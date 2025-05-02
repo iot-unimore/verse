@@ -85,11 +85,67 @@ Beside the rendering scripts few other tools are available under "verse/tools/bi
 These commands will be explained in the next section (Exploring results / Exploring resources)
 
 ## A quick test
+To verify if your setup is working correcly you can render the "simple_example" dataset. This is just a testing recipe to create a handful of files using the VERSE toolchain.
+
+```
+cd verse/src
+/render_dataset.py -i ../resources/ds_recipes/simple_example/info/simple_example.yaml -v
+```
+
+Use option "-v" to enable verbose. If your cpu has many cores you can use option "-c" to enable more parallel rendering.
+
+this will create a subfolder with few files under the "verse/datasets" folder :
+```
+verse/datasets
+├── readme.txt
+└── simple_example
+    └── train
+        ├── 000000_static_singlevoice_0_0_0
+        │   ├── 000000_static_singlevoice_0_0_0.yaml
+        │   ├── static_singlevoice.mkv
+        │   └── static_singlevoice_mkv.yaml
+        ├── 000001_static_singlevoice_0_0_1
+        │   ├── 000001_static_singlevoice_0_0_1.yaml
+        │   ├── static_singlevoice.mkv
+        │   └── static_singlevoice_mkv.yaml
+        ├── 000300_dynamic_singlevoice_1_0_0
+        │   ├── 000300_dynamic_singlevoice_1_0_0.yaml
+        │   ├── dynamic_singlevoice.mkv
+        │   └── dynamic_singlevoice_mkv.yaml
+        ├── 000300_dynamic_singlevoice_1_0_1
+        │   ├── 000300_dynamic_singlevoice_1_0_1.yaml
+        │   ├── dynamic_singlevoice.mkv
+        │   └── dynamic_singlevoice_mkv.yaml
+        ├── 001300_dynamic_multivoice_0_1_0
+        │   ├── 001300_dynamic_multivoice_0_1_0.yaml
+        │   ├── dynamic_multivoice.mkv
+        │   └── dynamic_multivoice_mkv.yaml
+        ├── 001300_dynamic_multivoice_2_0_0
+        │   ├── 001300_dynamic_multivoice_2_0_0.yaml
+        │   ├── dynamic_multivoice.mkv
+        │   └── dynamic_multivoice_mkv.yaml
+        ├── 001300_dynamic_multivoice_2_0_1
+        │   ├── 001300_dynamic_multivoice_2_0_1.yaml
+        │   ├── dynamic_multivoice.mkv
+        │   └── dynamic_multivoice_mkv.yaml
+        └── 001301_dynamic_multivoice_0_1_1
+            ├── 001301_dynamic_multivoice_0_1_1.yaml
+            ├── dynamic_multivoice.mkv
+            └── dynamic_multivoice_mkv.yaml
+```
+
+The .mkv (Matroska)[https://en.wikipedia.org/wiki/Matroska] file will contain the original human voices and the rendered, virtual spatial audio. Two .yaml files are available: one to describe the .mkv content (track by track) and one to describe the audio scene that was used to render the final audio.
+
+All these artifacts can be explored as explained in the section below
+
 
 ## Exploring results
+### Play audio
+### Display scene
 
-## Exploring resources
 
 # Resource definition
+
+## Exploring resources
 
 # Dataset definition
