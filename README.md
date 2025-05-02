@@ -30,6 +30,46 @@ The code and framework for this repo has been developed and tested in Linux, spe
 ### Installation
 After cloning this repository you need to setup your environment (only once) to be able to use VERSE toolchain. The instructions on how to create your virtual environment and fetch resources are available at this page [First Setup](docs/first_setup.md)
 
+## Folder Structure
+The structure of the repository is the following:
+
+```
++-- datasets
++-- resources
+|   +-- ds_recipes
+|   +-- heads
+|   +-- paths
+|   +-- rooms
+|   +-- scenes
+|   +-- voices
+|
++-- src
+|   +-- dataset_render.py
+|   +-- scene_render.py
++-- tools
+    +-- sound_spatializer
+```
+
+DATASETS is the folder that will contain the final audio rendering.
+
+RESOURCES is the folder where all the main components are placed, each one with a repetitive folder structure and [YAML](\url{https://yaml.org/}) decriptors, using the following schema:
+```
++-- resources
+    +--[RESOURCE_TYPE]
+       +--[RESOURCE_NAME]
+          +--info.yaml
+          +--fetch_files.sh
+          +--info
+             +--[FILENAME].yaml
+          +--files
+             +--[AUDIO_FILE].ext
+```
+RESOURCE_TYPE folder is defined as voices, heads, rooms, paths, scenes. Inside each RESOURCE_TYPE folder there is one sub-folder for each data provider. This allow to pull data of the same type from different locations, even outside of the VERSE repository, as long as the following information are provided. Each RESOURCE_TYPE is defined by a "fetch\_file.sh" script which allows to retrieve binary files from external repositories, and a mandatory "info.yaml" which decribe the resource itself.
+
+Binary files are placed into the "files" subfolder and for each binary file there is a correspondent yaml descriptor into the "info" sub-folder. The purpose of the main info.yaml file is to provide a human readable description of the content for this specific resource, while the purpose of the single yaml files placed into the info sub-folder is to provide a human readable description of each binary files composing the resource itself.
+
+This folder structure is repeated for each resource type, providing a uniform setup to parse available data either manually by human or automatically by code.
+
 # Audio Rendering
 
 ## A quick test
