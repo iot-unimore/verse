@@ -97,6 +97,30 @@ cd verse/tools/
 ```
 
 The build script will check for library requirements, download external libraries (3D-TuneIn) and compile sound_spatializer tool (sspat). The binary file is placed in "verse/tools/bin" as a symlink.
+Please test the tool with the command:
+```
+cd verse/tool/bin
+
+./sspat -h
+```
+
+which should provide the following output:
+
+```
+SoundSpatializer v.1.0.2
+
+Usage: sspat [options]
+Options:
+  -i, --input <file>            Input .WAV file
+  -o, --output <file>           Output .WAV file
+  -c, --coord_source <a,e,d>    Source coordinates (spherical)
+  -s, --hrtf_sofa <file>        Specify Head HRTF SOFA file
+  -r, --brir_sofa <file>        Specify Room Reverb SOFA file
+  -v, --verbosity <level>       Set verbosity level
+  -b, --buflen <number>         Set audio buffer size (max: 16384)
+  -p, --params <file>           Params file (YAML)
+  -h, --help                    Show this help message and quit
+```
 
 
 
