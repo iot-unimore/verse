@@ -28,3 +28,15 @@ Dataset configurations are provided as resources too: these are recipes that def
 The code and framework for this repo has been developed and tested in Linux, specifically Ubuntu 20.04. There is no "native" support for Windows environment (t.b.d docker image). You will need a large disk space since even the small datasets can easily generate 100GBbytes due to all the permutations of parameters. The code has been written to leverage multi-processing as much as possible. A moder CPU with at least 8-16 cores is preferred. The code is also tested on AMD Threadripper 3960x/128G and 3990x/256G.
 
 ### Installation
+
+# Audio Rendering
+
+## A quick test
+
+## Exploring results
+
+## Exploring resources
+
+# Resource definition
+
+# Dataset definition
