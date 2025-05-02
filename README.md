@@ -143,7 +143,20 @@ All these artifacts can be explored as explained in the section below
 ### Play audio
 ### Display scene
 
+## More datasets
+Beside the simple example two datasets are already defined in this repository
+- unimore_tiny: a set of ~1000 audio scenes for static and dynamic movements of human voices (up to three voices) in a single room. Final rendering size is about ~54GBytes
+- unimore_small: a set of ~12000 audio scenes, similar to the unimore_tiny set but with more voices. Larger disk space required.
 
+To render the datasets simply use the same syntax as before:
+```
+cd verse/src
+./render_dataset.py -i ../resources/ds_recipes/unimore_tiny/info/unimore_tiny_recipe.yaml
+```
+or
+```
+./render_dataset.py -i ../resources/ds_recipes/unimore_small/info/unimore_small_recipe.yaml
+```
 # Resource definition
 
 ## Exploring resources
