@@ -119,7 +119,7 @@ verse/datasets
             └── dynamic_multivoice_mkv.yaml
 ```
 
-The .mkv (Matroska)[https://en.wikipedia.org/wiki/Matroska] file will contain the original human voices and the rendered, virtual spatial audio. Two .yaml files are available: one to describe the .mkv content (track by track) and one to describe the audio scene that was used to render the final audio.
+The .mkv [Matroska](https://en.wikipedia.org/wiki/Matroska) file will contain the original human voices and the rendered, virtual spatial audio. Two .yaml files are available: one to describe the .mkv content (track by track) and one to describe the audio scene that was used to render the final audio.
 
 All these artifacts can be explored as explained in the section below
 
