@@ -1,0 +1,37 @@
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV before
+# being used by the render_3dti script
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+description:
+copyright: public domain
+source: https://librivox.org/contes-du-magasin-des-enfants-by-jeanne-marie-leprince-de-beaumont-1002/
+name: contes-du-magasin-des-enfants-by-jeanne-marie-leprince-de-beaumont-1002
+file: files/01_male/01_adult/000031_book-reading_fr-fr_leprince/contes_10_pecheurvoyageur_leprince.mp3
+speaker:
+  count: 1
+  gender: male
+  language: fr-fr
+metadata:
+  title: 10 - Conte du pecheur et du voyageur
+  album: Contes du Magasin des enfants
+  track: 10/15
+  genre: Speech
+format:
+  type: mp3
+  samplerate: 44100 Hz
+  channels: 1
+  duration: 00:11:09.96
+# [optional] preferred playback section (for audio rendering)
+playback:
+  begin: 00:01:00.00
+  end: 00:02:00.00
+
+#EOF

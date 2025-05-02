@@ -1,0 +1,163 @@
+---
+# Dataset Recipe:
+# each recipe is a set of rules to select voices/heads/rooms to be used to 
+# render a selection of audio scenes.
+syntax:
+  name: ds_recipe
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+#
+# recipe
+#
+name: unimore_small
+
+output:
+  path: datasets/unimore_small
+  store_info: True
+  audio:
+    format:
+      type: wav
+      subtype: pcm_s16le
+      samplerate: 48000
+
+#
+# set is a collection of scenes that will be grouped in a subfolder (same name)
+#
+sets:
+  # train/test/validate : only listed sets will be rendered
+  
+  train:
+    # each task is a separate selection
+    # of voices/heads/rooms needed to render a scene.
+    # if you want to render each scene with default values
+    # leave the voices/heads/rooms empty and the one
+    # specified in the recipe will be used.
+  
+    # for voice/heads/rooms specification do not add the ".yaml"
+    # use only filename without extention
+
+    tasks:
+      # note: if multiple voices are listed they will be used 
+      #       according to the scene requirements, matching is done "in sorting order". 
+      #       listing more voices than what is required by the scene will not have effects (skipped)
+
+      # TRAIN/TASK #0      
+      0:
+        voices:
+          0:
+            subtype: librivox_tiny
+            info: ["*_angelina","*_branchedelilas","*_karfunkelsteine","*_terzeodibarbare","*_davidcopperfield"]
+          1:
+            subtype: librivox_tiny
+            info: ["*_boythewanderingdog","*_gentlemenpreferblondes","*_fairytale003","*_quijote","*_emma"]
+          2:
+            subtype: librivox_tiny
+            info: ["*_redondillas","*_soneto36","*_ssf077","*_gianburrasca","*_labelleetlabete","*bienemajaundihreabenteuer"]
+
+        heads:
+        rooms:
+        scenes:
+          0:
+            subtype: unimore
+            info: ["static_onevoice_00006*","static_onevoice_00007*",
+                   "static_onevoice_00008*","static_onevoice_00009*",
+                   "static_onevoice_0001*","static_onevoice_0002*",
+                   "static_twovoice_00006*","static_twovoice_00007*",
+                   "static_twovoice_00008*","static_twovoice_00009*", 
+                   "static_twovoice_0001*",
+                   "static_threevoice_00006*","static_threevoice_0007*",
+                   "static_threevoice_00008*","static_threevoice_0009*",
+                   "static_threevoice_0001*"]
+          1:
+            subtype: unimore
+            info: ["dynamic_onevoice_00003*","dynamic_onevoice_00004*","dynamic_onevoice_00005*","dynamic_onevoice_00006*",
+                   "dynamic_onevoice_00007*","dynamic_onevoice_00008*","dynamic_onevoice_00009*","dynamic_onevoice_0001*",
+                   "dynamic_twovoice_00003*","dynamic_twovoice_00004*","dynamic_twovoice_00005*","dynamic_twovoice_00006*",
+                   "dynamic_twovoice_00007*","dynamic_twovoice_00008*","dynamic_twovoice_00009*","dynamic_twovoice_0001*",
+                   "dynamic_threevoice_*"]
+          2:
+            subtype: unimore
+            info: ["mix_twovoice_00003*","mix_twovoice_00004*","mix_twovoice_00005*","mix_twovoice_00006*",
+                   "mix_twovoice_00007*","mix_twovoice_00008*","mix_twovoice_00009*","mix_twovoice_0001*",
+                   "mix_threevoice_00003*","mix_threevoice_00004*","mix_threevoice_00005*","mix_threevoice_00006*",
+                   "mix_threevoice_00007*","mix_threevoice_00008*","mix_threevoice_00009*","mix_threevoice_0001*"]
+  validate:
+    tasks:
+      # TEST/TASK #0 
+      0:
+        voices:
+          0:
+            subtype: librivox_tiny
+            info: ["*_huckleberry","*_alicesadventuresinwonderlandabridged","*_blackbuccaneer"]
+          1:
+            subtype: librivox_tiny
+            info: ["*_germancollection039","*_corsario","*_barryblake"]
+          2:
+            subtype: librivox_tiny
+            info: ["*_alibaba","*_adventskalender2018","*_human"]
+
+        heads:
+        rooms:
+        scenes:
+          0:
+            subtype: unimore
+            info: ["static_onevoice_00002*","static_onevoice_00003*",
+                   "static_onevoice_00004*","static_onevoice_00005*",
+                   "static_twovoice_00002*","static_twovoice_00003*",
+                   "static_twovoice_00004*","static_twovoice_00005*",
+                   "static_threevoice_00002*","static_threevoice_00003*",
+                   "static_threevoice_00004*","static_threevoice_00005*"]
+          1:
+            subtype: unimore
+            info: ["dynamic_onevoice_00001*","dynamic_twovoice_00001*",
+                   "dynamic_onevoice_00002*","dynamic_twovoice_00002*"]
+          2:
+            subtype: unimore
+            info: ["mix_twovoice_00001*","mix_threevoice_00001*",
+                   "mix_twovoice_00002*","mix_threevoice_00002*"]
+  
+  test:
+    tasks:
+      # VALIDATE/TASK #0
+      0:
+        voices:
+          0:
+            subtype: librivox_tiny
+            info: ["*_contes","*_meraviglieduemila","*_iletaitunefois"]
+          1:
+            subtype: librivox_tiny
+            info: ["*_el19demarzoyel2demayo","*_clemencia","*_alicenelpaesemeraviglie"]
+          2:
+            subtype: librivox_tiny
+            info: ["*_5semainesenballon","*_achilleis","*_storyofapatriot"]
+  
+        heads:
+        rooms:
+        scenes:
+          0:
+            subtype: unimore
+            info: ["static_onevoice_00000*","static_onevoice_00001*",
+                   "static_twovoice_00000*","static_twovoice_00001*",
+                   "static_threevoice_00000*","static_threevoice_00001*"]
+          1:
+            subtype: unimore
+            info: ["dynamic_onevoice_00000*","dynamic_twovoice_00000*"]
+          2:
+            subtype: unimore
+            info: ["mix_twovoice_00000*","mix_threevoice_00000*"]
+
+#
+# script hooks & lib import for data preparation (optional)
+#
+hooks:
+# t.b.d (still needed to define syntax)
+# the idea is to allow pre and post processing, like for example 
+# to add "analog pink noise" to the rendering and simulate
+# analog mic "hissing"
+# note: we might need to move this "inside" the task level definition
+
+#EOF
+...

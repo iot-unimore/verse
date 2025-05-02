@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: simple_example
+
+type: dataset
+
+content: dataset_recipe
+
+description: a recipe to show the sintax capabilities
+
+size_bytes:
+
+source:
+
+source_original:
+
+fetch_script:
+
+copyright:
+
+license:
+
+details:
+
+#EOF
+...

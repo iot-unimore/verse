@@ -1,0 +1,31 @@
+---
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV (mono) before
+# being used by the render_3dti script
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+description: testing
+copyright: not available
+source: not available
+name: none
+file: files/voice_002.wav
+speaker: 
+  count: 1
+format:
+  type: wav
+  samplerate:  44100 Hz 
+  channels: 1 
+  duration: 00:00:33.41
+# [optional] preferred playback section (for audio rendering)
+#playback:
+#  begin: 00:01:00.00
+#  end: 00:02:00.00
+#EOF
+...

@@ -1,0 +1,19 @@
+# head related impulse response (HRTF)
+syntax:
+  name: hrtf_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+name: none
+description: simple binaural hrtf from generic head.
+format: sofa
+format_3dti: yes
+hrtf_count: 1
+hrtf_main_idx: 0
+hrtf:
+  0:
+    name: binaural
+    file: files/head_001/head_001.sofa
+
+#EOF

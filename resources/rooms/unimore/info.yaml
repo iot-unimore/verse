@@ -1,0 +1,33 @@
+---
+# VERSE resource info 
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: unimore_rooms
+
+type: dataset
+
+content: brir
+
+description: a small selection of rooms impulse responses in SOFA format
+
+size_bytes:
+
+source: 
+
+source_original:
+
+fetch_script: fetch_files.sh
+
+copyright: MIT
+
+license: https://en.wikipedia.org/wiki/MIT_License
+
+details: 
+
+#EOF
+...

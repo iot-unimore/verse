@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: librivox_tiny
+
+type: dataset
+
+content: audio
+
+description: a curated small selection of audio recordings for human voice (single person)
+
+size_bytes:
+
+source: none
+
+source_original: https://librivox.org/
+
+fetch_script: fetch_files.sh
+
+copyright: public_domain
+
+license: https://en.wikipedia.org/wiki/Public_domain
+
+details: https://wiki.librivox.org/index.php?title=Copyright_and_Public_Domain
+
+#EOF
+...

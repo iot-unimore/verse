@@ -1,0 +1,145 @@
+---
+# audio rendering scene configuration file
+syntax:
+  name: audio_rendering_scene
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+#
+# details
+#
+scene:
+  name: static_singlevoice
+  description: scene purpose and details here
+
+#
+# audio setup
+#
+setup:
+  #
+  # scene audio format for final rendering
+  #
+  format:
+    type: wav
+    subtype: pcm_s16le
+    samplerate: 48000
+
+  #
+  # audio sources (voices)
+  #
+  sources_count: 2
+  sources:
+    0:
+      # source type and info file
+      type: voices
+      subtype: librivox_tiny
+      info: 000056_gentlemenpreferblondes
+
+      # silence padding (seconds) pre/post playback
+      #playback:
+      #   padding:
+      #      pre: 20
+      #      post: 30
+
+      # positioning: static or dynamic
+
+      # positioning using spherical coord
+      # up/view vector for orientation
+#      position:
+#        type: static
+#        coord:
+#          value: [0, 0, 1]
+#          type: spherical
+#          units: ['degree','degree','metre']
+#        view_vect:
+#          value: [1, 0, 0]
+#          type: cartesian
+#          units: ['metre']
+#        up_vect:
+#          value: [0, 0, 1]
+
+      # positioning using motion path
+      # 
+      position:
+        type: dynamic  
+        value:
+          type: paths
+          subtype: unimore
+          info: path_001.yaml
+
+    1:
+      # source type and info file
+      type: voices
+      subtype: librivox_tiny
+      info: 000055_gentlemenpreferblondes
+
+      # silence padding (seconds) pre/post playback
+      #playback:
+      #   padding:
+      #      pre: 10
+      #      post: 20
+
+      # positioning: static or dynamic
+
+      # positioning using spherical coord
+      # up/view vector for orientation
+      position:
+        type: static
+        coord:
+          value: [0, 0, 1]
+          type: spherical
+          units: ['degree','degree','metre']
+        view_vect:
+          value: [1, 0, 0]
+          type: cartesian
+          units: ['metre']
+        up_vect:
+          value: [0, 0, 1]
+
+      # positioning using motion path
+      #
+      #position:
+      #  type: dynamic  
+      #  value:
+      #    type: paths
+      #    subtype: unimore
+      #    info: path_001.yaml
+
+  #
+  # listener heads (MUST be count=1)
+  #
+  listeners_count: 1
+  listeners:
+    0:
+       type: heads
+       subtype: unimore 
+       info: head_003
+
+       # positioning: listener is static
+       position:
+         type: static
+         coord:
+           value: [0, 0, 0]
+           type: spherical
+           units: ['degree','degree','metre']
+         view_vect:
+           value: [1, 0, 0]
+           type: cartesian
+           units: ['metre']
+         up_vect:
+           value: [0, 0, 1]
+
+  #
+  # rooms (MUST be count=1 or count=0 for no reverberation)
+  #
+  rooms_count: 1
+  rooms:
+   0:
+      type: rooms
+      subtype: unimore
+      info: room_brir_001
+
+#EOF
+...

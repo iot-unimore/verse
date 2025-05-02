@@ -1,0 +1,37 @@
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV before
+# being used by the render_3dti script
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+description:
+copyright: public domain
+source: https://librivox.org/100-the-story-of-a-patriot-by-upton-sinclair/
+name: 100-the-story-of-a-patriot-by-upton-sinclair
+file: files/01_male/01_adult/000013_book-reading_en-en_patriot/storyofapatriot_20_sinclair_128kb.mp3
+speaker:
+  count: 1
+  gender: male
+  language: en-en
+metadata:
+  title: 20 - Sections 39 & 40
+  album: 100%
+  track: 20
+  genre: speech
+format:
+  type: mp3
+  samplerate: 44100 Hz
+  channels: 1
+  duration: 00:11:54.45
+# [optional] preferred playback section (for audio rendering)
+playback:
+  begin: 00:01:00.00
+  end: 00:02:00.00
+
+#EOF

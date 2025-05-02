@@ -1,0 +1,37 @@
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV before
+# being used by the render_3dti script
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+description:
+copyright: public domain
+source: https://librivox.org/el-corsario-by-george-gordon-lord-byron/
+name: el-corsario-by-george-gordon-lord-byron
+file: files/01_male/01_adult/000042_book-reading_es-es_corsario/corsario_02_byron_128kb.mp3
+speaker:
+  count: 1
+  gender: male
+  language: es-es
+metadata:
+  title: 02 - Canto Primero (segunda parte)
+  album: El Corsario
+  track: 2
+  genre: speech
+format:
+  type: mp3
+  samplerate: 44100 Hz
+  channels: 1
+  duration: 00:12:12.13
+# [optional] preferred playback section (for audio rendering)
+playback:
+  begin: 00:01:00.00
+  end: 00:02:00.00
+
+#EOF

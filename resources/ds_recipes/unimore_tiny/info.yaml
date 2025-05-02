@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: unimore_tiny
+
+type: dataset
+
+content: dataset_recipe
+
+description: a recipe to build a dataset from other resources (voices, heads, rooms)
+
+size_bytes: 54G
+
+source:
+
+source_original:
+
+fetch_script:
+
+copyright: MIT
+
+license: https://en.wikipedia.org/wiki/MIT_License
+
+details: none
+
+#EOF
+...

@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: unimore_heads
+
+type: dataset
+
+content: hrtf
+
+description: multi-channel .sofa file for HRTFs on different subjects as per 3D-TuneIn project requirements
+
+size_bytes:
+
+source: none
+
+source_original: none
+
+fetch_script: fetch_files.sh
+
+copyright: MIT
+
+license: https://en.wikipedia.org/wiki/MIT_License
+
+details: t.b.d
+
+#EOF
+...

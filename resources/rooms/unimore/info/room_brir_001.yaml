@@ -1,0 +1,26 @@
+---
+# binaural room impulse response (BRIR)
+
+syntax:
+  name: brir_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+name: room_001
+
+description: large, very reverberant room
+
+format: sofa
+
+format_3dti: yes
+
+brir_count: 1
+brir_main_idx: 0
+brir:
+  0:
+    file: files/room_brir_001.sofa
+
+#EOF
+...

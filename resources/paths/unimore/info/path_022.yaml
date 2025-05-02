@@ -1,0 +1,43 @@
+---
+# moving path map.
+# this is the descriptor file for a moving object path.
+# the associated .CSV file will contain the detailed
+# positioning of the object within the 0-100% timeline
+# of the associated audio file. The association with
+# a mono audio file is done at runtime by the 
+# render 3dti script.
+syntax:
+  name: path_map
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+name: outgoing_right_flat
+
+description: right side of the speaker, increasing distance
+
+# file format (only CSV supported)
+format: csv
+
+column_mapping:
+  time: 0
+  volume: 1
+  azimuth: 2
+  elevation: 3
+  distance: 4
+  type: 5
+#
+# coordinates (only spherical supported) and column mapping
+coord:
+  type: spherical
+  angle: degree
+
+path_count: 1
+path_main_idx: 0
+path:
+  0:
+    file: files/path_022.csv
+
+#EOF
+...

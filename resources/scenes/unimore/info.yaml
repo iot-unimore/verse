@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: unimore_audio_scenes
+
+type: dataset
+
+content: scenes
+
+description: a small selection of audio scene definition for virtual audio rendering
+
+size_bytes:
+
+source: 
+
+source_original:
+
+fetch_script: fetch_files.sh
+
+copyright: MIT
+
+license: https://en.wikipedia.org/wiki/MIT_License
+
+details: 
+
+#EOF
+...

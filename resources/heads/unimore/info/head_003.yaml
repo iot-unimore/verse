@@ -1,0 +1,42 @@
+---
+# head related impulse response (HRTF)
+syntax:
+  name: hrtf_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+name: wilson_prj_head_barebone
+
+description: wilson_prj head with no hair/hat on top (barebone) with glasses having six microphones (three pairs of L/R mics). Mics are also inside ears (binaural) for reference.
+
+format: sofa
+
+format_3dti: yes
+
+#
+# HRTFs definition:
+# we can have more than one HRTF for the same head because the 3DTuneIn tool will
+# take only binaural hrtf for rendering. For this head we have multiple micropones
+# arranged in L/R pairs (for binaural and for glasses array).
+# we list them in order with the associated hrtf file.
+#
+hrtf_count: 4
+hrtf_main_idx: 0
+hrtf:
+  0:
+    name: binaural
+    file: files/head_003/dry-20250223_001_binaural.sofa
+  1:
+    name: array_six_front
+    file: files/head_003/dry-20250223_001_array_six_front.sofa
+  2:
+    name: array_six_middle
+    file: files/head_003/dry-20250223_001_array_six_middle.sofa
+  3:
+    name: array_six_rear
+    file: files/head_003/dry-20250223_001_array_six_rear.sofa
+
+#EOF
+...

@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: unimore_path_csv
+
+type: dataset
+
+content: paths in spherical coordinates (3dti convention) for object moving in space
+
+description: each path is a trajectory in 3D space with absolute coordinates centered in listener position
+
+size_bytes: 576K
+
+source:
+
+source_original:
+
+fetch_script: fetch_files.sh
+
+copyright: MIT
+
+license: https://en.wikipedia.org/wiki/MIT_License
+
+details: 
+
+#EOF
+...

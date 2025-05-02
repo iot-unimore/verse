@@ -1,0 +1,71 @@
+---
+# sound spatializer configuration file
+
+# syntax specification versioning
+syntax:
+  name: sspat_config
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+#
+# audio setup and wav track description
+#
+setup:
+  #
+  # audio sources
+  #
+  sources_count: 4
+  sources:
+    0:
+      # audio wav file
+      file_wav: ./resources/voices/voice_001.wav
+      # source initial position
+      coord: 0,0,1
+      # source path: dynamic path added to initial position, 
+      # use "none" if source is static
+      path_csv: none
+
+    1:
+      # audio wav file
+      file_wav: ./resources/voices/voice_002.wav
+      # source initial position
+      coord: 90,0,1
+      # source path: dynamic path added to initial position, 
+      # use "none" if source is static
+      path_csv: none
+
+    2:
+      # audio wav file
+      file_wav: ./resources/voices/voice_003.wav
+      # source initial position
+      #coord: 270,0,1
+      coord: 0,0,0
+      # source path: dynamic path added to initial position, 
+      # use "none" if source is static
+      path_csv: ./resources/paths/path_001.csv
+
+    3:
+      # audio wav file
+      file_wav: ./resources/voices/voice_004.wav
+      # source initial position
+      coord: 30,45,1
+      # source path: dynamic path added to initial position, 
+      # use "none" if source is static
+      path_csv: none
+
+  #
+  # head
+  #
+  head:
+    hrtf_sofa: ./resources/heads/head_003/dry-20250223_001_binaural.sofa
+
+  #
+  # room
+  #
+  room:
+    brir_sofa: ./resources/rooms/room_brir_001.sofa
+
+#EOF
+...

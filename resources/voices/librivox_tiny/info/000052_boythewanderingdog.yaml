@@ -1,0 +1,37 @@
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV before
+# being used by the render_3dti script
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+description:
+copyright: public domain
+source: https://librivox.org/boy-the-wandering-dog-by-marshall-saunders/
+name: boy-the-wandering-dog-by-marshall-saunders
+file: files/02_female/01_adult/000011_book-reading_en-en_dog/boythewanderingdog_04_saunders_128kb.mp3
+speaker:
+  count: 1
+  gender: female
+  language: en-en
+metadata:
+  title: 04 - My New Master
+  album: Boy, The Wandering Dog
+  track: 4
+  genre: speech
+format:
+  type: mp3
+  samplerate: 44100 Hz
+  channels: 1
+  duration: 00:15:33.59
+# [optional] preferred playback section (for audio rendering)
+playback:
+  begin: 00:01:00.00
+  end: 00:02:00.00
+
+#EOF

@@ -1,0 +1,83 @@
+---
+# audio rendering scene configuration file
+syntax:
+  name: audio_rendering_scene
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+#
+# details
+#
+scene:
+  name: dynamic_onevoice_000017
+  description: scene with a dynamic single voice in the room
+
+#
+# audio setup
+#
+setup:
+  #
+  # scene audio format for final rendering
+  #
+  format:
+    type: wav
+    subtype: pcm_s16le
+    samplerate: 48000
+
+  #
+  # audio sources (voices)
+  #
+  sources_count: 1
+  sources:
+    0:
+      # source type and info file
+      type: voices
+      subtype: librivox_tiny
+      info: 000005_meraviglieduemila
+
+      # positioning using spherical coord
+      position:
+        type: dynamic
+        value:
+          type: paths
+          subtype: unimore
+          info: path_017.yaml
+
+  #
+  # listener heads (MUST be count=1)
+  #
+  listeners_count: 1
+  listeners:
+    0:
+       type: heads
+       subtype: unimore 
+       info: head_003
+
+       # positioning: listener is static
+       position:
+         type: static
+         coord:
+           value: [0, 0, 0]
+           type: spherical
+           units: ['degree','degree','metre']
+         view_vect:
+           value: [1, 0, 0]
+           type: cartesian
+           units: ['metre']
+         up_vect:
+           value: [0, 0, 1]
+
+  #
+  # rooms (MUST be count=1 or count=0 for no reverberation)
+  #
+  rooms_count: 0
+  rooms:
+   0:
+      type: rooms
+      subtype:
+      info:
+
+#EOF
+...

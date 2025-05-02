@@ -1,0 +1,37 @@
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV before
+# being used by the render_3dti script
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+description:
+copyright: public domain
+source: https://librivox.org/emma-by-jane-austen-3/
+name: emma-by-jane-austen-3
+file: files/02_female/01_adult/000032_book-reading_fr-fr_emma/emma_38_austen_128kb.mp3
+speaker:
+  count: 1
+  gender: female
+  language: fr-fr
+metadata:
+  title: 38 - Chapitre XXXVIII
+  album: Emma
+  track: 38
+  genre: speech
+format:
+  type: mp3
+  samplerate: 44100 Hz
+  channels: 1
+  duration: 00:22:13.45
+# [optional] preferred playback section (for audio rendering)
+playback:
+  begin: 00:01:00.00
+  end: 00:02:00.00
+
+#EOF
