@@ -71,6 +71,18 @@ Binary files are placed into the "files" subfolder and for each binary file ther
 This folder structure is repeated for each resource type, providing a uniform setup to parse available data either manually by human or automatically by code.
 
 # Audio Rendering
+Once the environment is setup and all the resources have been prepared you can render audio using two scripts: the "render_scene" and the "render_dataset"
+
+These scripts are the core of the VERSE toolchain: the "render_dataset" script will read a recipe (under "verse/resources/ds_recipes") prepare a set of scene files and launch the "render_scene" multiple times to create audio files in a specific subfolder of "verse/datasets". You can render multiple datasets, they will have separate folders (as long as there is enough space on the disk)
+
+Beside the rendering scripts few other tools are available under "verse/tools/bin":
+- display_path
+- display_scene
+- display_sofa
+- parse_sofa
+- play_scene
+
+These commands will be explained in the next section (Exploring results / Exploring resources)
 
 ## A quick test
 
