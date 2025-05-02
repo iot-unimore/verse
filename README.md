@@ -28,6 +28,7 @@ Dataset configurations are provided as resources too: these are recipes that def
 The code and framework for this repo has been developed and tested in Linux, specifically Ubuntu 20.04. There is no "native" support for Windows environment (t.b.d docker image). You will need a large disk space since even the small datasets can easily generate 100GBbytes due to all the permutations of parameters. The code has been written to leverage multi-processing as much as possible. A moder CPU with at least 8-16 cores is preferred. The code is also tested on AMD Threadripper 3960x/128G and 3990x/256G.
 
 ### Installation
+After cloning this repository you need to setup your environment (only once) to be able to use VERSE toolchain. The instructions on how to create your virtual environment and fetch resources are available at this page [First Setup](docs/first_setup.md)
 
 # Audio Rendering
 
