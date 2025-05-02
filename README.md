@@ -108,22 +108,7 @@ verse/datasets
         │   ├── 000001_static_singlevoice_0_0_1.yaml
         │   ├── static_singlevoice.mkv
         │   └── static_singlevoice_mkv.yaml
-        ├── 000300_dynamic_singlevoice_1_0_0
-        │   ├── 000300_dynamic_singlevoice_1_0_0.yaml
-        │   ├── dynamic_singlevoice.mkv
-        │   └── dynamic_singlevoice_mkv.yaml
-        ├── 000300_dynamic_singlevoice_1_0_1
-        │   ├── 000300_dynamic_singlevoice_1_0_1.yaml
-        │   ├── dynamic_singlevoice.mkv
-        │   └── dynamic_singlevoice_mkv.yaml
-        ├── 001300_dynamic_multivoice_0_1_0
-        │   ├── 001300_dynamic_multivoice_0_1_0.yaml
-        │   ├── dynamic_multivoice.mkv
-        │   └── dynamic_multivoice_mkv.yaml
-        ├── 001300_dynamic_multivoice_2_0_0
-        │   ├── 001300_dynamic_multivoice_2_0_0.yaml
-        │   ├── dynamic_multivoice.mkv
-        │   └── dynamic_multivoice_mkv.yaml
+        [ ... ]
         ├── 001300_dynamic_multivoice_2_0_1
         │   ├── 001300_dynamic_multivoice_2_0_1.yaml
         │   ├── dynamic_multivoice.mkv
