@@ -206,6 +206,52 @@ The first subset is related to [LibriVox](https://librivox.org/), providing a sm
 The second subset is a (even smaller) selection of audio files for testing purposes.
 
 No matter what is the source of a resource subtype, there will be always the same folder structure [RESOURCE][SUBTYPE]/info like below
+```
+├── fetch_files.sh
+├── files
+├── info
+└── info.yaml
+```
+
+The upper level info.yaml file is a generic descriptor for the resource, listing type, ownership, copyright and especially the amount of disk space this resource will occupy once all its files are present.
+For example in the case of librivox_tiny we have:
+
+```
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: librivox_tiny
+type: dataset
+content: audio
+description: a curated small selection of audio recordings for human voice (single person)
+
+size_bytes: 1.3G
+
+source: https://librivox.org/
+source_original:
+
+fetch_script: fetch_files.sh
+
+copyright: public_domain
+license: https://en.wikipedia.org/wiki/Public_domain
+details: https://wiki.librivox.org/index.php?title=Copyright_and_Public_Domain
+```
+
+The most important folders are "files" and "info".
+
+The first will contain all the "raw" data and it is normally populated by the "fetch_files.sh" script present in the same resource folder.
+User should place in fetch_files.sh all the needed instructions and access codes to pull external resources like .wav audio files that normally are not placed inside a github repository.
+
+For each one of the raw resource files there will be a corrispondant "info" file, again leveraging YAML syntax, to describe the resource itself.
+
+NOTE: to distinguish each YAML file content the first part is always a "syntax" field, exposing the structure and syntax of the rest of the file. The "syntax/name" will be different depending on the resource type, for example we have "resource_info" to highlight a generic resource descriptor file, "voice_file" to indicate a specific voice file type, "audio_rendering_scene" to indicate a scene file etc.
+
+The syntax for each resource info file is defined and detailed in a dedicated howto: [voices howto](voice_syntax_howto.md) [heads howto](head_syntax_howto.md) [rooms howto](room_syntax_howto.md) [paths howto](path_syntax_howto.md) [scenes howto](scene_syntax_howto.md)
 
 
 
