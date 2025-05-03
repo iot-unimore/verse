@@ -91,4 +91,5 @@ The syntax for "scene" is explained in [scene_syntax_howto](scene_syntax_howto.m
 For this scene the listener "head" has one pair of receivers placed in the ears (binaural) and a six-mic-array placed around the head, hence we have a front/middle/rear indication for the head mic array.
 
 Open Audacity and load the .mkv file, you will be presented with a list of audio tracks to be imported, select **all** of them:
+![audacity_open](./pics/auda_1.png)
 
