@@ -90,6 +90,15 @@ The syntax for "scene" is explained in [scene_syntax_howto](scene_syntax_howto.m
 
 For this scene the listener "head" has one pair of receivers placed in the ears (binaural) and a six-mic-array placed around the head, hence we have a front/middle/rear indication for the head mic array.
 
-Open Audacity and load the .mkv file, you will be presented with a list of audio tracks to be imported, select **all** of them:
+Open Audacity and load the .mkv file, you will be presented with a list of audio tracks to be imported, select **all** of them (use SHIFT and MOUSE-CLICK):
+
 ![audacity_open](./pics/auda_1.png)
+
+Next you will see the full list of audio tracks following the same track numbering order as for the .yaml descriptor.
+
+The first three tracks are the audio sources used in this scene (they are mono audio files, different length). The last tracks are stereo (mic pairs) referring to binaura or array-six[front|middle|rear].
+
+You can use MUTE/SOLO buttons and all the features of Audacity to compare, filter and play the audio tracks.
+
+![audacity_open](./pics/auda_2.png)
 
