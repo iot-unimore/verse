@@ -92,7 +92,7 @@ if __name__ == "__main__":
         "--input_file",
         type=str,
         default=None,
-        help="input path file (yaml or csv) to display (default: %(default)s)",
+        help="input path file (yaml or mkv) to display (default: %(default)s)",
     )
     parser.add_argument(
         "-l",
