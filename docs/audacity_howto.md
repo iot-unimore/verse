@@ -80,6 +80,12 @@ The descriptor shows that the rendered audio does contain n.3 "sources", meaning
 There are also 8 receivers (one listener with eight receivers, meaning 4 pairs of microphones).
 
 The details of how the receivers are placed and how the sources move in space are described by the scene definition file, in this case the file: "001301_dynamic_multivoice_0_1_1.yaml".
+
+For each receiver the desciptor indicates the number of channels (2) and the track number which will be useful for Audacity visualization.
+
+Note that this track number is the same you get by using the command line tools "play_scene.py" with the "-l" option (listing tracks)
+
+## Loading in Audacity
 The syntax for "scene" is explained in [scene_syntax_howto](docs/scene_syntax_howto.md).
 
 For this scene the listener "head" has one pair of receivers placed in the ears (binaural) and a six-mic-array placed around the head, hence we have a front/middle/rear indication for the head mic array.
