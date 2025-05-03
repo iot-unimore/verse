@@ -92,7 +92,7 @@ To verify if your setup is working correcly you can render the "simple_example" 
 
 ```
 cd verse/src
-/render_dataset.py -i ../resources/ds_recipes/simple_example/info/simple_example.yaml -v
+./render_dataset.py -i ../resources/ds_recipes/simple_example/info/simple_example.yaml -v
 ```
 
 Use option "-v" to enable verbose. If your cpu has many cores you can use option "-c" to enable more parallel rendering.
