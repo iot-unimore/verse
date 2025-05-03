@@ -86,6 +86,6 @@ For each receiver the desciptor indicates the number of channels (2) and the tra
 Note that this track number is the same you get by using the command line tools "play_scene.py" with the "-l" option (listing tracks)
 
 ## Loading in Audacity
-The syntax for "scene" is explained in [scene_syntax_howto](docs/scene_syntax_howto.md).
+The syntax for "scene" is explained in [scene_syntax_howto](scene_syntax_howto.md).
 
 For this scene the listener "head" has one pair of receivers placed in the ears (binaural) and a six-mic-array placed around the head, hence we have a front/middle/rear indication for the head mic array.
