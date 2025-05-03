@@ -190,12 +190,7 @@ For "resources" we refer to the core components of an audio scene: human voices,
 Each resource has a specific binary format depending on the purpose of the resource itself. Resources could be retrieved also from different (external) datasets to expand possibilities of VERSE.
 For this reason each resource has an abstraction layer which leverages YAML syntax to define the content of a resource folder.
 
-Starting from [VERSE]/resources we see a folder for each type:
-- voices
-- heads
-- paths
-- rooms
-- scenes
+Starting from [VERSE]/resources we see a folder for each type: voices, heads, paths, rooms, scenes.
 
 When selecting the resource type folder we have the list of different subset of that specific resource, each subset being a specific "selection" made by the user or someone on behalf of the user.
 For example selecting "voices" we have two subtypes:
