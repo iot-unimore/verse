@@ -183,7 +183,36 @@ or
 ./render_dataset.py -i ../resources/ds_recipes/unimore_small/info/unimore_small_recipe.yaml
 ```
 # Resource definition
+For "resources" we refer to the core components of an audio scene: human voices, listener head (and receivers location), room (for reverberation) and motion_path to define source motion during the audio rendering.
+
+Each resource has a specific binary format depending on the purpose of the resource itself. Resources could be retrieved also from different (external) datasets to expand possibilities of VERSE.
+For this reason each resource has an abstraction layer which leverages YAML syntax to define the content of a resource folder.
+
+Starting from [VERSE]/resources we see a folder for each type:
+- voices
+- heads
+- paths
+- rooms
+- scenes
+
+When selecting the resource type folder we have the list of different subset of that specific resource, each subset being a specific "selection" made by the user or someone on behalf of the user.
+For example selecting "voices" we have two subtypes:
+
+```
+├── librivox_tiny
+└── unimore
+```
+The first subset is related to [LibriVox](https://librivox.org/), providing a small selection of human voices of different gender/language.
+The second subset is a (even smaller) selection of audio files for testing purposes.
+
+No matter what is the source of a resource subtype, there will be always the same folder structure [RESOURCE][SUBTYPE]/info like below
+
+
 
 ## Exploring resources
+tbd: describe display_path / display_scene / display_sofa / parse_sofa tools
 
 # Dataset definition
+The rendering of a dataset is done once (offline) and it is based on a "recipe". Dataset recipes (ds_recipes) are a resource. The user can define different recipes to mix&match scenes, voices, listeners to create his own specific dataset.
+
+tbd: aggiungere qua la definizione della sintassi per dataset
