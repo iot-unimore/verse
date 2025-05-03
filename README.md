@@ -2,7 +2,7 @@
 <img src="docs/pics/verse_logo.png" width=20%>
 
 
-# [V]irtual [E]nvironment for [R]endering of [S]peech [E]missions
+# Virtual Environment for Rendering of Speech Emissions
 
 This is a project focusing on human voice perception with different purposes. 
 Among the others, the main goal is to study the advantages of an array of microphones versus binaural audio signals, in the context of real embedded devices and including machine learning algorithms (in particular neural networks) for signal processing, with a particular focus on human voices.
