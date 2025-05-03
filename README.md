@@ -147,7 +147,7 @@ Using the same tool you can play a single track, each track being a stereo (mic 
 ```
 [VERSE]/tools/bin/play_scene.py -i ./dynamic_multivoice.mkv -t 3
 ```
-You can also use (Audacity)[https://www.audacityteam.org/] to visualize audio in detail, as explained in detail here (T.B.D)
+You can also use [Audacity](https://www.audacityteam.org/) to visualize audio in detail, as explained in detail here (T.B.D)
 
 ### Display scene
 
@@ -160,8 +160,7 @@ As a quick reference you can use the "display_scene" tool to visualize source po
 ```
 /tools/bin/display_scene.py -i ./001301_dynamic_multivoice_0_1_1.yaml
 ```
-which will generate a plot similar to the one in figure.
-
+which will generate a plot similar to the one in figure. From the image we can recognize that this scene is composed by n.3 human voices: one is static placed at 1 metre distance in front of the listener (blue color, does not move during the audio rendering). One is dynamic, goes from the rigth side (gree dot) of the speaker to the left side (red dot) while moving on a semi-circular path on the back side of the listener. The 3rd source is also dynamic, but moves from right to left on a linear path in front of the listener (green color path)
 
 <br clear="left"/>
 
