@@ -37,7 +37,7 @@ syntax:
 description: none
 name: verse rendered audio scene
 
-file: /media/gfilippi/bigdata_01/ub2004/Fil_PRJ/verse/datasets/simple_example/train/001301_dynamic_multivoice_0_1_1/dynamic_multivoice.mkv
+file: [VERSE]/datasets/simple_example/train/001301_dynamic_multivoice_0_1_1/dynamic_multivoice.mkv
 
 sources_count: 3
 sources:
@@ -73,3 +73,13 @@ receivers:
     file: dynamic_multivoice_array_six_rear_003.wav
     track_id: 6
 ```
+
+where [VERSE] is your local copy for VERSE repo.
+
+The descriptor shows that the rendered audio does contain n.3 "sources", meaning human voices. These are the original (mono) voices that were used to rendere the audio scene.
+There are also 8 receivers (one listener with eight receivers, meaning 4 pairs of microphones).
+
+The details of how the receivers are placed and how the sources move in space are described by the scene definition file, in this case the file: "001301_dynamic_multivoice_0_1_1.yaml".
+The syntax for "scene" is explained in [scene_syntax_howto](docs/scene_syntax_howto.md).
+
+For this scene the listener "head" has one pair of receivers placed in the ears (binaural) and a six-mic-array placed around the head, hence we have a front/middle/rear indication for the head mic array.
