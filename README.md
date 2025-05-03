@@ -1,6 +1,6 @@
-<p align="center">
+
 <img src="docs/pics/verse_logo.png" width=20%>
-</p>
+
 
 # Virtual Environment for Rendering of Speech Emissions
 
