@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: OpenSLR_LibriSpeech
+
+type: dataset
+
+content: audio
+
+description: A large multilingual corpus derived from LibriVox audiobooks
+
+size_bytes: 700GB
+
+source: https://openslr.org/94/index.html
+
+source_original: https://openslr.org/94/index.html
+
+fetch_script: fetch_files.sh
+
+copyright: public_domain
+
+license: CC BY 4.0 
+
+details: retrieved direclty from OpenSRL (Open Speech and Language Resources) website
+
+#EOF
+...
