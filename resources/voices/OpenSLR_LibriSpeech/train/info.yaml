@@ -25,9 +25,9 @@ fetch_script: fetch_files.sh
 
 copyright: public_domain
 
-license: CC BY 4.0 
+license: CC BY 4.0
 
-details: retrieved direclty from OpenSRL (Open Speech and Language Resources) website
+details: TRAIN_SET, retrieved direclty from OpenSRL (Open Speech and Language Resources) website
 
 #EOF
 ...
