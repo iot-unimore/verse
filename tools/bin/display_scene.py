@@ -17,7 +17,7 @@ import os
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
 
-_RESOURCES_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../", "resources")
+_RESOURCES_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../", "resources")
 
 
 #
