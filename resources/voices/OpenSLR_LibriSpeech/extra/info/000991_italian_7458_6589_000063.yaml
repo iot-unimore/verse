@@ -1,0 +1,37 @@
+---
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV before
+# being used by the render_3dti script
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+description:
+copyright: CC BY 4.0
+source: https://openslr.org/94/index.html
+name: italian_7458_6589_000063
+file: files/mls_italian_opus/test/audio/7458/6589/7458_6589_000063.opus
+speaker: 
+  count: 1
+  gender: 
+  language: italian
+metadata:
+  title:  04 - Marsina Stretta
+  album:  Novelle per un Anno, settima r
+  artist:  Luigi Pirandello
+format:
+  type: opus
+  samplerate:  48000 Hz 
+  channels: 1 
+  duration: 00:00:12.83
+# [optional] preferred playback section (for audio rendering)
+playback:
+  begin: 00:00:00.00
+  end: 00:00:12.83
+#EOF
+...

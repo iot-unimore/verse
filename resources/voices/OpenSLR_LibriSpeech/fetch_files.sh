@@ -24,7 +24,7 @@ declare -a filelist=(\
 #mls_french_opus.tar.gz \
 #mls_spanish_opus.tar.gz \
 mls_italian_opus.tar.gz \
-#mls_portuguese_opus.tar.gz \
+mls_portuguese_opus.tar.gz \
 mls_polish_opus.tar.gz )
 
 
