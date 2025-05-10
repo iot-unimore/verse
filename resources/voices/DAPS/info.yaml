@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: daps
+
+type: dataset
+
+content: audio
+
+description: The DAPS (Device and Produced Speech) dataset is a collection of aligned versions of professionally produced studio speech recordings and recordings of the same speech on common consumer devices (tablet and smartphone) in real-world environments.
+
+size_bytes: 3G
+
+source: https://zenodo.org/records/4660670
+
+source_original: https://archive.org/details/daps_dataset
+
+fetch_script: fetch_files.sh
+
+copyright: CC-A-ND-3.0
+
+license: https://creativecommons.org/licenses/by-nd/3.0/us/
+
+details: DAPS consists of 20 speakers (10 female and 10 male) reading 5 excerpts each from public domain books (which provides about 14 minutes of data per speaker)
+
+#EOF
+...
