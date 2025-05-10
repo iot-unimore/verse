@@ -5,9 +5,9 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 #
 ########################### DO NOT MODIFY BELOW THIS LINE ##########################################
 
-RESOURCES_TAR_FILE="daps.tar.gz"
+RESOURCES_TAR_FILE="daps_verse.tar.gz"
 
-RESOURCES_TAR_LINK="https://zenodo.org/records/4660670/files/daps.tar.gz?download=1"
+RESOURCES_TAR_LINK="http://www.brainworks.it/${RESOURCES_TAR_FILE}"
 
 WGET=`which wget`
 

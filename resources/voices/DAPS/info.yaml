@@ -17,7 +17,7 @@ description: The DAPS (Device and Produced Speech) dataset is a collection of al
 
 size_bytes: 3G
 
-source: https://zenodo.org/records/4660670
+source: http://www.brainworks.it/daps_verse.tar.gz
 
 source_original: https://archive.org/details/daps_dataset
 
