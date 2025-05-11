@@ -249,11 +249,11 @@ For each one of the raw resource files there will be a corrispondant "info" file
 NOTE: to distinguish each YAML file content the first part is always a "syntax" field, exposing the structure and syntax of the rest of the file. The "syntax/name" will be different depending on the resource type, for example we have "resource_info" to highlight a generic resource descriptor file, "voice_file" to indicate a specific voice file type, "audio_rendering_scene" to indicate a scene file etc.
 
 The syntax for each resource info file is defined and detailed in a dedicated howto: 
-- [voices howto](voice_syntax_howto.md) 
-- [heads howto](head_syntax_howto.md) 
-- [rooms howto](room_syntax_howto.md) 
-- [paths howto](path_syntax_howto.md) 
-- [scenes howto](scene_syntax_howto.md)
+- [voices howto](docs/voice_syntax_howto.md) 
+- [heads howto](docs/head_syntax_howto.md) 
+- [rooms howto](docs/room_syntax_howto.md) 
+- [paths howto](docs/path_syntax_howto.md) 
+- [scenes howto](docs/scene_syntax_howto.md)
 
 Adding new resources to the VERSE repository requires to create a subfolder (subtype) inside the appropriate location and to create a correct info file following the documented syntax.
 This will allow the "render_dataset" and "render_scene" scripts to automatically retrieve the source for final audio rendering.
