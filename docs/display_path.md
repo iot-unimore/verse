@@ -31,7 +31,7 @@ cd [VERSE]tools/bin/
 
 This will generate a plot like the following:
 
-<img src="/docs/pics/path_001.png" align="left" width="600px"/>
+<img src="/docs/pics/path_001.png" align="left" width="517px"/>
 <img src="/docs/pics/OpenAural.png" align="left" width="300px"/>
 <br clear="left"/>
 
