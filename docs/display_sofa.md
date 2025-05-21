@@ -72,3 +72,15 @@ If we select a different source the impulse response will change. For example if
 ![display_sofa_right](pics/display_sofa_002.png)
 
 note how the impulse response is different between the two receivers (mics placed into ears positions) due to the marking effect of the head.
+
+It is also possible to select one specific receiver and display the impulse response for it.
+For example to select the left receiver (#1) from the same file use the command:
+
+```
+cd [VERSE]/resources/heads/unimore/files
+[VERSE]/tools/bin/display_sofa.py -mf ./head_003/dry-20250223_001_binaural.sofa -sss 0,0,1 -ssr 1
+```
+and the output will show only one measure instead of the two L/R on the same plot as before:
+
+![display_sofa_right_leftch](pics/display_sofa_003.png)
+
