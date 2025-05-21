@@ -41,3 +41,34 @@ options:
 ```
 
 ## usage
+This tool is needed to visualize the position in space of source/emitters and listener/receivers. This tool will also visualize the audio measure (impulse response) associated to the specified source and receiver (or all of them if they are not specified)
+
+As an example we can reference the "head_003" from "[VERSE]/resources/heads/unimore/files" folder. Here we can find more .sofa file that are associated to different pairs of receivers.
+
+```
+.
+├── head_001
+│   └── head_001.sofa
+└── head_003
+    ├── dry-20250223_001_array_six_front.sofa
+    ├── dry-20250223_001_array_six_middle.sofa
+    ├── dry-20250223_001_array_six_rear.sofa
+    └── dry-20250223_001_binaural.sofa
+```
+
+Using the "dry-20250223_001_binaural.sofa" file we can display all source positions and measure with the command:
+
+```
+cd [VERSE]/resources/heads/unimore/files
+[VERSE]/tools/bin/display_sofa.py -mf ./head_003/dry-20250223_001_binaural.sofa -sss 0,0,1
+```
+the output shows the full map of available measures inside the .sofa file (on the right) with the selected source position in spherical coordinates (0,0,1) marked with a red dot on the map.
+On the left the impulse response (and frequency response) of the selected source for both receivers (VERSE is rendering pairs of receivers because of the 3DTune-In library)
+
+![display_sofa_01](pics/display_sofa_001.png)
+
+If we select a different source the impulse response will change. For example if we select a source from the right side of the listener (azimuth 270 deg) we will get:
+
+![display_sofa_right](pics/display_sofa_002.png)
+
+note how the impulse response is different between the two receivers (mics placed into ears positions) due to the marking effect of the head.
