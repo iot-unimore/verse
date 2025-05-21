@@ -97,6 +97,15 @@ receivers:
   3:
     channels: 2
     file: static_singlevoice_array_six_rear_003.wav
+
+## scene visualization
+To visualize the scene (source positions and their motion) please see the command [display_scene](docs/display_scene.md)
+
+for this example the command would be:
+```
+[VERSE]/tools/bin/display_scene.py -i ./000000_static_singlevoice_0_0_0.yaml
+```
+where [VERSE] is the file path to your local VERSE folder.
     track_id: 5
 ```
 
