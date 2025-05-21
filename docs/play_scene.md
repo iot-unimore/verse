@@ -101,7 +101,7 @@ receivers:
 ```
 
 ## scene visualization
-To visualize the scene (source positions and their motion) please see the command [display_scene](docs/display_scene.md)
+To visualize the scene (source positions and their motion) please see the command [display_scene](display_scene.md)
 
 for this example the command would be:
 
