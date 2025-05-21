@@ -3,7 +3,7 @@
 This tool is located under "verse/tools/bin" folder and its purpose is to show an interactive plot of a pre-defined path file.
 
 ## syntax
-The sintax of this command has the following options:
+The syntax of this command has the following options:
 
 ```
 ./display_path.py -h
