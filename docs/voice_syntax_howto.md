@@ -92,3 +92,7 @@ playback:
   begin: 00:00:40.00
   end: 00:01:40.00
 ```
+
+The audio format is specified as WAV with its sampling rate, number of channels and duration.
+
+the playback section is useful to identify a "preferred playback" start/end timing when using this resource for renderring in VERSE.
