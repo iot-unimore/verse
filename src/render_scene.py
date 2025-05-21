@@ -206,7 +206,7 @@ def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[]):
             track_id += 1
             idx += 1
 
-        yaml_descriptor["receivers_count"] = len(stereo_files) * 2
+        yaml_descriptor["receivers_count"] = len(stereo_files) // * 2
         yaml_descriptor["receivers"] = {}
         idx = 0
         for file in stereo_files:
