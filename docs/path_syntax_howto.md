@@ -109,3 +109,33 @@ this info file is abstracting the final data which is contained in "files/path_0
 
 the format is specified as CSV (Comma separated values) and the conlumns are mapped as per "column_mapping" field. Coordinates for this path files are spherical with angles in degrees as specified bu te "coord" field.
 
+# raw file
+the low-level data is specified by a CSV file which has the following structure:
+
+- the 1st column is a time in % of the total playback time of the associated audio file. This will be specified by the scene definition later, so we cannot use absolute playback time.
+- the second column is the amplitude (Volume) for audio playback
+- following are the coordinates for source position at that specific playback time (currenlty only spherical coords are supported)
+- the last column indicates the type (spherical/cartesian) for source coordinates.
+  
+```
+#audio_path
+#syntax_ver:1.0
+#time[%], volume[%], azimuth[degree], elevation[degree], distance[metre], spherical(s)/cartesian(c)
+00.00,100,-90,0,1,s
+02.00,100,-90,0,1,s
+05.00,100,-81,0,1,s
+10.00,100,-72,0,1,s
+15.00,100,-63,0,1,s
+[...]
+80.00,100,54,0,1,s
+85.00,100,63,0,1,s
+90.00,100,72,0,1,s
+95.00,100,81,0,1,s
+100.00,100,90,0,1,s
+#eof
+```
+
+each position is referred to the space origin which is centered at the same position of the listener's head.
+
+# visualization
+Path can be visualized with the "display_path" tool, see (display_path)[display_path.md]
