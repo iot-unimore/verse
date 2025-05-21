@@ -2,7 +2,7 @@
 
 This tool is located under "verse/tools/bin" folder and its purpose is to show the content of a .sofa file (Spatially Oriented Format for Audio)
 
-This file format is defined by the Audio Engineering Society (AES) within the standard [AES69-2022](https://www.aes.org/publications/standards/search.cfm?docID=99) see also [sofaconventions](https://www.sofaconventions.org/mediawiki/index.php/SOFA_(Spatially_Oriented_Format_for_Acoustics)
+This file format is defined by the Audio Engineering Society (AES) within the standard [AES69-2022](https://www.aes.org/publications/standards/search.cfm?docID=99) see also [sofaconventions](https://www.sofaconventions.org/mediawiki/index.php/SOFA_(Spatially_Oriented_Format_for_Acoustics))
 
 VERSE usese this format for both the HRTF (head related transfer function) and RIR (room impulse response).
 
@@ -39,3 +39,5 @@ options:
   -log LOGFILE, --logfile LOGFILE
                         log verbose output to file (default: None)
 ```
+
+## usage
