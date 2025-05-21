@@ -1,0 +1,37 @@
+---
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV before
+# being used by the render_3dti script
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+description:
+copyright: CC BY 4.0
+source: https://openslr.org/94/index.html
+name: portuguese_9351_9018_000296
+file: files/mls_portuguese_opus/train/audio/9351/9018/9351_9018_000296.opus
+speaker: 
+  count: 1
+  gender: 
+  language: portuguese
+metadata:
+  title:  03 - Captulo III
+  album:  Helena
+  artist:  Joaquim Maria Machado de Assis
+format:
+  type: opus
+  samplerate:  48000 Hz 
+  channels: 1 
+  duration: 00:00:15.12
+# [optional] preferred playback section (for audio rendering)
+playback:
+  begin: 00:00:00.00
+  end: 00:00:15.12
+#EOF
+...
