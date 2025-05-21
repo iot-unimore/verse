@@ -1,6 +1,9 @@
 # Tool: display_path
 
-tbd
+This tool is located under "verse/tools/bin" folder and its purpose is to show an interactive plot of a pre-defined path file.
+
+## syntax
+The sintax of this command has the following options:
 
 ```
 ./display_path.py -h
@@ -14,3 +17,5 @@ options:
   -log LOGFILE, --logfile LOGFILE
                         log verbose output to file (default: None)
 ```
+
+As input file you can specify either a yaml or a csv file, it must be a valid file as per VERSE definition [path_syntax](docs/path_syntax.md)
