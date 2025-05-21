@@ -84,3 +84,20 @@ and the output will show only one measure instead of the two L/R on the same plo
 
 ![display_sofa_right_leftch](pics/display_sofa_003.png)
 
+Sometimes it is also useful to display the position in space of the receivers associated to the measures contained inside the .sofa file. These coordinates are part of the SOFA convention and can be plotted using the "-src" option, for example:
+
+```
+cd [VERSE]/resources/heads/unimore/files
+[VERSE]/tools/bin/display_sofa.py -mf ./head_003/dry-20250223_001_binaural.sofa -src
+```
+which will show an interactive 3D plot with two receivers placed at the location of the ears for the dummy head under test.
+
+The two receivers are placed at a distance of about 7cm from the center of the head, ~15 cm apart from each other.
+
+![display_sofa_right_leftch](pics/display_sofa_004.png)
+![display_sofa_right_leftch](pics/display_sofa_005.png)
+
+
+
+
+
