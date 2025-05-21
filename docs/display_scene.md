@@ -19,7 +19,7 @@ options:
                         log verbose output to file (default: None)
 ```
 As input file you can specify yaml scene definition file.
-Ascene is defined by VERSE with the following syntax: [scene_syntax](docs/scene_syntax_howto.md)
+Ascene is defined by VERSE with the following syntax: [scene_syntax](scene_syntax_howto.md)
 
 ## usage
 As an example we refer to file "dynamic_twovoice_000001.yaml" under the "unimore" resource/path folder.
