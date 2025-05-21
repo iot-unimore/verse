@@ -18,7 +18,7 @@ options:
                         log verbose output to file (default: None)
 ```
 
-As input file you can specify either a yaml or a csv file, it must be a valid file as per VERSE definition [path_syntax](path_syntax.md)
+As input file you can specify either a yaml or a csv file, it must be a valid file as per VERSE definition [path_syntax](path_syntax_howto.md)
 
 ## usage
 As an example we refer to path "path_001.yaml" under the "unimore" resource.
