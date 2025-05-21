@@ -26,7 +26,7 @@ As an example we refer to file "dry-20250223_001_binaural.sofa" under the "unimo
 After enabling your conda environment for VERSE use the following command to parse the file:
 
 ```
-[VERSE]/tools/bin/parse_sofa.py -i -i ./dry-20250223_001_binaural.sofa
+[VERSE]/tools/bin/parse_sofa.py -i ./dry-20250223_001_binaural.sofa
 ```
 
 The output is a list of information showing the convention, number of source/emitters (and location), number of listeners/receivers (and location). The .sofa file also indicates the type of room (or free field)
