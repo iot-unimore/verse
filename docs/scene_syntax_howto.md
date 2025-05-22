@@ -23,6 +23,129 @@ Audio scenes are important because they define the "skeleton" of an audio playba
 # info.yaml
 The top level info.yaml has the following syntax:
 
+```
+# audio rendering scene configuration file
+syntax:
+  name: audio_rendering_scene
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+#
+# details
+#
+scene:
+  name: static_twovoice_000000
+  description: scene with two static voices in the room, see position coordinates
+
+#
+# audio setup
+#
+setup:
+  #
+  # scene audio format for final rendering
+  #
+  format:
+    type: wav
+    subtype: pcm_s16le
+    samplerate: 48000
+
+  #
+  # audio sources (voices)
+  #
+  sources_count: 1
+  sources:
+    0:
+      # source type and info file
+      type: voices
+      subtype: librivox_tiny
+      info: 000005_meraviglieduemila
+      {POSITIONING}
+
+  #
+  # listener heads (MUST be count=1)
+  #
+  listeners_count: 1
+  listeners:
+    0:
+       type: heads
+       subtype: unimore 
+       info: head_003
+
+       # positioning: listener is static
+       position:
+         type: static
+         coord:
+           value: [0, 0, 0]
+           type: spherical
+           units: ['degree','degree','metre']
+         view_vect:
+           value: [1, 0, 0]
+           type: cartesian
+           units: ['metre']
+         up_vect:
+           value: [0, 0, 1]
+  #
+  # rooms (MUST be count=1 or count=0 for no reverberation)
+  #
+  rooms_count: 0
+  rooms:
+   0:
+      type: rooms
+      subtype:
+      info:
+```
+The "syntax" versioning allows to identify the source definition intependenlty of the file location. The "details" section is important since it will be use to generate the name of the final folder for audio files.
+
+## setup
+The "setup" section is the core definition for an audio scene.
+
+## format
+The "format" section defines samplerate and bit format of the rendered audio files.
+
+## sources
+Audio sources can be more than one and are listed with an incremental number, starting from zero. The source definition requires type, subtype and info file name to identify an audio voice. 
+The positioning of a source can be of two types: static or dynamic.
+
+A static source position requires only the spatial coordinates, normally in spherical mode (azimuth, elevation, distance) as per AES69-2022 specification. For example the following source is placed in front of the listener at 1 metre distance on a lower position (at 45 degree). View vector and Up vector define the orientation of the source itself (as per AES69-2022 definition)
+
+```
+      # positioning using spherical coord
+      position:
+        type: static
+        coord:
+          value: [0, -45, 1]
+          type: spherical
+          units: ['degree','degree','metre']
+        view_vect:
+          value: [1, 0, 0]
+          type: cartesian
+          units: ['metre']
+        up_vect:
+          value: [0, 0, 1]
+```
+
+For dynamic sources the position will chance during playback and so a "path" must be associated to the source. For example:
+
+```
+      # positioning using spherical coord
+      position:
+        type: dynamic
+        value:
+          type: paths
+          subtype: unimore
+          info: path_001.yaml
+```
+
+Paths are a RESOURCE and are defined in VERSE as specified here: (path_syntax)[path_syntax_howto]
+
+## listeners
+For an
+
+## rooms
+
+# Examples
 STATIC SOURCES
 
 ```
