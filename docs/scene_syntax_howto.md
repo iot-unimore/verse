@@ -141,12 +141,54 @@ For dynamic sources the position will chance during playback and so a "path" mus
 Paths are a RESOURCE and are defined in VERSE as specified here: (path_syntax)[path_syntax_howto]
 
 ## listeners
-For an
+There must be only one listener in one scene.
+
+A "listener" is defined by its "head" (hrtf) definition and its position. The position is specified with spherical coordinates while the head is RESOURCE in VERSE, see specification here: [head_syntax](head_syntax_howto.md)
+
+The syntax for a listener is the following:
+
+```
+  listeners:
+    0:
+       type: heads
+       subtype: unimore 
+       info: head_003
+
+       # positioning: listener is static
+       position:
+         type: static
+         coord:
+           value: [0, 0, 0]
+           type: spherical
+           units: ['degree','degree','metre']
+         view_vect:
+           value: [1, 0, 0]
+           type: cartesian
+           units: ['metre']
+         up_vect:
+           value: [0, 0, 1]
+```
+
+
 
 ## rooms
+There must be only one room, which is defined by the corrispondent RIR (room impulse response). Room syntax for VERSE is defined here: [room_syntax](room_syntax_howto.md)
+
+The definition of a room is optional: if the room is not specified in a scene there will be no audio reverberation while rendering the scene itself. Here is an example for the room indication
+
+```
+  rooms:
+   0:
+      type: rooms
+      subtype: unimore
+      info: room_brir_001
+```
+
+All the above sections are specified in one single audio scene file, see below for two examples with multiple audio sources.
 
 # Examples
-STATIC SOURCES
+
+The first example is a scene with two audio sources that are STATIC, they do not move in space during playback of the voice files.
 
 ```
 # audio rendering scene configuration file
@@ -254,7 +296,9 @@ setup:
       info:
 ```
 
-DYNAMIC SOURCES
+The second example is similar but this time the audio sources are both DYNAMIC, so there is a path associated to each source.
+
+Source of different types can be mixed to create an appropriate audio configuration for the final rendering.
 
 ```
 # audio rendering scene configuration file
