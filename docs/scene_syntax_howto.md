@@ -393,4 +393,31 @@ setup:
       subtype:
       info:
 ```
+
+
+# Audio scene rendering
+
 ```
+usage: render_scene.py [-h] [-sf SCENE_FILE] [-sn SCENE_NAME] [-fp] [-fo] [-o OUTPUT_FOLDER] [-k] [-c CPU_PROCESS] [-v]
+                       [-log LOGFILE]
+
+options:
+  -h, --help            show this help message and exit
+  -sf SCENE_FILE, --scene_file SCENE_FILE
+                        audio scene to render (default: None)
+  -sn SCENE_NAME, --scene_name SCENE_NAME
+                        scene prefix name for audio files (default: None)
+  -fp, --full_playback  play audio source in full length (default: False)
+  -fo, --force_overwrite
+                        audio source conversion (ffmpeg) force overwrite (default: False)
+  -o OUTPUT_FOLDER, --output_folder OUTPUT_FOLDER
+                        output folder (default: None)
+  -k, --keep_files      keep all output files (default: False)
+  -c CPU_PROCESS, --cpu_process CPU_PROCESS
+                        maximum number of CPU process to use
+  -v, --verbose         verbose (default: False)
+  -log LOGFILE, --logfile LOGFILE
+                        log verbose output to file (default: None)
+
+```
+
