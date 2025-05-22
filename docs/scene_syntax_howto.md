@@ -397,6 +397,10 @@ setup:
 
 # Audio scene rendering
 
+Rendering an audio scene requires to use the "render_scene.py" script available under [VERSE]/src folder.
+
+The full syntax of this command is the following:
+
 ```
 usage: render_scene.py [-h] [-sf SCENE_FILE] [-sn SCENE_NAME] [-fp] [-fo] [-o OUTPUT_FOLDER] [-k] [-c CPU_PROCESS] [-v]
                        [-log LOGFILE]
