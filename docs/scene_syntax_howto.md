@@ -424,4 +424,19 @@ options:
                         log verbose output to file (default: None)
 
 ```
+* The "scene_file" is the main option to indicate the .yaml file to be used, this is mandatory.
+* Use the "scene_name" option to indicate a specific prefix to be used when generating the final folder with rendered audio. The folder name is specified by the corrispondent option "output".
+* The "full_playback" option is useful when you want to render the source audio files in full length without using the "preferred playback segment" of the source itself.
+* The "keep_files" will keep all the temporary files in the final folder, useful for debug only.
 
+Once a scene is rendered you will have a folder with three files, for example:
+
+```
+001301_dynamic_multivoice_0_1_1
+    ├── 001301_dynamic_multivoice_0_1_1.yaml
+    ├── dynamic_multivoice.mkv
+    └── dynamic_multivoice_mkv.yaml
+```
+The final audio file is the Matroska (.mkv) file. This will contain the original sources used for rendering and the rendered output. Matroska is a so called "transport" or "container" format that allows multiple .WAV (LPCM) files to be grouped (muxed) in different tracks. The same file has a corrispondent descriptor in YAML format, useful to get informations on the matroska file with a more readable format. The remaining YAML file is the actual audio scene definition as it was used for rendering.
+
+See [play_scene](play_scene.md) and [display_scene.md](display_scene.md) tools to learn how to play and display audio rendering results.
