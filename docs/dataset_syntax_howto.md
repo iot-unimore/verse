@@ -128,6 +128,23 @@ sets:
 ```
 In the example above the dataset is made of a "train" set which is composed of only two audio scenes, rendered without any modifications from the original audio_scene definition itself.
 
+The final output is placed under [VERSE]/dataset/simple_example folder and the tree will resamble the following:
+
+```
+[VERSE]/dataset/simple_example
+                    └── train
+                        ├── 000000_static_singlevoice_0_0_0
+                        │   ├── 000000_static_singlevoice_0_0_0.yaml
+                        │   ├── static_singlevoice.mkv
+                        │   └── static_singlevoice_mkv.yaml
+                        └── 000001_static_singlevoice_0_0_1
+                            ├── 000001_static_singlevoice_0_0_1.yaml
+                            ├── static_singlevoice.mkv
+                            └── static_singlevoice_mkv.yaml
+```
+
+See [scene_sintax](scene_syntax_howoto.md) for the details of each scene file definition and usage.
+
 # adding tasks to a dataset
 Sometime we need a set to be rendered across multiple sources, either scenes, voices, heads or rooms. This is where adding one more task is needed to allow flexibility for the dataset recipe.
 
@@ -192,7 +209,15 @@ For example in the recipe below:
 
 * task #0 is rendering ALL the scenes from the resource "scenes/unimore" keeping them "as-is", without changing anyone of the scene components. This is the simplest way to render a dataset as it was specified by the authors of the scenes resource.
 * taks #1 does a "mix&match": for its definition it is pulling few specific scenes from two different resources, without changing anyone of the components of the sources itself.
-the first task is specifying only few files while the second task is selecting "all" the files of a resource. 
+the first task is specifying only few files while the second task is selecting "all" the files of a resource.
+* task #2 selects one specific scene but does the rendering by altering the voices to be used for the scene itself
+* task #3 selects one specific scene but is changign the heads and rooms to be used when rendering audio.
+
+Note that when specifying a list of resources the dataset will do the permutation on all combination for those lists. Here again the final dataset will grow up in size, fast.
+
+It is important to note the difference between voices lists and room/heads list:
+- A scene might require multiple voices to be rendered. For this reason there are multiple lists of voices for task #1
+- A scene always uses only one listeners (one head) and optionally one room (room can be skipped to avoid reverberation in final result). For this reason when using a list of heads or a list of rooms we are activating a permutation of data once more.
 
 ```
 [...]
@@ -239,8 +264,8 @@ sets:
             subtype: unimore
             info: ["001300_dynamic_multivoice"]
 
-      # TRAIN/TASK #2
-      2:
+      # TRAIN/TASK #3
+      3:
         voices:
         heads:
           0:
@@ -254,6 +279,52 @@ sets:
           0:
             subtype: unimore
             info: ["000300_dynamic_singlevoice"]
+```
 
+The example above is referred to one set (called "train") but it could be referred to any set definition.
+
+# advanced resource definition
+
+Sometime it is more difficult to select or split resources across different sources and we need a more flexible way to define which files to be used.
+
+For this reason it is possible to use wildcards when specifying resources names. We can use the asterisk for multiple selection and exclamation mark (at the beginning) to indicate exclusion.
+
+The following task definition is selecting scene resource "librivox_tiny", specifically all the files having a name starting with "static_one" or "mix":
 
 ```
+    [...]
+    tasks:
+       # TRAIN/TASK #3
+       3:
+         # note: this task shows that you can list "all" the scenes in a dataset
+         voices:
+         heads:
+         rooms:
+         scenes:
+          0:
+            subtype: librivox_tiny
+            info: ["static_one*|mix*"]
+```
+
+The following task definition instead, is selecting scene resource "librivox_tiny", specifically all the files havign a name starting with "mix" and also excluding all the files starting with "static_one":
+
+```
+    [...]
+    tasks:
+       # TRAIN/TASK #3
+       3:
+         # note: this task shows that you can list "all" the scenes in a dataset
+         voices:
+         heads:
+         rooms:
+         scenes:
+          0:
+            subtype: librivox_tiny
+            info: ["!static_one*|mix*"]
+```
+
+The same can be done for all resource definition in a ds_recipe.
+
+The combination of sets, tasks and wildcards allow the definition of fairly articulated dataset recipes, all starting from audio scenes previously defined.
+
+***The main advantage of this technique is to provide a method to render the same "source motion path" while mixing sources (human voices) listener (human head) and room (reverb), saving the time to physically record all these sessions**
