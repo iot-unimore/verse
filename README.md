@@ -273,4 +273,6 @@ As mentioned before "[VERSE]/tools/bin" provides a set of scripts to inspect a s
 # Dataset definition
 The rendering of a dataset is done once (offline) and it is based on a "recipe". Dataset recipes (ds_recipes) are a resource. The user can define different recipes to mix&match scenes, voices, listeners to create his own specific dataset.
 
-tbd: aggiungere qua la definizione della sintassi per dataset
+The definition of ds_recipes is specified in details here: [dataset_syntax](docs/datasets_syntsx_howto.md)
+
+The ds_recipe is a powerful tool, this is the aggregator of all the components forming a syntetic audio scene, with the capability of mixing and matching single resources of different types to generate the final dataset collection of (virtual) audio recordings.
