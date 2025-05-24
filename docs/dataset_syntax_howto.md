@@ -15,6 +15,13 @@ tree -L 2
 │   └── unimore_tiny_recipe.yaml
 └── info.yaml
 ```
+
+## dataset_recipe and dataset
+Please note that the dataset recipe and the actual (final) dataset are two separate entities.
+
+- the dataset_recipe (ds_recipe) is a resource, a definition of the resources used to compose and create the final collection of audio files starting from audio scene definitions. These ds_recipes files are all located under the [VERSE]/resources/ds_recipes as mentioned above and should not be placed elsewhere.
+- the dataset is the final collection of audio files. These will be placed in a subfolder of the "[VERSE]/datasets" folder, which will contain only audio files and their metadata, nothing else.
+
 # info.yaml
 The top level info.yaml has the following syntax:
 
@@ -327,4 +334,4 @@ The same can be done for all resource definition in a ds_recipe.
 
 The combination of sets, tasks and wildcards allow the definition of fairly articulated dataset recipes, all starting from audio scenes previously defined.
 
-***The main advantage of this technique is to provide a method to render the same "source motion path" while mixing sources (human voices) listener (human head) and room (reverb), saving the time to physically record all these sessions**
+**The main advantage of this technique is to provide a method to render the same "source motion path" while mixing sources (human voices) listener (human head) and room (reverb), saving the time to physically record all these sessions**
