@@ -27,11 +27,11 @@
 
 #define SW_VER_MJR                      ( 1 )
 #define SW_VER_MIN                      ( 0 )
-#define SW_VER_REV                      ( 2 )
+#define SW_VER_REV                      ( 3 )
 
 #define MAX_SAMPLERATE             ( 192000 )
 
-#define HRTF_RESAMPLING_STEPS_DEG      ( 15 )
+#define HRTF_RESAMPLING_STEPS_DEG       ( 5 )
 
 #define MAX_BUFFER_LEN              ( 16384 )
 #define BUFFER_LEN                   ( 4096 )
@@ -52,12 +52,12 @@
  *******************************************************************************/
 
 /*  This will be the length of the buffer used to hold audio frames */
-uint16_t                 iBufferSize = BUFFER_LEN;
+uint16_t iBufferSize = BUFFER_LEN;
 
-bool                     bEnableReverb = false;
+bool bEnableReverb = false;
 
-volatile uint8_t         verbosity = LOG_ZERO;
-volatile bool            bCtrlExit = false;
+volatile uint8_t verbosity = LOG_ZERO;
+volatile bool bCtrlExit = false;
 
 
 /*
@@ -66,7 +66,7 @@ volatile bool            bCtrlExit = false;
 
 static const char* const short_opts = "i:o:v:r:s:p:b:c:h";
 
-static const option      long_opts[] = {
+static const option long_opts[] = {
     { "input",         required_argument, nullptr, 'i' },
     { "output",        required_argument, nullptr, 'o' },
     { "coords_source", required_argument, nullptr, 'c' },
@@ -337,9 +337,9 @@ int8_t yamlOpenFile( std::string yaml_file, YAML::Node* yaml_config )
  *******************************************************************************/
 int8_t setConfigParams( YAML::Node* yaml_config )
 {
-    int8_t      err = 0;
+    int8_t err = 0;
 
-    int8_t      sources_count = ( *yaml_config )[ "setup" ][ "sources_count" ].as<int>( );
+    int8_t sources_count = ( *yaml_config )[ "setup" ][ "sources_count" ].as<int>( );
 
     if ( sources_count > MAX_SOURCES )
     {
@@ -433,12 +433,12 @@ int8_t openInputFiles( YAML::Node                                            yam
                        uint16_t*                                             sources_cnt,
                        uint8_t                                               max_channels )
 {
-    int8_t   err = 0;
+    int8_t err = 0;
 
     SNDFILE* infile;
-    SF_INFO  infile_sfinfo;
+    SF_INFO infile_sfinfo;
 
-    int8_t   sources_count = yaml_config[ "setup" ][ "sources_count" ].as<int>( );
+    int8_t sources_count = yaml_config[ "setup" ][ "sources_count" ].as<int>( );
 
     if ( MAX_SOURCES < sources_count )
     {
@@ -539,9 +539,9 @@ int8_t openInputFiles( YAML::Node                                            yam
 
 int8_t findSourceMaxLen( YAML::Node yaml_config, vector<SF_INFO>& soundSourcesFileInfo, uint64_t* max_len )
 {
-    int8_t   err = 0;
+    int8_t err = 0;
 
-    int8_t   sources_count = yaml_config[ "setup" ][ "sources_count" ].as<int>( );
+    int8_t sources_count = yaml_config[ "setup" ][ "sources_count" ].as<int>( );
 
     uint64_t len = 0;
 
@@ -625,14 +625,14 @@ int8_t coordDecode( std::string input_str, uint8_t coordType, float* coord, uint
     {
         if ( NULL != coord  )
         {
-            float       tmp_coord[ 3 ] = { 0.0f };
+            float tmp_coord[ 3 ] = { 0.0f };
 
             const char* temp = input_str.c_str( );
-            char        string[ sizeof input_str.c_str( ) ] = "";
+            char string[ sizeof input_str.c_str( ) ] = "";
 
-            float       value = 0.0f;
-            int         count = 0;
-            int         parsed = 0;
+            float value = 0.0f;
+            int count = 0;
+            int parsed = 0;
 
             err = 0;
             while ( ( err == 0 ) && ( !( bCtrlExit ) ) && ( 1 == sscanf( temp, "%11[^,],%n", string, &count ) ) )
@@ -737,7 +737,7 @@ int8_t coordDecode( std::string input_str, uint8_t coordType, float* coord, uint
 int8_t coordValidate(  float* coord, uint8_t coordType, uint8_t coord_cnt, bool positive_range )
 {
     int8_t err = -1;
-    float  tmp_coord[ 3 ] = { 0.0f };
+    float tmp_coord[ 3 ] = { 0.0f };
 
     if ( coord_cnt < 3 )
     {
@@ -790,7 +790,7 @@ int8_t coordValidate(  float* coord, uint8_t coordType, uint8_t coord_cnt, bool 
 int8_t coordSumAndValidate(  float* coord1, float* coord2, uint8_t coordType, uint8_t coord_cnt )
 {
     int8_t err = -1;
-    float  tmp_coord[ 3 ] = { 0.0f };
+    float tmp_coord[ 3 ] = { 0.0f };
 
     if ( coord_cnt < 3 )
     {
@@ -902,14 +902,14 @@ int8_t csvCoordInterpPosition( Common::CTransform&                     posCurren
                                uint64_t                                frames,
                                uint64_t                                frames_total )
 {
-    int8_t      err = -1;
+    int8_t err = -1;
 
-    float       positionA[ 3 ] = { 0.0f };
-    float       framesA = stof( csvText[ currIdx ][ 0 ] );
+    float positionA[ 3 ] = { 0.0f };
+    float framesA = stof( csvText[ currIdx ][ 0 ] );
     std::string coordA = csvText[ currIdx ][ 2 ] + "," + csvText[ currIdx ][ 3 ] + "," + csvText[ currIdx ][ 4 ];
 
-    float       positionB[ 3 ] = { 0.0f };
-    float       framesB = stof( csvText[ nextIdx ][ 0 ] );
+    float positionB[ 3 ] = { 0.0f };
+    float framesB = stof( csvText[ nextIdx ][ 0 ] );
     std::string coordB = csvText[ nextIdx ][ 2 ] + "," + csvText[ nextIdx ][ 3 ] + "," + csvText[ nextIdx ][ 4 ];
 
     coordDecode( coordA.c_str( ), COORD_TYPE_SPHERICAL, positionA, sizeof( positionA ) / sizeof( float ), false );
@@ -959,8 +959,8 @@ int8_t TuneInUserConfig(
     float      source_coord[ 3 ],
     uint16_t   bufferSize )
 {
-    float                     path_coord[ 3 ] = { 0.0f };
-    float                     tmp_coord[ 3 ] = { 0.0f };
+    float path_coord[ 3 ] = { 0.0f };
+    float tmp_coord[ 3 ] = { 0.0f };
 
 
     /*
@@ -986,28 +986,33 @@ int8_t TuneInUserConfig(
      * Audio Listener setup posiiton and properties
      *
      */
+    Common::CTransform listenerPosition = Common::CTransform( );
+    listenerPosition.SetPosition( Common::CVector3( 0 /* x */, 0 /* Y */, 0 /* Z */ ) );
 
-    listener = myCore.CreateListener( );
-    Common::CTransform        listenerPosition = Common::CTransform( );
+    // listener = myCore.CreateListener(  );
+    listener = myCore.CreateListener( 0.06f );
 
     // Setting listener in (0,0,0)
-    listenerPosition.SetPosition( Common::CVector3( 0, 0, 0 ) );
     listener->SetListenerTransform( listenerPosition );
 
     // Disabling custom head radius
     listener->DisableCustomizedITD( );
+    // listener->EnableCustomizedITD( );
+
+    // listener->EnableDirectionality(Common::T_ear::BOTH);
+    // listener->DisbleDirectionality(Common::T_ear::BOTH);
 
     /* HRTF can be loaded in either SOFA
      * (more info in https://sofacoustics.org/) or 3dti-hrtf format.
      * These HRTF files are provided with 3DTI Audio Toolkit.
      * They can be found in 3dti_AudioToolkit/resources/HRTF
      */
-    bool                      specifiedDelays;
+    bool specifiedDelays = false;
 
     // Comment this line and uncomment next lines to load the default HRTF in 3dti-hrtf format instead of in SOFA format
     // HRTF::CreateFrom3dti("hrtf.3dti-hrtf", listener);
 
-    std::string               hrtf_sofa_file = yaml_config[ "setup" ][ "head" ][ "hrtf_sofa" ].as<std::string>( );
+    std::string hrtf_sofa_file = yaml_config[ "setup" ][ "head" ][ "hrtf_sofa" ].as<std::string>( );
     if ( ( 0 < hrtf_sofa_file.length( ) ) && ( 0 != hrtf_sofa_file.compare( "none" ) ) )
     {
         HRTF::CreateFromSofa( hrtf_sofa_file.c_str( ), listener, specifiedDelays );
@@ -1018,6 +1023,21 @@ int8_t TuneInUserConfig(
         return -1;
     }
 
+    printf( "SPECIFIED DELAYS: %s\n", ( true == specifiedDelays?"YES":"NO" ) );
+
+    printf( "LISTENER EAR LEFT X=%3.2f, Y=%3.2f Z=%3.2f\n",
+            listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).x,
+            listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).y,
+            listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).z
+          );
+
+    printf( "LISTENER EAR RIGHT X=%3.2f, Y=%3.2f Z=%3.2f\n",
+            listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).x,
+            listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).y,
+            listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).z
+          );
+
+    printf( "LISTENER HRTF Sampling %d\n", listener->GetHRTFResamplingStep( ) );
 
     /*
      * Audio Environment setup (Room)
@@ -1029,9 +1049,11 @@ int8_t TuneInUserConfig(
 
     // Setting number of ambisonic channels to use in reverberation processing
     environment->SetReverberationOrder( TReverberationOrder::BIDIMENSIONAL );
+    // environment->SetReverberationOrder( TReverberationOrder::THREEDIMENSIONAL );
+    // environment->SetReverberationOrder( TReverberationOrder::ADIMENSIONAL );
 
     // Loading SOFAcoustics BRIR file and applying it to the environment
-    std::string               brir_sofa_file = yaml_config[ "setup" ][ "room" ][ "brir_sofa" ].as<std::string>( );
+    std::string brir_sofa_file = yaml_config[ "setup" ][ "room" ][ "brir_sofa" ].as<std::string>( );
     if ( ( 0 < brir_sofa_file.length( ) ) && ( 0 != brir_sofa_file.compare( "none" ) ) )
     {
         BRIR::CreateFromSofa( brir_sofa_file.c_str( ), environment );
@@ -1041,10 +1063,12 @@ int8_t TuneInUserConfig(
         bEnableReverb = false;
     }
 
+    printf( "REVERBERATION is: %s\n", ( true == bEnableReverb )?"ON":"OFF" );
+
     /*
      * Loop on Audio Sources and setup DSP and positioning
      */
-    int8_t                    sources_count = yaml_config[ "setup" ][ "sources_count" ].as<int>( );
+    int8_t sources_count = yaml_config[ "setup" ][ "sources_count" ].as<int>( );
 
     for ( int8_t idx = 0; idx < sources_count; idx++ )
     {
@@ -1058,11 +1082,24 @@ int8_t TuneInUserConfig(
 
         shared_ptr<Binaural::CSingleSourceDSP> tmpSource = myCore.CreateSingleSourceDSP( ); // Creating audio source
 
+
+#if ( 1 )
+        Common::CTransform tmpSourcePosition = Common::CTransform( );
+        Common::CVector3 tmpVect = Common::CVector3( );
+
+        tmpVect.SetFromAED( source_coord[ 0 ], source_coord[ 1 ], source_coord[ 2 ] );
+
+        tmpSourcePosition.SetPosition( tmpVect );
+
+        printf( "SOURCE_COORD X=%3.2f Y=%3.2f Z=%3.2f\n", tmpVect.x,                                                tmpVect.y, tmpVect.z );
+        printf( "EAR AZIMUTH L=%3.2f, R=%3.2f\n",         tmpSource->GetCurrentEarAzimuth( Common::T_ear::LEFT ),   tmpSource->GetCurrentEarAzimuth( Common::T_ear::RIGHT ) );
+        printf( "EAR ELEVATION L=%3.2f, R=%3.2f\n",       tmpSource->GetCurrentEarElevation( Common::T_ear::LEFT ), tmpSource->GetCurrentEarElevation( Common::T_ear::RIGHT ) );
+#else
         // decode position, from spherical to cartesian
-        float                                  tmp_coord[ 3 ] = { 0.0f };
+        float tmp_coord[ 3 ] = { 0.0f };
         coordSphericalToCartesian( source_coord, sizeof( tmp_coord ) / sizeof( float ), tmp_coord, sizeof( tmp_coord ) / sizeof( float ) );
 
-        Common::CTransform                     tmpSourcePosition = Common::CTransform( );
+        Common::CTransform tmpSourcePosition = Common::CTransform( );
         tmpSourcePosition.SetPosition( Common::CVector3( tmp_coord[ 0 ], tmp_coord[ 1 ], tmp_coord[ 2 ] ) );
 
         if ( 0 != yaml_config[ "setup" ][ "sources" ][ idx ][ "path_csv" ].as<std::string>( ).compare( "none" ) )
@@ -1076,14 +1113,36 @@ int8_t TuneInUserConfig(
                 tmpSourcePosition.SetPosition( Common::CVector3( tmp_coord[ 0 ], tmp_coord[ 1 ], tmp_coord[ 2 ] ) );
             }
         }
+#endif
 
         // source config
+        tmpSource->EnableInterpolation( );
+        // tmpSource->DisableInterpolation( );
+
         tmpSource->SetSourceTransform( tmpSourcePosition );
-        tmpSource->SetSpatializationMode( Binaural::TSpatializationMode::HighQuality );  // HighPerformance vs HighQuality // Choosing high quality mode for anechoic processing
-        tmpSource->DisableNearFieldEffect( );                                            // Audio source will not be close to listener, so we don't need near field effect
+        tmpSource->SetSpatializationMode( Binaural::TSpatializationMode::HighQuality );
+
+        // tmpSource->EnableNearFieldEffect( );
+        tmpSource->DisableNearFieldEffect( );
+
+        // tmpSource->EnableFarDistanceEffect();
+        tmpSource->DisableFarDistanceEffect( );
+
         tmpSource->EnableAnechoicProcess( );                                             // Setting anechoic and reverb processing for this source
-        tmpSource->EnableDistanceAttenuationAnechoic( );
-        tmpSource->EnablePropagationDelay( );                                            // Activate delay simulation due to the distance of the source
+        // tmpSource->DisableAnechoicProcess( );                                             // Setting anechoic and reverb processing for this source
+
+        // tmpSource->EnableDistanceAttenuationAnechoic( );
+        tmpSource->DisableDistanceAttenuationAnechoic( );
+
+        // tmpSource->EnablePropagationDelay( );                                            // Activate delay simulation due to the distance of the source
+        tmpSource->DisablePropagationDelay( );
+
+        // tmpSource->EnableReverbProcess( );
+        tmpSource->DisableReverbProcess( );
+
+        // tmpSource->EnableDistanceAttenuationSmoothingAnechoic( );
+        tmpSource->DisableDistanceAttenuationSmoothingAnechoic( );
+
 
         /* push back into Sources vector */
         soundSources.push_back( tmpSource );
@@ -1115,8 +1174,13 @@ int8_t TuneInAudioProcess(
     vector<shared_ptr<Binaural::CSingleSourceDSP> >& soundSources,
     vector<SF_INFO>&                                 soundSourcesFileInfo )
 {
+    if ( count < iBufferSize )
+    {
+        count = iBufferSize;
+    }
+
     // Declaration, initialization and filling mono buffers, one buffer for each source
-    CMonoBuffer<float>                    bufferInput( count );
+    CMonoBuffer<float> bufferInput( count );
 
     // Declaration of stereo buffer, used to mix multiple sources in one buffer
     Common::CEarPair<CMonoBuffer<float> > bufferProcessed;
@@ -1219,7 +1283,7 @@ void processData(
             {
                 // csvSearchIndex( soundSourcesPath[ idx ], &soundSourcesPathIdx[ idx ], (float) ( totalFrames * 100.0f / soundSourcesFileInfo[ idx ].frames ) );
 
-                uint32_t           nextIdx = soundSourcesPathIdx[ idx ];
+                uint32_t nextIdx = soundSourcesPathIdx[ idx ];
 
                 csvSearchNextIndex( soundSourcesPath[ idx ], &nextIdx, (float) ( totalFrames * 100.0f / soundSourcesFileInfo[ idx ].frames ) );
 
@@ -1275,35 +1339,35 @@ int main( int argc, char* argv[] )
     /* I/O buffers are of double precision floating point values
      * and will hold our data while we process it.
      */
-    static float     data[ MAX_SOURCES ][ MAX_BUFFER_LEN ]; // input data is a mono audio signal for each source
-    static float     dataOutBuffer[ MAX_BUFFER_LEN * 2 ];   // ouptut data is a stereo audio signal
+    static float data[ MAX_SOURCES ][ MAX_BUFFER_LEN ];     // input data is a mono audio signal for each source
+    static float dataOutBuffer[ MAX_BUFFER_LEN * 2 ];       // ouptut data is a stereo audio signal
 
     /*
      * Libsnd descriptors and pointers
      */
-    SNDFILE*         infile;
-    SNDFILE*         outfile;
+    SNDFILE* infile;
+    SNDFILE* outfile;
 
-    SF_INFO          infile_sfinfo;
-    SF_INFO          outfile_sfinfo;
-    uint64_t         frameCount = 0;
-    uint64_t         frameCount_tmp = 0;
-    uint64_t         frameCount_max = 0;
+    SF_INFO infile_sfinfo;
+    SF_INFO outfile_sfinfo;
+    uint64_t frameCount = 0;
+    uint64_t frameCount_tmp = 0;
+    uint64_t frameCount_max = 0;
 
-    float            source_coord[ 3 ] = { 0.0f };
-    uint16_t         sources_cnt = 0;
+    float source_coord[ 3 ] = { 0.0f };
+    uint16_t sources_cnt = 0;
 
     /*
      * CLI parameters
      */
-    std::string      input_file;
-    std::string      output_file;
-    std::string      hrtf_sofa_file;
-    std::string      brir_sofa_file;
-    std::string      params_yaml_file;
-    std::string      coord_source = "0,0,1";
+    std::string input_file;
+    std::string output_file;
+    std::string hrtf_sofa_file;
+    std::string brir_sofa_file;
+    std::string params_yaml_file;
+    std::string coord_source = "0,0,1";
 
-    YAML::Node       yaml_config = YAML::Load( _YAML_DEFAULT_CONFIG );
+    YAML::Node yaml_config = YAML::Load( _YAML_DEFAULT_CONFIG );
 
     /*
      * The SF_INFO struct must be initialized before using it.
@@ -1490,7 +1554,7 @@ int main( int argc, char* argv[] )
     /*
      * Open output WAV file (stereo)
      */
-    outfile_sfinfo = soundSourcesFileInfo[ 0 ];// infile_sfinfo;
+    outfile_sfinfo = soundSourcesFileInfo[ 0 ]; // infile_sfinfo;
     outfile_sfinfo.channels = 2;
     if ( 0 != openOutputFile( output_file, &outfile, &outfile_sfinfo ) )
     {
@@ -1527,7 +1591,7 @@ int main( int argc, char* argv[] )
     progressbar bar( frameCount_max / iBufferSize );
 
     // while ( ( frameCount = (int) sf_read_float( infile, data, iBufferSize ) ) && ( !bCtrlExit ) )
-    uint64_t    totalFrames = 0;
+    uint64_t totalFrames = 0;
     while ( ( totalFrames < frameCount_max ) && ( !bCtrlExit ) )
     {
         if ( ( verbosity < 20 ) && ( verbosity > 0 ) )
@@ -1536,7 +1600,7 @@ int main( int argc, char* argv[] )
         }
 
         /* read frames from all streams, track max frame len */
-        uint64_t             frameCount_tmp_max = 0;
+        uint64_t frameCount_tmp_max = 0;
         for ( int idx = 0; idx < sources_cnt; idx++ )
         {
             frameCount_tmp = (int) sf_read_float( soundSourcesFile[ idx ], &data[ idx ][ 0 ], iBufferSize );
@@ -1577,7 +1641,7 @@ int main( int argc, char* argv[] )
 
         // vector to array: loop to fill values
         // ToDo: can we optimize with memcpy?
-        float*               dataOut = &dataOutBuffer[ 0 ];
+        float* dataOut = &dataOutBuffer[ 0 ];
 
         for ( auto it = iOutput.begin( ); it != iOutput.end( ); it++ )
         {
