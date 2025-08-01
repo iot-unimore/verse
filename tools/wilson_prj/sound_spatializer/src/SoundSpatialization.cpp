@@ -982,15 +982,16 @@ int8_t TuneInUserConfig(
     // Setting 15-degree resampling step for HRTF
     myCore.SetHRTFResamplingStep( HRTF_RESAMPLING_STEPS_DEG );
 
+
+
     /*
-     * Audio Listener setup posiiton and properties
+     * Audio Listener setup position and properties
      *
      */
+    listener = myCore.CreateListener(  );
+
     Common::CTransform listenerPosition = Common::CTransform( );
     listenerPosition.SetPosition( Common::CVector3( 0 /* x */, 0 /* Y */, 0 /* Z */ ) );
-
-    // listener = myCore.CreateListener(  );
-    listener = myCore.CreateListener( 0.06f );
 
     // Setting listener in (0,0,0)
     listener->SetListenerTransform( listenerPosition );
@@ -1000,13 +1001,12 @@ int8_t TuneInUserConfig(
     // listener->EnableCustomizedITD( );
 
     // listener->EnableDirectionality(Common::T_ear::BOTH);
-    // listener->DisbleDirectionality(Common::T_ear::BOTH);
+    // listener->DisableDirectionality(Common::T_ear::BOTH);
 
-    /* HRTF can be loaded in either SOFA
-     * (more info in https://sofacoustics.org/) or 3dti-hrtf format.
-     * These HRTF files are provided with 3DTI Audio Toolkit.
-     * They can be found in 3dti_AudioToolkit/resources/HRTF
+    /*
+     * Audio Listener HRTF
      */
+
     bool specifiedDelays = false;
 
     // Comment this line and uncomment next lines to load the default HRTF in 3dti-hrtf format instead of in SOFA format
@@ -1023,21 +1023,30 @@ int8_t TuneInUserConfig(
         return -1;
     }
 
-    printf( "SPECIFIED DELAYS: %s\n", ( true == specifiedDelays?"YES":"NO" ) );
+    /* print some info for source definition */
+    LOG_MSG( LOG_LOW, verbosity, "Delays are specified: %s\n", ( true == specifiedDelays?"YES":"NO" ) );
 
-    printf( "LISTENER EAR LEFT X=%3.2f, Y=%3.2f Z=%3.2f\n",
-            listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).x,
-            listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).y,
-            listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).z
-          );
+    // TODO: set listener head size based on HRTF receivers coordinates (from the SOFA file)
+    listener->SetHeadRadius( 0.060f );
 
-    printf( "LISTENER EAR RIGHT X=%3.2f, Y=%3.2f Z=%3.2f\n",
-            listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).x,
-            listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).y,
-            listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).z
-          );
+    LOG_MSG( LOG_LOW, verbosity,
+             "Listener Left Ear: X=%3.2f, Y=%3.2f Z=%3.2f\n",
+             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).x,
+             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).y,
+             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).z
+           );
 
-    printf( "LISTENER HRTF Sampling %d\n", listener->GetHRTFResamplingStep( ) );
+    LOG_MSG( LOG_LOW, verbosity,
+             "Listener Right Ear: X=%3.2f, Y=%3.2f Z=%3.2f\n",
+             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).x,
+             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).y,
+             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).z
+           );
+
+    LOG_MSG( LOG_LOW, verbosity,
+             "Listener HRTF Angle Sampling: %d\n", listener->GetHRTFResamplingStep( ) );
+
+
 
     /*
      * Audio Environment setup (Room)
@@ -1063,7 +1072,14 @@ int8_t TuneInUserConfig(
         bEnableReverb = false;
     }
 
-    printf( "REVERBERATION is: %s\n", ( true == bEnableReverb )?"ON":"OFF" );
+    LOG_MSG( LOG_LOW, verbosity, "BRIR, Reverberation is: %s\n", ( true == bEnableReverb )?"ON":"OFF" );
+
+
+
+    /*
+     * Audio Environment setup (Room)
+     *
+     */
 
     /*
      * Loop on Audio Sources and setup DSP and positioning
@@ -1073,7 +1089,6 @@ int8_t TuneInUserConfig(
     for ( int8_t idx = 0; idx < sources_count; idx++ )
     {
         // decode position, from str to numeric
-        // if ( 0 != coordDecode( yaml_config[ "setup" ][ "sources" ][ idx ][ "coord" ].as<std::string>( ), COORD_TYPE_SPHERICAL, source_coord, sizeof( source_coord ) / sizeof( float ) , true) )
         if ( 0 != coordDecode( yaml_config[ "setup" ][ "sources" ][ idx ][ "coord" ].as<std::string>( ), COORD_TYPE_SPHERICAL, source_coord, 3, true ) )
         {
             std::cerr << "Error: invalid source coordinates (type is spherical).\n\n";
@@ -1082,8 +1097,6 @@ int8_t TuneInUserConfig(
 
         shared_ptr<Binaural::CSingleSourceDSP> tmpSource = myCore.CreateSingleSourceDSP( ); // Creating audio source
 
-
-#if ( 1 )
         Common::CTransform tmpSourcePosition = Common::CTransform( );
         Common::CVector3 tmpVect = Common::CVector3( );
 
@@ -1091,29 +1104,9 @@ int8_t TuneInUserConfig(
 
         tmpSourcePosition.SetPosition( tmpVect );
 
-        printf( "SOURCE_COORD X=%3.2f Y=%3.2f Z=%3.2f\n", tmpVect.x,                                                tmpVect.y, tmpVect.z );
-        printf( "EAR AZIMUTH L=%3.2f, R=%3.2f\n",         tmpSource->GetCurrentEarAzimuth( Common::T_ear::LEFT ),   tmpSource->GetCurrentEarAzimuth( Common::T_ear::RIGHT ) );
-        printf( "EAR ELEVATION L=%3.2f, R=%3.2f\n",       tmpSource->GetCurrentEarElevation( Common::T_ear::LEFT ), tmpSource->GetCurrentEarElevation( Common::T_ear::RIGHT ) );
-#else
-        // decode position, from spherical to cartesian
-        float tmp_coord[ 3 ] = { 0.0f };
-        coordSphericalToCartesian( source_coord, sizeof( tmp_coord ) / sizeof( float ), tmp_coord, sizeof( tmp_coord ) / sizeof( float ) );
+        LOG_MSG( LOG_LOW, verbosity,
+                 "Source, initial Position X=%3.2f Y=%3.2f Z=%3.2f\n", tmpVect.x, tmpVect.y, tmpVect.z );
 
-        Common::CTransform tmpSourcePosition = Common::CTransform( );
-        tmpSourcePosition.SetPosition( Common::CVector3( tmp_coord[ 0 ], tmp_coord[ 1 ], tmp_coord[ 2 ] ) );
-
-        if ( 0 != yaml_config[ "setup" ][ "sources" ][ idx ][ "path_csv" ].as<std::string>( ).compare( "none" ) )
-        {
-            std::string tmpStringCSV = soundSourcesPath[ idx ][ 0 ][ 2 ] + "," + soundSourcesPath[ idx ][ 0 ][ 3 ] + "," + soundSourcesPath[ idx ][ 0 ][ 4 ];
-
-            if ( 0 == coordDecode( tmpStringCSV.c_str( ), COORD_TYPE_SPHERICAL, path_coord, sizeof( path_coord ) / sizeof( float ), true ) )
-            {
-                // coordSumAndValidate( source_coord, path_coord, COORD_TYPE_SPHERICAL, 3 );
-                coordSphericalToCartesian( path_coord, sizeof( tmp_coord ) / sizeof( float ), tmp_coord, sizeof( tmp_coord ) / sizeof( float ) );
-                tmpSourcePosition.SetPosition( Common::CVector3( tmp_coord[ 0 ], tmp_coord[ 1 ], tmp_coord[ 2 ] ) );
-            }
-        }
-#endif
 
         // source config
         tmpSource->EnableInterpolation( );
