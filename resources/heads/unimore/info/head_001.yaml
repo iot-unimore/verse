@@ -1,3 +1,4 @@
+---
 # head related impulse response (HRTF)
 syntax:
   name: hrtf_file
@@ -5,11 +6,24 @@ syntax:
     major: 0
     minor: 1
     revision: 0
+
 name: none
+
 description: simple binaural hrtf from generic head.
+
 format: sofa
+
 format_3dti: yes
+
+#
+# HRTFs definition:
+# we can have more than one HRTF for the same head because the 3DTuneIn tool will
+# take only binaural hrtf for rendering. For this head we have multiple micropones
+# arranged in L/R pairs (for binaural and for glasses array).
+# we list them in order with the associated hrtf file.
+#
 hrtf_count: 1
+hrtf_samplerates: [ 48000 ]
 hrtf_main_idx: 0
 hrtf:
   0:

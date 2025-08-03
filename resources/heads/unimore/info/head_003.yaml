@@ -23,6 +23,7 @@ format_3dti: yes
 # we list them in order with the associated hrtf file.
 #
 hrtf_count: 4
+hrtf_samplerates: [ 96000 ]
 hrtf_main_idx: 0
 hrtf:
   0:
