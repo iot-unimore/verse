@@ -1016,17 +1016,17 @@ int8_t TuneInUserConfig(
     if ( ( 0 < hrtf_sofa_file.length( ) ) && ( 0 != hrtf_sofa_file.compare( "none" ) ) )
     {
         HRTF::CreateFromSofa( hrtf_sofa_file.c_str( ), listener, specifiedDelays );
+
+        // SANITY CHECK: the HRTF and input files must have the same sammplig rate.
+        if ( soundSourcesFileInfo[ 0 ].samplerate != HRTF::GetSampleRateFromSofa( hrtf_sofa_file.c_str( ) ) )
+        {
+            LOG_ERR( LOG_ALWAYS, verbosity, "Error: Input audio files and HRTF sampling rate mismatch.\n" );
+            return -1;
+        }
     }
     else
     {
         /* return error if we have no hrtf file */
-        return -1;
-    }
-
-    // SANITY CHECK: the HRTF and input files must have the same sammplig rate.
-    if ( soundSourcesFileInfo[ 0 ].samplerate != HRTF::GetSampleRateFromSofa( hrtf_sofa_file.c_str( ) ) )
-    {
-        LOG_ERR( LOG_ALWAYS, verbosity, "Error: Input audio files and HRTF sampling rate mismatch.\n" );
         return -1;
     }
 
@@ -1054,8 +1054,6 @@ int8_t TuneInUserConfig(
     LOG_MSG( LOG_LOW, verbosity,
              "Listener HRTF Angle Sampling: %d\n", listener->GetHRTFResamplingStep( ) );
 
-
-
     /*
      * Audio Environment setup (Room)
      *
@@ -1074,6 +1072,13 @@ int8_t TuneInUserConfig(
     if ( ( 0 < brir_sofa_file.length( ) ) && ( 0 != brir_sofa_file.compare( "none" ) ) )
     {
         BRIR::CreateFromSofa( brir_sofa_file.c_str( ), environment );
+
+        // SANITY CHECK: the HRTF and input files must have the same sammplig rate.
+        if ( soundSourcesFileInfo[ 0 ].samplerate != BRIR::GetSampleRateFromSofa( brir_sofa_file.c_str( ) ) )
+        {
+            LOG_ERR( LOG_ALWAYS, verbosity, "Error: Input audio files and BRIR sampling rate mismatch.\n" );
+            return -1;
+        }
     }
     else
     {
