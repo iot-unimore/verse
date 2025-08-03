@@ -343,7 +343,7 @@ int8_t setConfigParams( YAML::Node* yaml_config )
 
     if ( sources_count > MAX_SOURCES )
     {
-        LOG_ERR( LOG_ALWAYS, verbosity, "Error: too many audio sources in config file." )
+        LOG_ERR( LOG_ALWAYS, verbosity, "Error: too many audio sources in config file.\n" )
         return -1;
     }
 
@@ -979,7 +979,7 @@ int8_t TuneInUserConfig(
     // Applying configuration to core
     myCore.SetAudioState( audioState );
 
-    // Setting 15-degree resampling step for HRTF
+    // Setting resampling step for HRTF
     myCore.SetHRTFResamplingStep( HRTF_RESAMPLING_STEPS_DEG );
 
 
@@ -1022,6 +1022,14 @@ int8_t TuneInUserConfig(
         /* return error if we have no hrtf file */
         return -1;
     }
+
+    // SANITY CHECK: the HRTF and input files must have the same sammplig rate.
+    if ( soundSourcesFileInfo[ 0 ].samplerate != HRTF::GetSampleRateFromSofa( hrtf_sofa_file.c_str( ) ) )
+    {
+        LOG_ERR( LOG_ALWAYS, verbosity, "Error: Input audio files and HRTF sampling rate mismatch.\n" );
+        return -1;
+    }
+
 
     /* print some info for source definition */
     LOG_MSG( LOG_LOW, verbosity, "Delays are specified: %s\n", ( true == specifiedDelays?"YES":"NO" ) );
@@ -1092,7 +1100,7 @@ int8_t TuneInUserConfig(
         if ( 0 != coordDecode( yaml_config[ "setup" ][ "sources" ][ idx ][ "coord" ].as<std::string>( ), COORD_TYPE_SPHERICAL, source_coord, 3, true ) )
         {
             std::cerr << "Error: invalid source coordinates (type is spherical).\n\n";
-            return 1;
+            return -1;
         }
 
         shared_ptr<Binaural::CSingleSourceDSP> tmpSource = myCore.CreateSingleSourceDSP( ); // Creating audio source
@@ -1308,17 +1316,6 @@ void processData(
             LOG_MSG( LOG_DEBUG, verbosity, "[ProcessData] IDX: %d, path n.a\n", idx );
         }
     }
-
-
-
-#if 0
-    // Moving the steps source
-    sourcePosition.SetPosition( Common::CVector3( sourcePosition.GetPosition( ).x,
-                                                  sourcePosition.GetPosition( ).y - streamTime / 110.0f,
-                                                  sourcePosition.GetPosition( ).z > 10 ? sourcePosition.GetPosition( ).z : sourcePosition.GetPosition( ).z + streamTime / 110.0f ) );
-
-    sourceSteps->SetSourceTransform( sourcePosition );
-#endif
 }
 
 
@@ -1432,7 +1429,7 @@ int main( int argc, char* argv[] )
             case '?': // Unrecognized option
             default:
                 print_help( );
-                return 1;
+                return -1;
         }
     }
 
@@ -1447,7 +1444,7 @@ int main( int argc, char* argv[] )
         else
         {
             std::cerr << "Error: cannot read yaml config file. exit.\n\n";
-            return 1;
+            return -1;
         }
     }
 
@@ -1462,14 +1459,14 @@ int main( int argc, char* argv[] )
     {
         std::cerr << "Error: input file OR yaml_params files must be specified.\n\n";
         print_help( );
-        return 1;
+        return -1;
     }
 
     if ( output_file.empty( ) )
     {
         std::cerr << "Error: output file must be specified.\n\n";
         print_help( );
-        return 1;
+        return -1;
     }
 
     // SANITY CHECK: hrtf_sofa file is provided
@@ -1477,7 +1474,7 @@ int main( int argc, char* argv[] )
     {
         std::cerr << "Error: hrtf_sofa_file is needed.\n\n";
         print_help( );
-        return 1;
+        return -1;
     }
 
     /*
@@ -1511,7 +1508,7 @@ int main( int argc, char* argv[] )
     if ( 0 != coordDecode( coord_source, COORD_TYPE_SPHERICAL, source_coord, sizeof( source_coord ) / sizeof( float ), true ) )
     {
         std::cerr << "Error: invalid source coordinates (spherical).\n\n";
-        return 1;
+        return -1;
     }
 
     LOG_MSG( LOG_LOW, verbosity,
@@ -1528,7 +1525,7 @@ int main( int argc, char* argv[] )
      */
     if ( 0 != openInputFiles( yaml_config, soundSourcesFile, soundSourcesFileInfo, soundSourcesPath, soundSourcesPathIdx, &sources_cnt, MAX_CHANNELS ) )
     {
-        return 1;
+        return -1;
     }
 
     /*
@@ -1538,7 +1535,7 @@ int main( int argc, char* argv[] )
     {
         if ( soundSourcesFileInfo[ 0 ].samplerate != soundSourcesFileInfo[ idx ].samplerate )
         {
-            LOG_ERR( LOG_ALWAYS, verbosity, "Error: source .WAV files must have the same samplerate." )
+            LOG_ERR( LOG_ALWAYS, verbosity, "Error: source .WAV files must have the same samplerate.\n" )
             closeInputFiles( soundSourcesFile );
             exit( 1 );
         }
@@ -1553,7 +1550,7 @@ int main( int argc, char* argv[] )
     {
         closeInputFiles( soundSourcesFile );
         // sf_close( infile );
-        return 1;
+        return -1;
     }
 
     /*
@@ -1562,11 +1559,11 @@ int main( int argc, char* argv[] )
     // if ( 0 != TuneInUserConfig( yaml_config, iBufferSize, infile_sfinfo.samplerate, hrtf_sofa_file, brir_sofa_file ) )
     if ( 0 != TuneInUserConfig( yaml_config, source_coord, iBufferSize ) )
     {
-        LOG_ERR( LOG_ALWAYS, verbosity, "Error: cannot configure 3D-TuneIn library." )
+        LOG_ERR( LOG_ALWAYS, verbosity, "Error: cannot configure 3D-TuneIn library.\n" )
         closeInputFiles( soundSourcesFile );
         // sf_close( infile );
         sf_close( outfile );
-        return 1;
+        return -1;
     }
 
     // Declaration and initialization of stereo buffer

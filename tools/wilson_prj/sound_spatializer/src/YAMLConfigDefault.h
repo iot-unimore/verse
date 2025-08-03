@@ -32,15 +32,15 @@ setup:
       path_csv: none
       # 3dti_params
       3dti:
-        enableInterpolation: true
-        enableAnechoicProcess: true
+        enableInterpolation: yes
+        enableAnechoicProcess: yes
         enableReverbProcess: true
-        enableFarDistanceEffect: false
-        enableDistanceAttenuationAnechoic: true
-        enableDistanceAttenuationSmoothingAnechoic: false
-        enableDistanceAttenuationReverb: false
-        enableNearFieldEffect: false
-        enablePropagationDelay: false
+        enableFarDistanceEffect: no
+        enableDistanceAttenuationAnechoic: yes
+        enableDistanceAttenuationSmoothingAnechoic: yes
+        enableDistanceAttenuationReverb: no
+        enableNearFieldEffect: no
+        enablePropagationDelay: no
 
   #
   # audio listeners
@@ -52,15 +52,15 @@ setup:
       coord: 0,0,1
       # listener path (none if static)
       path_csv: none
-      # HRTF
+      # HEAD
       head:
         hrtf_sofa: none
       # 3dti_params
       3dti:
         head_radius: 0.06
-        customizedITD: false
+        customizedITD: no
         ILDAttenutaion_dB: -6
-        directionality: false
+        directionality: no
         directionality_dB: 6
 
   #
