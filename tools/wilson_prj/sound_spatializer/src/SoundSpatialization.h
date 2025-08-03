@@ -51,5 +51,8 @@ vector<SF_INFO>                                    soundSourcesFileInfo;        
 std::vector<std::vector<std::vector<std::string>>> soundSourcesPath;                         // vector of CSV for source motion definition
 std::vector<uint32_t>                              soundSourcesPathIdx;
 
+/* Setup */
+
+uint8_t hrtfResamplingStepsDeg;
 
 #endif

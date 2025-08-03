@@ -52,7 +52,7 @@ setup:
       coord: 0,0,1
       # listener path (none if static)
       path_csv: none
-      # HEAD
+      # hrtf for this listener
       head:
         hrtf_sofa: none
       # 3dti_params
@@ -60,8 +60,10 @@ setup:
         head_radius: 0.06
         customizedITD: no
         ILDAttenutaion_dB: -6
+        # directionality: no, left, right, both
         directionality: no
-        directionality_dB: 6
+        directionality_L_dB: 0
+        directionality_R_dB: 0
 
   #
   # head
@@ -73,6 +75,7 @@ setup:
   # room
   #
   room:
+    reverberationOrder: bidimensional
     brir_sofa: none
 
 #EOF

@@ -57,6 +57,7 @@ uint16_t iBufferSize = BUFFER_LEN;
 bool bEnableReverb = false;
 
 volatile uint8_t verbosity = LOG_ZERO;
+
 volatile bool bCtrlExit = false;
 
 
@@ -360,13 +361,196 @@ int8_t setConfigParams( YAML::Node* yaml_config )
 
     std::cout << ( *yaml_config )[ "setup" ][ "room" ][ "brir_sofa" ] << std::endl;
 
-    std::string hrtf_sofa_file = ( *yaml_config )[ "setup" ][ "head" ][ "hrtf_sofa" ].as<std::string>( );
-    if ( 0 != hrtf_sofa_file.compare( "none" ) )
+    std::string brir_sofa_file = ( *yaml_config )[ "setup" ][ "room" ][ "brir_sofa" ].as<std::string>( );
+    if ( 0 != brir_sofa_file.compare( "none" ) )
     {
         bEnableReverb = true;
     }
 
+
+    hrtfResamplingStepsDeg = HRTF_RESAMPLING_STEPS_DEG;
+
     return 0;
+}
+
+
+/*******************************************************************************
+ * Function Name:
+ *******************************************************************************
+ * Summary:
+ *
+ * Parameters:
+ *  None
+ *
+ * Return:
+ *  None
+ *
+ *******************************************************************************/
+int8_t setListenerParams( YAML::Node yaml_config )
+{
+    int8_t err = 0;
+
+    if ( yaml_config.IsNull( ) )
+    {
+        return -1;
+    }
+
+    /* DEFAULTS */
+    listener->DisableCustomizedITD( );
+    listener->DisableDirectionality( Common::T_ear::BOTH );
+
+    /* YAML CFG VERSION CHECK */
+    int yaml_stx_mjr = ( yaml_config )[ "syntax" ][ "version" ][ "major" ].as<int>( );
+    int yaml_stx_min = ( yaml_config )[ "syntax" ][ "version" ][ "minor" ].as<int>( );
+
+    /* these params are present from syntax version 0.2 and above */
+    if ( ( yaml_stx_mjr >= 0 ) && ( yaml_stx_min >= 2 ) )
+    {
+        LOG_MSG( LOG_LOW, verbosity, "Listener: reading customized configuration.\n" );
+
+        if ( yaml_config[ "setup" ] && yaml_config[ "setup" ].IsMap( ) &&
+             yaml_config[ "setup" ][ "listeners" ] && yaml_config[ "setup" ][ "listeners" ].IsMap( ) &&
+             yaml_config[ "setup" ][ "listeners" ][ 0 ] && yaml_config[ "setup" ][ "listeners" ][ 0 ].IsMap( ) &&
+             yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ] )
+        {
+            /* head radius */
+            if ( yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "head_radius" ] )
+            {
+                listener->SetHeadRadius( yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "head_radius" ].as<float>( ) );
+            }
+
+            /* customized ITD */
+            if ( 0 == yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "customizedITD" ].as<std::string>( ).compare( "yes" ) )
+            {
+                listener->EnableCustomizedITD( );
+
+                /* ILD Attenuation */
+                if ( yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "ILDAttenutaion_dB" ] )
+                {
+                    listener->SetILDAttenutaion( yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "ILDAttenutaion_dB" ].as<float>( ) );
+                }
+            }
+
+
+            /* directionality */
+            if ( 0 != yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality" ].as<std::string>( ).compare( "no" ) )
+            {
+                if ( 0 == yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality" ].as<std::string>( ).compare( "both" ) )
+                {
+                    listener->EnableDirectionality( Common::T_ear::BOTH );
+
+                    /* Left */
+                    if ( yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality_L_dB" ] )
+                    {
+                        listener->SetDirectionality_dB( Common::T_ear::LEFT, yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality_L_dB" ].as<float>( ) );
+                    }
+                    /* Right */
+                    if ( yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality_R_dB" ] )
+                    {
+                        listener->SetDirectionality_dB( Common::T_ear::RIGHT, yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality_R_dB" ].as<float>( ) );
+                    }
+                }
+                else if ( 0 == yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality" ].as<std::string>( ).compare( "left" ) )
+                {
+                    listener->EnableDirectionality( Common::T_ear::LEFT );
+
+                    /* Left */
+                    if ( yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality_L_dB" ] )
+                    {
+                        listener->SetDirectionality_dB( Common::T_ear::LEFT, yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality_L_dB" ].as<float>( ) );
+                    }
+                }
+                else if ( 0 == yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality" ].as<std::string>( ).compare( "right" ) )
+                {
+                    listener->EnableDirectionality( Common::T_ear::RIGHT );
+
+                    /* Right */
+                    if ( yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality_R_dB" ] )
+                    {
+                        listener->SetDirectionality_dB( Common::T_ear::RIGHT, yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ][ "directionality_R_dB" ].as<float>( ) );
+                    }
+                }
+            }
+        }
+    }
+
+    /* report */
+
+    LOG_MSG( LOG_LOW, verbosity, "Listener: ILD Attenuation: %2.2f\n",       listener->GetILDAttenutaion( ) );
+    LOG_MSG( LOG_LOW, verbosity, "Listener: Head Radius: %2.2f\n",           listener->GetHeadRadius( ) );
+    LOG_MSG( LOG_LOW, verbosity, "Listener: Customized ITD Enabled: %s\n",   ( listener->IsCustomizedITDEnabled( ) == true )?"yes":"no" );
+    LOG_MSG( LOG_LOW, verbosity, "Listener: Directionality L Enabled: %s\n", ( listener->IsDirectionalityEnabled( Common::T_ear::LEFT ) == true )?"yes":"no" );
+    LOG_MSG( LOG_LOW, verbosity, "Listener: Directionality R Enabled: %s\n", ( listener->IsDirectionalityEnabled( Common::T_ear::RIGHT ) == true )?"yes":"no" );
+    LOG_MSG( LOG_LOW, verbosity,
+             "Listener: Left Ear: X=%3.2f, Y=%3.2f Z=%3.2f\n",
+             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).x,
+             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).y,
+             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).z
+           );
+    LOG_MSG( LOG_LOW, verbosity,
+             "Listener: Right Ear: X=%3.2f, Y=%3.2f Z=%3.2f\n",
+             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).x,
+             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).y,
+             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).z
+           );
+
+    LOG_MSG( LOG_LOW, verbosity,
+             "Listener: HRTF Angle Sampling: %d\n", listener->GetHRTFResamplingStep( ) );
+
+    return err;
+}
+
+
+/*******************************************************************************
+ * Function Name:
+ *******************************************************************************
+ * Summary:
+ *
+ * Parameters:
+ *  None
+ *
+ * Return:
+ *  None
+ *
+ *******************************************************************************/
+int8_t setSourceParams( YAML::Node yaml_config, shared_ptr<Binaural::CSingleSourceDSP> audioSource )
+{
+    int8_t err = 0;
+
+    // enableInterpolation: yes
+    // enableAnechoicProcess: yes
+    // enableReverbProcess: true
+    // enableFarDistanceEffect: no
+    // enableDistanceAttenuationAnechoic: yes
+    // enableDistanceAttenuationSmoothingAnechoic: yes
+    // enableDistanceAttenuationReverb: no
+    // enableNearFieldEffect: no
+    // enablePropagationDelay: no
+
+#if 0
+    // tmpSource->EnableNearFieldEffect( );
+    tmpSource->DisableNearFieldEffect( );
+
+    // tmpSource->EnableFarDistanceEffect();
+    tmpSource->DisableFarDistanceEffect( );
+
+    tmpSource->EnableAnechoicProcess( );
+    // tmpSource->DisableAnechoicProcess( );
+
+    // tmpSource->EnableDistanceAttenuationAnechoic( );
+    tmpSource->DisableDistanceAttenuationAnechoic( );
+
+    // tmpSource->EnablePropagationDelay( );
+    tmpSource->DisablePropagationDelay( );
+
+    // tmpSource->EnableReverbProcess( );
+    tmpSource->DisableReverbProcess( );
+
+    // tmpSource->EnableDistanceAttenuationSmoothingAnechoic( );
+    tmpSource->DisableDistanceAttenuationSmoothingAnechoic( );
+#endif
+
+    return err;
 }
 
 
@@ -962,12 +1146,10 @@ int8_t TuneInUserConfig(
     float path_coord[ 3 ] = { 0.0f };
     float tmp_coord[ 3 ] = { 0.0f };
 
-
     /*
      * 3DTuneIn Core setup
      */
     ERRORHANDLER3DTI.SetVerbosityMode( VERBOSITYMODE_ERRORSANDWARNINGS );
-
     ERRORHANDLER3DTI.SetErrorLogStream( &std::cout, true );
 
     // Audio State struct declaration, set buffer size and samplerate
@@ -980,14 +1162,13 @@ int8_t TuneInUserConfig(
     myCore.SetAudioState( audioState );
 
     // Setting resampling step for HRTF
-    myCore.SetHRTFResamplingStep( HRTF_RESAMPLING_STEPS_DEG );
-
+    myCore.SetHRTFResamplingStep( hrtfResamplingStepsDeg );
 
 
     /*
-     * Audio Listener setup position and properties
-     *
+     * Audio Listener (head)
      */
+
     listener = myCore.CreateListener(  );
 
     Common::CTransform listenerPosition = Common::CTransform( );
@@ -998,15 +1179,8 @@ int8_t TuneInUserConfig(
 
     // Disabling custom head radius
     listener->DisableCustomizedITD( );
-    // listener->EnableCustomizedITD( );
 
-    // listener->EnableDirectionality(Common::T_ear::BOTH);
-    // listener->DisableDirectionality(Common::T_ear::BOTH);
-
-    /*
-     * Audio Listener HRTF
-     */
-
+    /* HRTF */
     bool specifiedDelays = false;
 
     // Comment this line and uncomment next lines to load the default HRTF in 3dti-hrtf format instead of in SOFA format
@@ -1023,40 +1197,26 @@ int8_t TuneInUserConfig(
             LOG_ERR( LOG_ALWAYS, verbosity, "Error: Input audio files and HRTF sampling rate mismatch.\n" );
             return -1;
         }
+
+        LOG_MSG( LOG_LOW, verbosity, "HRTF: Delays are specified: %s\n", ( true == specifiedDelays?"YES":"NO" ) );
     }
     else
     {
-        /* return error if we have no hrtf file */
         return -1;
     }
-
-
-    /* print some info for source definition */
-    LOG_MSG( LOG_LOW, verbosity, "Delays are specified: %s\n", ( true == specifiedDelays?"YES":"NO" ) );
 
     // TODO: set listener head size based on HRTF receivers coordinates (from the SOFA file)
     listener->SetHeadRadius( 0.060f );
 
-    LOG_MSG( LOG_LOW, verbosity,
-             "Listener Left Ear: X=%3.2f, Y=%3.2f Z=%3.2f\n",
-             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).x,
-             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).y,
-             listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).z
-           );
+    /* YAML params, extra configs */
+    if ( 0 != setListenerParams( yaml_config ) )
+    {
+        return -1;
+    }
 
-    LOG_MSG( LOG_LOW, verbosity,
-             "Listener Right Ear: X=%3.2f, Y=%3.2f Z=%3.2f\n",
-             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).x,
-             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).y,
-             listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).z
-           );
-
-    LOG_MSG( LOG_LOW, verbosity,
-             "Listener HRTF Angle Sampling: %d\n", listener->GetHRTFResamplingStep( ) );
 
     /*
      * Audio Environment setup (Room)
-     *
      */
 
     // Creating environment to have reverberated sound
@@ -1064,8 +1224,6 @@ int8_t TuneInUserConfig(
 
     // Setting number of ambisonic channels to use in reverberation processing
     environment->SetReverberationOrder( TReverberationOrder::BIDIMENSIONAL );
-    // environment->SetReverberationOrder( TReverberationOrder::THREEDIMENSIONAL );
-    // environment->SetReverberationOrder( TReverberationOrder::ADIMENSIONAL );
 
     // Loading SOFAcoustics BRIR file and applying it to the environment
     std::string brir_sofa_file = yaml_config[ "setup" ][ "room" ][ "brir_sofa" ].as<std::string>( );
@@ -1088,9 +1246,8 @@ int8_t TuneInUserConfig(
     LOG_MSG( LOG_LOW, verbosity, "BRIR, Reverberation is: %s\n", ( true == bEnableReverb )?"ON":"OFF" );
 
 
-
     /*
-     * Audio Environment setup (Room)
+     * Audio Sources (voices)
      *
      */
 
@@ -1120,7 +1277,6 @@ int8_t TuneInUserConfig(
         LOG_MSG( LOG_LOW, verbosity,
                  "Source, initial Position X=%3.2f Y=%3.2f Z=%3.2f\n", tmpVect.x, tmpVect.y, tmpVect.z );
 
-
         // source config
         tmpSource->EnableInterpolation( );
         // tmpSource->DisableInterpolation( );
@@ -1128,19 +1284,20 @@ int8_t TuneInUserConfig(
         tmpSource->SetSourceTransform( tmpSourcePosition );
         tmpSource->SetSpatializationMode( Binaural::TSpatializationMode::HighQuality );
 
+
         // tmpSource->EnableNearFieldEffect( );
         tmpSource->DisableNearFieldEffect( );
 
         // tmpSource->EnableFarDistanceEffect();
         tmpSource->DisableFarDistanceEffect( );
 
-        tmpSource->EnableAnechoicProcess( );                                             // Setting anechoic and reverb processing for this source
-        // tmpSource->DisableAnechoicProcess( );                                             // Setting anechoic and reverb processing for this source
+        tmpSource->EnableAnechoicProcess( );
+        // tmpSource->DisableAnechoicProcess( );
 
         // tmpSource->EnableDistanceAttenuationAnechoic( );
         tmpSource->DisableDistanceAttenuationAnechoic( );
 
-        // tmpSource->EnablePropagationDelay( );                                            // Activate delay simulation due to the distance of the source
+        // tmpSource->EnablePropagationDelay( );
         tmpSource->DisablePropagationDelay( );
 
         // tmpSource->EnableReverbProcess( );
@@ -1149,6 +1306,12 @@ int8_t TuneInUserConfig(
         // tmpSource->EnableDistanceAttenuationSmoothingAnechoic( );
         tmpSource->DisableDistanceAttenuationSmoothingAnechoic( );
 
+
+        /* YAML params, extra configs */
+        if ( 0 != setSourceParams( yaml_config, tmpSource ) )
+        {
+            return -1;
+        }
 
         /* push back into Sources vector */
         soundSources.push_back( tmpSource );
@@ -1561,7 +1724,6 @@ int main( int argc, char* argv[] )
     /*
      * 3DTune-In setup
      */
-    // if ( 0 != TuneInUserConfig( yaml_config, iBufferSize, infile_sfinfo.samplerate, hrtf_sofa_file, brir_sofa_file ) )
     if ( 0 != TuneInUserConfig( yaml_config, source_coord, iBufferSize ) )
     {
         LOG_ERR( LOG_ALWAYS, verbosity, "Error: cannot configure 3D-TuneIn library.\n" )
