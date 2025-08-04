@@ -206,7 +206,7 @@ def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[]):
             track_id += 1
             idx += 1
 
-        yaml_descriptor["receivers_count"] = len(stereo_files) # * 2
+        yaml_descriptor["receivers_count"] = len(stereo_files)  # * 2
         yaml_descriptor["receivers"] = {}
         idx = 0
         for file in stereo_files:
@@ -302,24 +302,64 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
         cfg = {}
         cfg["syntax"] = {}
         cfg["syntax"]["name"] = "sspat_config"
-        cfg["syntax"]["version"] = {"major": 0, "minor": 1, "revision": 0}
+        cfg["syntax"]["version"] = {"major": 0, "minor": 2, "revision": 0}
 
+        #
+        # audio setup
+        #
         cfg["setup"] = {}
 
         cfg["setup"]["head"] = {}
         cfg["setup"]["head"]["hrtf_sofa"] = cfg_yaml["head"]
 
+        #
+        # room
+        #
         cfg["setup"]["room"] = {}
         cfg["setup"]["room"]["brir_sofa"] = cfg_yaml["room"]
 
+        #
+        # sources
+        #
         cfg["setup"]["sources_count"] = len(cfg_yaml["sources"])
-
         cfg["setup"]["sources"] = {}
         for sidx in cfg_yaml["sources"]:
             cfg["setup"]["sources"][sidx] = {}
             cfg["setup"]["sources"][sidx]["file_wav"] = cfg_yaml["sources"][sidx]["file"]
             cfg["setup"]["sources"][sidx]["coord"] = cfg_yaml["sources"][sidx]["coord"]
             cfg["setup"]["sources"][sidx]["path_csv"] = cfg_yaml["sources"][sidx]["path_csv"]
+            # 3dti extra parameters
+            cfg["setup"]["sources"][sidx]["3dti"] = {}
+            cfg["setup"]["sources"][sidx]["3dti"]["enableInterpolation"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableAnechoicProcess"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationAnechoic"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationSmoothingAnechoic"] = "yes"
+            if cfg["setup"]["room"]["brir_sofa"] == "none":
+                cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
+            else:
+                cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationReverb"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableFarDistanceEffect"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "no"
+            cfg["setup"]["sources"][sidx]["3dti"]["enablePropagationDelay"] = "no"
+
+        #
+        # listeners
+        #
+        cfg["setup"]["listeners_count"] = 1
+        cfg["setup"]["listeners"] = {}
+        cfg["setup"]["listeners"][0] = {}
+        cfg["setup"]["listeners"][0]["coord"] = [0, 0, 1]
+        cfg["setup"]["listeners"][0]["path_csv"] = "none"
+        cfg["setup"]["listeners"][0]["head"] = {}
+        cfg["setup"]["listeners"][0]["head"]["hrtf_sofa"] = cfg_yaml["head"]
+        cfg["setup"]["listeners"][0]["3dti"] = {}
+        cfg["setup"]["listeners"][0]["3dti"]["head_radius"] = 0.06
+        cfg["setup"]["listeners"][0]["3dti"]["customizedITD"] = "no"
+        cfg["setup"]["listeners"][0]["3dti"]["ILDAttenutaion_dB"] = -6
+        cfg["setup"]["listeners"][0]["3dti"]["directionality"] = "no"
+        cfg["setup"]["listeners"][0]["3dti"]["directionality_L_dB"] = 0
+        cfg["setup"]["listeners"][0]["3dti"]["directionality_R_dB"] = 0
 
     if len(cfg) > 0:
         # logger.info(yaml.dump(cfg))
@@ -341,11 +381,17 @@ def executeSoundSpatializerCmd(cmd=""):
     err = 0
     logger.info("soundSpatializer, executing:" + str(cmd))
 
-    result = check_output(cmd)
+    try:
+        result = check_output(cmd)
+    except:
+        logger.error("spatializer, could not run cmd: {}".format(cmd))
+        err = -1
 
     if not (os.path.isfile(cmd[4])):
         err = -1
-        logger.error("could not run sound spatializer: {}".format(cmd))
+        logger.error("spatializer, missing audio output file: {}".format(cmd[4]))
+
+    return err
 
 
 #

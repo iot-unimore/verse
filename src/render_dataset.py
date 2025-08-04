@@ -289,6 +289,20 @@ def buildDataSetRecipe(data=None):
                         # retrieve original scene
                         custom_scene_yaml = readYamlFile(scene[1])
 
+                        #
+                        # dataset audio output format has priority on scene audio output format
+                        #
+
+                        # type (WAV)
+                        if custom_scene_yaml["setup"]["format"]["type"] != data["formats_dict"]["type"]:
+                            custom_scene_yaml["setup"]["format"]["type"] = data["formats_dict"]["type"]
+                        # subtype (pcm_s16le, pcm_s24le)
+                        if custom_scene_yaml["setup"]["format"]["subtype"] != data["formats_dict"]["subtype"]:
+                            custom_scene_yaml["setup"]["format"]["subtype"] = data["formats_dict"]["subtype"]
+                        # samplerate (Hz)
+                        if custom_scene_yaml["setup"]["format"]["samplerate"] != data["formats_dict"]["samplerate"]:
+                            custom_scene_yaml["setup"]["format"]["samplerate"] = data["formats_dict"]["samplerate"]
+
                         # customize voices
                         if voices_iteration_count > 0:
                             for vidx in custom_scene_yaml["setup"]["sources"]:
@@ -503,6 +517,10 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
 
                         # print("voices: " + str(voices_list))
 
+                        # dataset format info
+                        format_dict = {}
+                        format_dict = recipe_yaml["output"]["audio"]["format"]
+
                         # workers params: dataset_idx, task_idx, scene_idx, scenes, heads, rooms, voices
                         data = {}
                         data["dataset_idx"] = dsidx
@@ -512,7 +530,7 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
                         data["heads_list"] = heads_list
                         data["rooms_list"] = rooms_list
                         data["voices_list"] = voices_list
-
+                        data["formats_dict"] = format_dict
                         workers_data.append(data)
 
     # we got all the work listed, now spawn multi-process to create all the scene files
