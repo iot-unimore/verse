@@ -17,6 +17,7 @@ format: sofa
 format_3dti: yes
 
 brir_count: 1
+brir_samplerates: [ 44100 ]
 brir_main_idx: 0
 brir:
   0:
