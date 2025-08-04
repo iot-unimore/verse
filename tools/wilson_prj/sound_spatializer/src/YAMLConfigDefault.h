@@ -34,11 +34,11 @@ setup:
       3dti:
         enableInterpolation: yes
         enableAnechoicProcess: yes
-        enableReverbProcess: true
-        enableFarDistanceEffect: no
-        enableDistanceAttenuationAnechoic: yes
-        enableDistanceAttenuationSmoothingAnechoic: yes
+        enableDistanceAttenuationAnechoic: no
+        enableDistanceAttenuationSmoothingAnechoic: no
+        enableReverbProcess: yes
         enableDistanceAttenuationReverb: no
+        enableFarDistanceEffect: no
         enableNearFieldEffect: no
         enablePropagationDelay: no
 

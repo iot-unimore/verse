@@ -476,25 +476,25 @@ int8_t setListenerParams( YAML::Node yaml_config )
 
     /* report */
 
-    LOG_MSG( LOG_LOW, verbosity, "Listener: ILD Attenuation: %2.2f\n",       listener->GetILDAttenutaion( ) );
-    LOG_MSG( LOG_LOW, verbosity, "Listener: Head Radius: %2.2f\n",           listener->GetHeadRadius( ) );
-    LOG_MSG( LOG_LOW, verbosity, "Listener: Customized ITD Enabled: %s\n",   ( listener->IsCustomizedITDEnabled( ) == true )?"yes":"no" );
-    LOG_MSG( LOG_LOW, verbosity, "Listener: Directionality L Enabled: %s\n", ( listener->IsDirectionalityEnabled( Common::T_ear::LEFT ) == true )?"yes":"no" );
-    LOG_MSG( LOG_LOW, verbosity, "Listener: Directionality R Enabled: %s\n", ( listener->IsDirectionalityEnabled( Common::T_ear::RIGHT ) == true )?"yes":"no" );
-    LOG_MSG( LOG_LOW, verbosity,
+    LOG_MSG( LOG_MEDIUM, verbosity, "Listener: ILD Attenuation: %2.2f\n",       listener->GetILDAttenutaion( ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Listener: Head Radius: %2.2f\n",           listener->GetHeadRadius( ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Listener: Customized ITD Enabled: %s\n",   ( listener->IsCustomizedITDEnabled( ) == true )?"yes":"no" );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Listener: Directionality L Enabled: %s\n", ( listener->IsDirectionalityEnabled( Common::T_ear::LEFT ) == true )?"yes":"no" );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Listener: Directionality R Enabled: %s\n", ( listener->IsDirectionalityEnabled( Common::T_ear::RIGHT ) == true )?"yes":"no" );
+    LOG_MSG( LOG_MEDIUM, verbosity,
              "Listener: Left Ear: X=%3.2f, Y=%3.2f Z=%3.2f\n",
              listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).x,
              listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).y,
              listener->GetListenerEarLocalPosition( Common::T_ear::LEFT ).z
            );
-    LOG_MSG( LOG_LOW, verbosity,
+    LOG_MSG( LOG_MEDIUM, verbosity,
              "Listener: Right Ear: X=%3.2f, Y=%3.2f Z=%3.2f\n",
              listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).x,
              listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).y,
              listener->GetListenerEarLocalPosition( Common::T_ear::RIGHT ).z
            );
 
-    LOG_MSG( LOG_LOW, verbosity,
+    LOG_MSG( LOG_MEDIUM, verbosity,
              "Listener: HRTF Angle Sampling: %d\n", listener->GetHRTFResamplingStep( ) );
 
     return err;
@@ -513,42 +513,157 @@ int8_t setListenerParams( YAML::Node yaml_config )
  *  None
  *
  *******************************************************************************/
-int8_t setSourceParams( YAML::Node yaml_config, shared_ptr<Binaural::CSingleSourceDSP> audioSource )
+int8_t setSourceParams( YAML::Node yaml_config, shared_ptr<Binaural::CSingleSourceDSP> audioSource, uint idx )
 {
     int8_t err = 0;
 
-    // enableInterpolation: yes
-    // enableAnechoicProcess: yes
-    // enableReverbProcess: true
-    // enableFarDistanceEffect: no
-    // enableDistanceAttenuationAnechoic: yes
-    // enableDistanceAttenuationSmoothingAnechoic: yes
-    // enableDistanceAttenuationReverb: no
-    // enableNearFieldEffect: no
-    // enablePropagationDelay: no
+    if ( yaml_config.IsNull( ) )
+    {
+        return -1;
+    }
 
-#if 0
-    // tmpSource->EnableNearFieldEffect( );
-    tmpSource->DisableNearFieldEffect( );
+    if ( NULL == audioSource )
+    {
+        return -1;
+    }
 
-    // tmpSource->EnableFarDistanceEffect();
-    tmpSource->DisableFarDistanceEffect( );
+    /* defaults */
+    audioSource->EnableInterpolation( );
+    audioSource->EnableAnechoicProcess( );
+    audioSource->DisableDistanceAttenuationAnechoic( );
+    audioSource->DisableDistanceAttenuationSmoothingAnechoic( );
+    audioSource->DisableReverbProcess( );
+    audioSource->DisableDistanceAttenuationReverb( );
+    audioSource->DisableFarDistanceEffect( );
+    audioSource->DisableNearFieldEffect( );
+    audioSource->DisablePropagationDelay( );
 
-    tmpSource->EnableAnechoicProcess( );
-    // tmpSource->DisableAnechoicProcess( );
 
-    // tmpSource->EnableDistanceAttenuationAnechoic( );
-    tmpSource->DisableDistanceAttenuationAnechoic( );
+    /* YAML CFG VERSION CHECK */
+    int yaml_stx_mjr = ( yaml_config )[ "syntax" ][ "version" ][ "major" ].as<int>( );
+    int yaml_stx_min = ( yaml_config )[ "syntax" ][ "version" ][ "minor" ].as<int>( );
 
-    // tmpSource->EnablePropagationDelay( );
-    tmpSource->DisablePropagationDelay( );
+    /* these params are present from syntax version 0.2 and above */
+    if ( ( yaml_stx_mjr >= 0 ) && ( yaml_stx_min >= 2 ) )
+    {
+        LOG_MSG( LOG_LOW, verbosity, "Source[%d]: reading customized configuration.\n", idx );
 
-    // tmpSource->EnableReverbProcess( );
-    tmpSource->DisableReverbProcess( );
+        if ( yaml_config[ "setup" ] && yaml_config[ "setup" ].IsMap( ) &&
+             yaml_config[ "setup" ][ "sources" ] && yaml_config[ "setup" ][ "sources" ].IsMap( ) &&
+             yaml_config[ "setup" ][ "sources" ][ idx ] && yaml_config[ "setup" ][ "sources" ][ idx ].IsMap( ) &&
+             yaml_config[ "setup" ][ "listeners" ][ 0 ][ "3dti" ] )
+        {
+            /* HRTF Interpolation */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableInterpolation" ] )
+            {
+                audioSource->EnableInterpolation( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableInterpolation" ].as<std::string>( ).compare( "no" ) )
+                {
+                    audioSource->DisableInterpolation( );
+                }
+            }
 
-    // tmpSource->EnableDistanceAttenuationSmoothingAnechoic( );
-    tmpSource->DisableDistanceAttenuationSmoothingAnechoic( );
-#endif
+            /* AnechoicProcess */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableAnechoicProcess" ] )
+            {
+                audioSource->EnableAnechoicProcess( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableAnechoicProcess" ].as<std::string>( ).compare( "no" ) )
+                {
+                    audioSource->DisableAnechoicProcess( );
+                }
+            }
+
+            /* DistanceAttenuationAnechoic */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableDistanceAttenuationAnechoic" ] )
+            {
+                audioSource->DisableDistanceAttenuationAnechoic( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableDistanceAttenuationAnechoic" ].as<std::string>( ).compare( "yes" ) )
+                {
+                    audioSource->EnableDistanceAttenuationAnechoic( );
+                }
+            }
+
+            /* DistanceAttenuationSmoothingAnechoic */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableDistanceAttenuationSmoothingAnechoic" ] )
+            {
+                audioSource->DisableDistanceAttenuationSmoothingAnechoic( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableDistanceAttenuationSmoothingAnechoic" ].as<std::string>( ).compare( "yes" ) )
+                {
+                    audioSource->EnableDistanceAttenuationSmoothingAnechoic( );
+                }
+            }
+
+            /* ReverbProcess */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableReverbProcess" ] )
+            {
+                audioSource->DisableReverbProcess( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableReverbProcess" ].as<std::string>( ).compare( "yes" ) )
+                {
+                    audioSource->EnableReverbProcess( );
+                }
+            }
+
+            /* DistanceAttenuationReverb */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableDistanceAttenuationReverb" ] )
+            {
+                audioSource->DisableDistanceAttenuationReverb( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableDistanceAttenuationReverb" ].as<std::string>( ).compare( "yes" ) )
+                {
+                    audioSource->EnableDistanceAttenuationReverb( );
+                }
+            }
+
+            /* FarDistanceEffect */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableFarDistanceEffect" ] )
+            {
+                audioSource->DisableFarDistanceEffect( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableFarDistanceEffect" ].as<std::string>( ).compare( "yes" ) )
+                {
+                    audioSource->EnableFarDistanceEffect( );
+                }
+            }
+
+            /* NearFieldEffect */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableNearFieldEffect" ] )
+            {
+                audioSource->DisableNearFieldEffect( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enableNearFieldEffect" ].as<std::string>( ).compare( "yes" ) )
+                {
+                    audioSource->EnableNearFieldEffect( );
+                }
+            }
+
+            /* PropagationDelay */
+            if ( yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ] && yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ].IsMap( ) &&
+                 yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enablePropagationDelay" ] )
+            {
+                audioSource->DisablePropagationDelay( );
+                if ( 0 == yaml_config[ "setup" ][ "sources" ][ idx ][ "3dti" ][ "enablePropagationDelay" ].as<std::string>( ).compare( "yes" ) )
+                {
+                    audioSource->EnablePropagationDelay( );
+                }
+            }
+        }
+    }
+
+    /* report */
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Interpolation: %s\n",                           idx, ( audioSource->IsInterpolationEnabled( )?"yes":"no" ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Anechoic Process: %s\n",                        idx, ( audioSource->IsAnechoicProcessEnabled( )?"yes":"no" ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Distance Attenuation Anechoic: %s\n",           idx, ( audioSource->IsDistanceAttenuationEnabledAnechoic( )?"yes":"no" ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Distance Attenuation Smoothing Anechoic: %s\n", idx, ( audioSource->IsDistanceAttenuationSmoothingEnabledAnechoic( )?"yes":"no" ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Reverb Process: %s\n",                          idx, ( audioSource->IsReverbProcessEnabled( )?"yes":"no" ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Distance Attenuation Reverb: %s\n",             idx, ( audioSource->IsDistanceAttenuationEnabledReverb( )?"yes":"no" ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Far Distance Effect: %s\n",                     idx, ( audioSource->IsFarDistanceEffectEnabled( )?"yes":"no" ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Near Field Effect: %s\n",                       idx, ( audioSource->IsNearFieldEffectEnabled( )?"yes":"no" ) );
+    LOG_MSG( LOG_MEDIUM, verbosity, "Source[%d]: Propagation Delay: %s\n",                       idx, ( audioSource->IsPropagationDelayEnabled( )?"yes":"no" ) );
 
     return err;
 }
@@ -1189,6 +1304,7 @@ int8_t TuneInUserConfig(
     std::string hrtf_sofa_file = yaml_config[ "setup" ][ "head" ][ "hrtf_sofa" ].as<std::string>( );
     if ( ( 0 < hrtf_sofa_file.length( ) ) && ( 0 != hrtf_sofa_file.compare( "none" ) ) )
     {
+        LOG_MSG( LOG_LOW, verbosity, "HRTF: opening file: %s\n", hrtf_sofa_file.c_str( ) );
         HRTF::CreateFromSofa( hrtf_sofa_file.c_str( ), listener, specifiedDelays );
 
         // SANITY CHECK: the HRTF and input files must have the same sammplig rate.
@@ -1254,9 +1370,9 @@ int8_t TuneInUserConfig(
     /*
      * Loop on Audio Sources and setup DSP and positioning
      */
-    int8_t sources_count = yaml_config[ "setup" ][ "sources_count" ].as<int>( );
+    uint sources_count = yaml_config[ "setup" ][ "sources_count" ].as<int>( );
 
-    for ( int8_t idx = 0; idx < sources_count; idx++ )
+    for ( uint idx = 0; idx < sources_count; idx++ )
     {
         // decode position, from str to numeric
         if ( 0 != coordDecode( yaml_config[ "setup" ][ "sources" ][ idx ][ "coord" ].as<std::string>( ), COORD_TYPE_SPHERICAL, source_coord, 3, true ) )
@@ -1275,40 +1391,10 @@ int8_t TuneInUserConfig(
         tmpSourcePosition.SetPosition( tmpVect );
 
         LOG_MSG( LOG_LOW, verbosity,
-                 "Source, initial Position X=%3.2f Y=%3.2f Z=%3.2f\n", tmpVect.x, tmpVect.y, tmpVect.z );
-
-        // source config
-        tmpSource->EnableInterpolation( );
-        // tmpSource->DisableInterpolation( );
-
-        tmpSource->SetSourceTransform( tmpSourcePosition );
-        tmpSource->SetSpatializationMode( Binaural::TSpatializationMode::HighQuality );
-
-
-        // tmpSource->EnableNearFieldEffect( );
-        tmpSource->DisableNearFieldEffect( );
-
-        // tmpSource->EnableFarDistanceEffect();
-        tmpSource->DisableFarDistanceEffect( );
-
-        tmpSource->EnableAnechoicProcess( );
-        // tmpSource->DisableAnechoicProcess( );
-
-        // tmpSource->EnableDistanceAttenuationAnechoic( );
-        tmpSource->DisableDistanceAttenuationAnechoic( );
-
-        // tmpSource->EnablePropagationDelay( );
-        tmpSource->DisablePropagationDelay( );
-
-        // tmpSource->EnableReverbProcess( );
-        tmpSource->DisableReverbProcess( );
-
-        // tmpSource->EnableDistanceAttenuationSmoothingAnechoic( );
-        tmpSource->DisableDistanceAttenuationSmoothingAnechoic( );
-
+                 "Source[%d], initial Position X=%3.2f Y=%3.2f Z=%3.2f\n", idx, tmpVect.x, tmpVect.y, tmpVect.z );
 
         /* YAML params, extra configs */
-        if ( 0 != setSourceParams( yaml_config, tmpSource ) )
+        if ( 0 != setSourceParams( yaml_config, tmpSource, idx ) )
         {
             return -1;
         }
