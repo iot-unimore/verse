@@ -354,7 +354,7 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
         cfg["setup"]["listeners"][0]["head"] = {}
         cfg["setup"]["listeners"][0]["head"]["hrtf_sofa"] = cfg_yaml["head"]
         cfg["setup"]["listeners"][0]["3dti"] = {}
-        cfg["setup"]["listeners"][0]["3dti"]["head_radius"] = 0.06
+        cfg["setup"]["listeners"][0]["3dti"]["head_radius"] = cfg_yaml["head_radius"]
         cfg["setup"]["listeners"][0]["3dti"]["customizedITD"] = "no"
         cfg["setup"]["listeners"][0]["3dti"]["ILDAttenutaion_dB"] = -6
         cfg["setup"]["listeners"][0]["3dti"]["directionality"] = "no"
@@ -797,6 +797,7 @@ def audioSpatialize(
                         listener["hrtf"][lidx]["file"],
                     )
                     sound_spatializer_cmd["head"] = head_sofa_file
+                    sound_spatializer_cmd["head_radius"] = listener["geometry"]["head_radius"]
 
                     # read sources
                     for sidx in range(len(sources_wav[0])):

@@ -15,6 +15,9 @@ format: sofa
 
 format_3dti: yes
 
+geometry:
+  head_radius: 0.07
+
 #
 # HRTFs definition:
 # we can have more than one HRTF for the same head because the 3DTuneIn tool will
