@@ -34,7 +34,7 @@
 #define HRTF_RESAMPLING_STEPS_DEG       ( 5 )
 
 #define MAX_BUFFER_LEN              ( 16384 )
-#define BUFFER_LEN                   ( 4096 )
+#define BUFFER_LEN                   (  512 )
 
 /* input files should be audio MONO sources */
 #define MAX_CHANNELS ( 1 )
@@ -398,6 +398,7 @@ int8_t setListenerParams( YAML::Node yaml_config )
     /* DEFAULTS */
     listener->DisableCustomizedITD( );
     listener->DisableDirectionality( Common::T_ear::BOTH );
+
 
     /* YAML CFG VERSION CHECK */
     int yaml_stx_mjr = ( yaml_config )[ "syntax" ][ "version" ][ "major" ].as<int>( );
@@ -1318,6 +1319,7 @@ int8_t TuneInUserConfig(
     }
     else
     {
+        LOG_ERR( LOG_ALWAYS, verbosity, "Error: Input audio files and HRTF is invalid.\n" );
         return -1;
     }
 
@@ -1327,6 +1329,7 @@ int8_t TuneInUserConfig(
     /* YAML params, extra configs */
     if ( 0 != setListenerParams( yaml_config ) )
     {
+        LOG_ERR( LOG_ALWAYS, verbosity, "Error: cannot setup Listener params.\n" );
         return -1;
     }
 
@@ -1393,9 +1396,13 @@ int8_t TuneInUserConfig(
         LOG_MSG( LOG_LOW, verbosity,
                  "Source[%d], initial Position X=%3.2f Y=%3.2f Z=%3.2f\n", idx, tmpVect.x, tmpVect.y, tmpVect.z );
 
+        tmpSource->SetSourceTransform( tmpSourcePosition );
+        tmpSource->SetSpatializationMode( Binaural::TSpatializationMode::HighQuality );
+
         /* YAML params, extra configs */
         if ( 0 != setSourceParams( yaml_config, tmpSource, idx ) )
         {
+            LOG_ERR( LOG_ALWAYS, verbosity, "Error: cannot setup source params.\n" );
             return -1;
         }
 
