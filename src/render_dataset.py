@@ -95,6 +95,7 @@ def readResourceListFull(recipe_yaml, resource, set_idx, task_idx):
                 tmp_list = readResourceList(recipe_yaml, resource, set_idx, task_idx, res_idx)
                 for item in tmp_list:
                     resource_list.append(item)
+
     return resource_list
 
 
@@ -107,11 +108,18 @@ def readResourceList(recipe_yaml, resource, set_idx, task_idx, res_idx):
             logger.error("listed resource has no subtype")
         else:
             if "all" == recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["info"][0]:
-                tmp = os.path.join(
-                    _RESOURCES_DIR,
-                    resource,
-                    recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
-                )
+                if resource == "postproc" or resource == "preproc":
+                    tmp = os.path.join(
+                        _RESOURCES_DIR,
+                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["type"],
+                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
+                    )
+                else:
+                    tmp = os.path.join(
+                        _RESOURCES_DIR,
+                        resource,
+                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
+                    )
                 info_list = glob.glob(os.path.abspath(tmp) + "/info/*.yaml")
 
                 for info in info_list:
@@ -128,11 +136,18 @@ def readResourceList(recipe_yaml, resource, set_idx, task_idx, res_idx):
                         # handle wildcard
                         if ("!" == info[0]) or ("*" in info) or ("?" in info):
                             # first build the whole list, then prune
-                            tmp = os.path.join(
-                                _RESOURCES_DIR,
-                                resource,
-                                recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
-                            )
+                            if resource == "postproc" or resource == "preproc":
+                                tmp = os.path.join(
+                                    _RESOURCES_DIR,
+                                    recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["type"],
+                                    recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
+                                )
+                            else:
+                                tmp = os.path.join(
+                                    _RESOURCES_DIR,
+                                    resource,
+                                    recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
+                                )
                             item_list = glob.glob(os.path.abspath(tmp) + "/info/*.yaml")
 
                             rule = info
@@ -172,33 +187,62 @@ def readResourceList(recipe_yaml, resource, set_idx, task_idx, res_idx):
                         else:
                             filename = ""
                             if info.endswith(".yaml"):
-                                filename = os.path.join(
-                                    _RESOURCES_DIR,
-                                    str(resource),
-                                    recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
-                                    "info",
-                                    info,
-                                )
+                                if resource == "postproc" or resource == "preproc":
+                                    filename = os.path.join(
+                                        _RESOURCES_DIR,
+                                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["type"],
+                                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
+                                        "info",
+                                        info,
+                                    )
+                                else:
+                                    filename = os.path.join(
+                                        _RESOURCES_DIR,
+                                        str(resource),
+                                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
+                                        "info",
+                                        info,
+                                    )
                             else:
-                                filename = os.path.join(
-                                    _RESOURCES_DIR,
-                                    str(resource),
-                                    recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
-                                    "info",
-                                    info + ".yaml",
-                                )
+                                if resource == "postproc" or resource == "preproc":
+                                    filename = os.path.join(
+                                        _RESOURCES_DIR,
+                                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["type"],
+                                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
+                                        "info",
+                                        info + ".yaml",
+                                    )
+                                else:
+                                    filename = os.path.join(
+                                        _RESOURCES_DIR,
+                                        str(resource),
+                                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
+                                        "info",
+                                        info + ".yaml",
+                                    )
 
                             # add resource only if info file is available
                             if os.path.isfile(filename):
-                                # resource_list.append(
-                                #     [recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"], info]
-                                # )
-                                resource_list.append(
-                                    [
-                                        recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["subtype"],
-                                        filename,
-                                    ]
-                                )
+                                if resource == "preproc" or resource == "postproc":
+                                    resource_list.append(
+                                        [
+                                            recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]["type"]
+                                            + "/"
+                                            + recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx][
+                                                "subtype"
+                                            ],
+                                            filename,
+                                        ]
+                                    )
+                                else:
+                                    resource_list.append(
+                                        [
+                                            recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx][
+                                                "subtype"
+                                            ],
+                                            filename,
+                                        ]
+                                    )
                 else:
                     logger.error("listed source is empty.")
 
@@ -278,6 +322,12 @@ def buildDataSetRecipe(data=None):
                     # compute max iteration on given rooms
                     rooms_iteration_count = len(data["rooms_list"])
 
+                    # compute max iteration on given rooms
+                    preprocessing_iteration_count = len(data["preproc_list"])
+
+                    # compute max iteration on given rooms
+                    postprocessing_iteration_count = len(data["postproc_list"])
+
                     scene_iteration_count = (
                         max(1, voices_iteration_count) * max(1, heads_iteration_count) * max(1, rooms_iteration_count)
                     )
@@ -319,6 +369,8 @@ def buildDataSetRecipe(data=None):
 
                         # customize heads
                         if heads_iteration_count > 0:
+                            if heads_iteration_count > 1:
+                                logger.error("there must be only one listener/head for each scene")
                             tmp_idx = it_idx % heads_iteration_count
                             custom_scene_yaml["setup"]["listeners_count"] = 1
                             # set the subtype
@@ -332,6 +384,8 @@ def buildDataSetRecipe(data=None):
 
                         # customize rooms
                         if rooms_iteration_count > 0:
+                            if roomss_iteration_count > 1:
+                                logger.error("there must be only one room (max) for each scene")
                             tmp_idx = it_idx % rooms_iteration_count
                             custom_scene_yaml["setup"]["rooms_count"] = 1
                             # set the subtype
@@ -342,6 +396,22 @@ def buildDataSetRecipe(data=None):
                             custom_scene_yaml["setup"]["rooms"][0]["info"] = os.path.split(
                                 data["rooms_list"][tmp_idx][1]
                             )[1][0:-5]
+
+                        # customize preprocessing
+                        if preprocessing_iteration_count > 0:
+                            logger.error("pre-processing not yet implemented")
+
+                        # customize postprocessing
+                        if postprocessing_iteration_count > 0:
+                            if postprocessing_iteration_count > 1:
+                                logger.error("there must be only one listener/head for each scene")
+                            custom_scene_yaml["postproc"] = {}
+                            custom_scene_yaml["postproc"][0] = {}
+                            custom_scene_yaml["postproc"][0]["type"] = data["postproc_list"][0][0].split("/")[0]
+                            custom_scene_yaml["postproc"][0]["subtype"] = data["postproc_list"][0][0].split("/")[1]
+                            custom_scene_yaml["postproc"][0]["info"] = str(
+                                data["postproc_list"][0][1].split("/")[-1]
+                            ).split(".")[0]
 
                         #
                         # save custom scene.yaml
@@ -517,6 +587,14 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
 
                         # print("voices: " + str(voices_list))
 
+                        # loop for task pre-processing
+                        preproc_list = []
+                        preproc_list = readResourceListFull(recipe_yaml, "preproc", dsidx, tidx)
+
+                        # loop for task post-processing
+                        postproc_list = []
+                        postproc_list = readResourceListFull(recipe_yaml, "postproc", dsidx, tidx)
+
                         # dataset format info
                         format_dict = {}
                         format_dict = recipe_yaml["output"]["audio"]["format"]
@@ -531,6 +609,9 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
                         data["rooms_list"] = rooms_list
                         data["voices_list"] = voices_list
                         data["formats_dict"] = format_dict
+                        data["preproc_list"] = preproc_list
+                        data["postproc_list"] = postproc_list
+
                         workers_data.append(data)
 
     # we got all the work listed, now spawn multi-process to create all the scene files
