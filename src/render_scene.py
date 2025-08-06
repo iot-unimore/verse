@@ -15,6 +15,7 @@ import glob
 
 import json
 import subprocess
+from subprocess import check_output
 
 from multiprocessing import Pool
 from setproctitle import setproctitle
@@ -976,6 +977,34 @@ def executeSpatializeTasks(cli_params, tasks={}):
             if not (os.path.isfile(cmd[4])):
                 err = -1
                 logger.error("could not render audio file: {}".format(cmd[4]))
+
+    #
+    # post-processing
+    #
+    if err == 0:
+        scene_yaml = readYamlFile(cli_params["scene_file"])
+        if ("postproc") in scene_yaml:
+            logger.info("post-processingg on: {}".format(str(cmd[4])))
+            try:
+                tmp_yaml = scene_yaml["postproc"][0]
+                postproc_yaml_file = os.path.join(
+                    _RESOURCES_DIR, tmp_yaml["type"], tmp_yaml["subtype"], "info", tmp_yaml["info"] + ".yaml"
+                )
+                postproc_yaml = readYamlFile(postproc_yaml_file)
+            except:
+                logger.error("could not read post-processing yaml: {}".format(postproc_yaml_file))
+
+            try:
+                if ("script_exe") in postproc_yaml:
+                    postproc_cmd = os.path.join(
+                        _RESOURCES_DIR, tmp_yaml["type"], tmp_yaml["subtype"], postproc_yaml["script_exe"]
+                    )
+                    # "-p" option is for parameter file (tbd)
+                    os_cmd = [str(postproc_cmd), "-i", str(cmd[4]), "-p", "none"]
+                    result = check_output(os_cmd)
+                    print("RESULT: {}".format(str(result)))
+            except:
+                logger.error("could not execute post-processing: {}".format(os_cmd))
 
     if err == 0:
         #
