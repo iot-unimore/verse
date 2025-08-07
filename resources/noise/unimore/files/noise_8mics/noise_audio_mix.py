@@ -35,6 +35,7 @@ _CTRL_EXIT_SIGNAL = 0  # driven by CTRL-C, 0 to exit threads
 
 _SCRIPT_NAME = os.path.basename(__file__)
 _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+_BASE_DIR = os.path.join(_ROOT_DIR, "../../")
 _RESOURCES_DIR = os.path.abspath(os.path.dirname(__file__)) + "../../../../../resources"
 _OUTPUT_REF_DIR = "/ref/"
 _OUTPUT_TMP_DIR = "/tmp/"
@@ -265,6 +266,7 @@ if __name__ == "__main__":
     #
     # load info files
     #
+    err = 0
 
     #
     # load params
@@ -333,7 +335,7 @@ if __name__ == "__main__":
     #
     tgt_samplerate = 0
     try:
-        tgt_samplerate = scene_yaml["setup"]["format"]["samplerate"]
+        tgt_samplerate = int(scene_yaml["setup"]["format"]["samplerate"])
     except:
         err = -1
         logger.error("{} invalid scene file syntax".format(_SCRIPT_NAME))
@@ -345,7 +347,7 @@ if __name__ == "__main__":
             err = -1
             logger.error("{} more than one stream in file {}".format(_SCRIPT_NAME, cli_params["input_file"]))
             exit(1)
-        src_samplerate = src_media_info["streams"][0]["sample_rate"]
+        src_samplerate = int(src_media_info["streams"][0]["sample_rate"])
     except:
         err = -1
         logger.error("{} invalid input file".format(_SCRIPT_NAME))
@@ -358,6 +360,31 @@ if __name__ == "__main__":
             )
         )
         logger.info("{} rendering by matching input_file samplerate {}".format(_SCRIPT_NAME, src_samplerate))
+        tgt_samplerate = src_samplerate
 
-    print("PIPPO: {}".format(str(cli_params["input_file"])))
-    print("PIPPA: {}".format(str(cli_params["param_file"])))
+    #
+    # search for samplerate match
+    #
+    idx_match = 0
+    try:
+        for idx in setup_yaml["files"]:
+            if tgt_samplerate == setup_yaml["files"][idx]["audio"]["format"]["samplerate"]:
+                logger.info("{} found matching samplerate {} for idx {}".format(_SCRIPT_NAME, tgt_samplerate, idx))
+                idx_match = idx
+    except:
+        err = -1
+        logger.error("{} cannot find matching noise for {}".format(_SCRIPT_NAME, cli_params["input_file"]))
+        exit(1)
+
+    #
+    # Audio Noise Mixing
+    #
+    if err == 0:
+        print("======================================================================================")
+
+        # print("PIPPA: {}".format(str(cli_params["param_file"])))
+
+        print("idx: {}".format(idx_match))
+        print("input: {}".format(str(cli_params["input_file"])))
+        print("noise: {}".format(os.path.join(_BASE_DIR, setup_yaml["files"][idx_match][tgt_name]["file"])))
+        print("======================================================================================")
