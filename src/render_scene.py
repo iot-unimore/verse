@@ -42,6 +42,7 @@ _MIN_CPU_COUNT = 1  # we need at least one CPU for each compute process
 _MIN_MEM_GB = 1  # min amount of memory for each compute process
 _MAX_MEM_GB = 1  # max amount of memory for each compute process
 
+
 #
 # EXECUTABLES / EXTERNAL CMDs
 #
@@ -391,6 +392,89 @@ def executeSoundSpatializerCmd(cmd=""):
     if not (os.path.isfile(cmd[4])):
         err = -1
         logger.error("spatializer, missing audio output file: {}".format(cmd[4]))
+
+    return err
+
+
+def writePostProcessingCFG(cfg_file=None, cli=None, task_yaml={}, postproc_yaml={}):
+    """
+    write a config file (.yaml) for postprocessing
+
+    Parameters
+    ----------
+    t.b.d
+
+    Returns
+    -------
+    t.b.d
+    """
+    err = -1
+
+    cfg = {}
+
+    if len(task_yaml) > 0:
+        cfg = {}
+        cfg["syntax"] = {}
+        cfg["syntax"]["name"] = "postproc_config"
+        cfg["syntax"]["version"] = {"major": 0, "minor": 2, "revision": 0}
+
+    #     #
+    #     # audio setup
+    #     #
+    #     cfg["setup"] = {}
+
+    #     cfg["setup"]["head"] = {}
+    #     cfg["setup"]["head"]["hrtf_sofa"] = cfg_yaml["head"]
+
+    #     #
+    #     # room
+    #     #
+    #     cfg["setup"]["room"] = {}
+    #     cfg["setup"]["room"]["brir_sofa"] = cfg_yaml["room"]
+
+    #     #
+    #     # sources
+    #     #
+    #     cfg["setup"]["sources_count"] = len(cfg_yaml["sources"])
+    #     cfg["setup"]["sources"] = {}
+    #     for sidx in cfg_yaml["sources"]:
+    #         cfg["setup"]["sources"][sidx] = {}
+    #         cfg["setup"]["sources"][sidx]["file_wav"] = cfg_yaml["sources"][sidx]["file"]
+    #         cfg["setup"]["sources"][sidx]["coord"] = cfg_yaml["sources"][sidx]["coord"]
+    #         cfg["setup"]["sources"][sidx]["path_csv"] = cfg_yaml["sources"][sidx]["path_csv"]
+    #         # 3dti extra parameters
+
+    if len(cfg) > 0:
+        # logger.info(yaml.dump(cfg))
+        logger.info(cfg)
+
+        with open(cfg_file, "w") as file:
+            yaml.dump(cfg, file)
+
+        if os.path.isfile(cfg_file):
+            err = 0
+        else:
+            err = -1
+            logger.error("cannot write post-processing config file {}".format(cfg_file))
+
+    return err
+
+
+def executePostProcessingCmd(cmd=""):
+    err = 0
+    logger.info("post-processing, executing:" + str(cmd))
+
+    try:
+        result = check_output(cmd)
+    except:
+        logger.error("post-processing, could not run cmd: {}".format(cmd))
+        err = -1
+
+    if not (os.path.isfile(cmd[4])):
+        err = -1
+        logger.error("post-processing, missing audio output file: {}".format(cmd[4]))
+
+    print(result)
 
     return err
 
@@ -982,29 +1066,86 @@ def executeSpatializeTasks(cli_params, tasks={}):
     # post-processing
     #
     if err == 0:
-        scene_yaml = readYamlFile(cli_params["scene_file"])
-        if ("postproc") in scene_yaml:
-            logger.info("post-processingg on: {}".format(str(cmd[4])))
-            try:
-                tmp_yaml = scene_yaml["postproc"][0]
-                postproc_yaml_file = os.path.join(
-                    _RESOURCES_DIR, tmp_yaml["type"], tmp_yaml["subtype"], "info", tmp_yaml["info"] + ".yaml"
-                )
-                postproc_yaml = readYamlFile(postproc_yaml_file)
-            except:
-                logger.error("could not read post-processing yaml: {}".format(postproc_yaml_file))
+        #
+        # create pos-procesing config files
+        #
+        postproc_cmds = []
 
-            try:
-                if ("script_exe") in postproc_yaml:
-                    postproc_cmd = os.path.join(
-                        _RESOURCES_DIR, tmp_yaml["type"], tmp_yaml["subtype"], postproc_yaml["script_exe"]
+        scene_yaml = readYamlFile(cli_params["scene_file"])
+
+        postproc_yaml = {}
+
+        if ("postproc") in scene_yaml:
+            err = 0
+            idx = 0
+            for task in tasks:
+                tmp_filename = task["scene"]["name"] + "_postproc_" + task["name"] + "_" + f"{idx:03d}"
+                cfg_filename = os.path.abspath(os.path.join(_OUTPUT_TMP_DIR, tmp_filename) + ".yaml")
+                wav_filename = os.path.abspath(os.path.join(_OUTPUT_REF_DIR + "/../", tmp_filename) + ".wav")
+
+                logger.info("config post-processing on: {}".format(wav_filename))
+                try:
+                    tmp_yaml = scene_yaml["postproc"][0]
+                    postproc_yaml_file = os.path.join(
+                        _RESOURCES_DIR, tmp_yaml["type"], tmp_yaml["subtype"], "info", tmp_yaml["info"] + ".yaml"
                     )
-                    # "-p" option is for parameter file (tbd)
-                    os_cmd = [str(postproc_cmd), "-i", str(cmd[4]), "-p", "none"]
-                    result = check_output(os_cmd)
-                    print("RESULT: {}".format(str(result)))
-            except:
-                logger.error("could not execute post-processing: {}".format(os_cmd))
+                    postproc_yaml = readYamlFile(postproc_yaml_file)
+                except:
+                    err = -1
+                    logger.error("could not read post-processing yaml: {}".format(postproc_yaml_file))
+
+                if err == 0:
+                    try:
+                        if ("script_exe") in postproc_yaml:
+                            script_exe_cmd = os.path.join(
+                                _RESOURCES_DIR, tmp_yaml["type"], tmp_yaml["subtype"], postproc_yaml["script_exe"]
+                            )
+                            postproc_cmd = [str(script_exe_cmd), "-i", wav_filename, "-p", cfg_filename]
+                        else:
+                            err = -1
+                            logger.error("missing postprocessing script_exe file")
+                    except:
+                        logger.error("could not configure post-processing: {}".format(os_cmd))
+
+                if err == 0:
+                    if 0 != writePostProcessingCFG(
+                        cfg_file=cfg_filename, cli=cli_params, task_yaml=task, postproc_yaml=postproc_yaml_file
+                    ):
+                        err = -1
+                    else:
+                        postproc_cmds.append(postproc_cmd)
+
+                idx += 1
+
+            # execute postproc
+            if err == 0:
+                mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")  # e.g. 4015976448
+                mem_gib = mem_bytes / (1024.0**3)  # e.g. 3.74
+
+                cpu_count = min([(os.cpu_count() - 2), cli_params["cpu_process"]])
+                cpu_count = max([_MIN_CPU_COUNT, cpu_count])
+
+                max_pool_size = min(cpu_count, int(mem_gib / postproc_yaml["resources"]["min_mem_gb"]))
+
+                logger.info("PostPocessing Pool size: {}".format(max_pool_size))
+                cpu_pool = Pool(max_pool_size)
+
+                #
+                # run postprocessing script
+                logger.info("-" * 80)
+                logger.info("launch post-processing (multi-process)")
+                logger.info("-" * 80)
+
+                result = cpu_pool.map(executePostProcessingCmd, postproc_cmds)
+
+                cpu_pool.close()
+                cpu_pool.join()
+
+                # check results
+                for cmd in postproc_cmds:
+                    if not (os.path.isfile(cmd[4])):
+                        err = -1
+                        logger.error("could not post-prcess audio file: {}".format(cmd[4]))
 
     if err == 0:
         #
