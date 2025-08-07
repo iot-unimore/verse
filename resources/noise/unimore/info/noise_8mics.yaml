@@ -1,0 +1,62 @@
+---
+# analog audio electrical noise recordings
+syntax:
+  name: noise_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+name: noise_8mics
+
+description: wilson_prj background noise for analog mics
+
+script_exe: files/noise_8mics/noise_audio_mix.py
+
+script_func: noise_mix
+
+samplerates: [ 96000, 48000 ]
+
+names: ["binaural", "array_six_front", "array_six_mid", "array_six_rear" ]
+
+files_idx: 0
+
+# system resources needed to run the task
+resources:
+  min_mem_gb: 1
+  max_mem_gb: 1
+
+#
+# ordered as per samplerates array
+files:
+  0:
+    audio:
+      format:
+        type: wav
+        subtype: pcm_s24le
+        samplerate: 96000
+    binaural:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_96000_binaural.wav
+    array_six_front:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_96000_array_six_front.wav
+    array_six_middle:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_96000_array_six_middle.wav
+    array_six_rear:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_96000_array_six_rear.wav
+  1:
+    audio:
+      format:
+        type: wav
+        subtype: pcm_s24le
+        samplerate: 48000
+    binaural:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_48000_binaural.wav
+    array_six_front:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_48000_array_six_front.wav
+    array_six_middle:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_48000_array_six_middle.wav
+    array_six_rear:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_48000_array_six_rear.wav
+
+#EOF
+...

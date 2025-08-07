@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: noise collection
+
+type: dataset
+
+content: audio
+
+description: a test collection of analog microphones noise
+
+size_bytes:
+
+source: none
+
+source_original: none
+
+fetch_script: fetch_files.sh
+
+copyright: public_domain
+
+license: https://en.wikipedia.org/wiki/Public_domain
+
+details: https://wiki.librivox.org/index.php?title=Copyright_and_Public_Domain
+
+#EOF
+...
