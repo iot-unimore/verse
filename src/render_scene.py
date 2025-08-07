@@ -396,7 +396,7 @@ def executeSoundSpatializerCmd(cmd=""):
     return err
 
 
-def writePostProcessingCFG(cfg_file=None, cli=None, task_yaml={}, postproc_yaml={}):
+def writePostProcessingCFG(cfg_file=None, wav_file=None, cli=[], task_yaml={}, postproc_yaml={}):
     """
     write a config file (.yaml) for postprocessing
 
@@ -413,38 +413,34 @@ def writePostProcessingCFG(cfg_file=None, cli=None, task_yaml={}, postproc_yaml=
     cfg = {}
 
     if len(task_yaml) > 0:
-        cfg = {}
-        cfg["syntax"] = {}
-        cfg["syntax"]["name"] = "postproc_config"
-        cfg["syntax"]["version"] = {"major": 0, "minor": 2, "revision": 0}
+        try:
+            cfg = {}
+            cfg["syntax"] = {}
+            cfg["syntax"]["name"] = "postproc_config"
+            cfg["syntax"]["version"] = {"major": 0, "minor": 2, "revision": 0}
 
-    #     #
-    #     # audio setup
-    #     #
-    #     cfg["setup"] = {}
+            cfg["name"] = task_yaml["name"]
 
-    #     cfg["setup"]["head"] = {}
-    #     cfg["setup"]["head"]["hrtf_sofa"] = cfg_yaml["head"]
+            cfg["scene"] = {}
+            cfg["scene"]["file"] = cli["scene_file"]
 
-    #     #
-    #     # room
-    #     #
-    #     cfg["setup"]["room"] = {}
-    #     cfg["setup"]["room"]["brir_sofa"] = cfg_yaml["room"]
+            # in-place post-processing
+            cfg["input"] = {}
+            cfg["input"]["file"] = wav_file
 
-    #     #
-    #     # sources
-    #     #
-    #     cfg["setup"]["sources_count"] = len(cfg_yaml["sources"])
-    #     cfg["setup"]["sources"] = {}
-    #     for sidx in cfg_yaml["sources"]:
-    #         cfg["setup"]["sources"][sidx] = {}
-    #         cfg["setup"]["sources"][sidx]["file_wav"] = cfg_yaml["sources"][sidx]["file"]
-    #         cfg["setup"]["sources"][sidx]["coord"] = cfg_yaml["sources"][sidx]["coord"]
-    #         cfg["setup"]["sources"][sidx]["path_csv"] = cfg_yaml["sources"][sidx]["path_csv"]
-    #         # 3dti extra parameters
+            cfg["output"] = {}
+            cfg["output"]["file"] = wav_file
 
-    if len(cfg) > 0:
+            cfg["setup"] = postproc_yaml
+
+            cfg["task"] = task_yaml
+            err = 0
+
+        except:
+            logger.error("invalid post-processing configuration. cannot write cfg file.")
+            err = -1
+
+    if (err == 0) and (len(cfg) > 0):
         # logger.info(yaml.dump(cfg))
         logger.info(cfg)
 
@@ -466,6 +462,8 @@ def executePostProcessingCmd(cmd=""):
 
     try:
         result = check_output(cmd)
+        print(result)
+
     except:
         logger.error("post-processing, could not run cmd: {}".format(cmd))
         err = -1
@@ -473,8 +471,6 @@ def executePostProcessingCmd(cmd=""):
     if not (os.path.isfile(cmd[4])):
         err = -1
         logger.error("post-processing, missing audio output file: {}".format(cmd[4]))
-
-    print(result)
 
     return err
 
@@ -1109,7 +1105,11 @@ def executeSpatializeTasks(cli_params, tasks={}):
 
                 if err == 0:
                     if 0 != writePostProcessingCFG(
-                        cfg_file=cfg_filename, cli=cli_params, task_yaml=task, postproc_yaml=postproc_yaml_file
+                        cfg_file=cfg_filename,
+                        wav_file=wav_filename,
+                        cli=cli_params,
+                        task_yaml=task,
+                        postproc_yaml=postproc_yaml_file,
                     ):
                         err = -1
                     else:
