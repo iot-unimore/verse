@@ -431,7 +431,8 @@ def writePostProcessingCFG(cfg_file=None, wav_file=None, cli=[], task_yaml={}, p
             cfg["output"] = {}
             cfg["output"]["file"] = wav_file
 
-            cfg["setup"] = postproc_yaml
+            cfg["setup"] = {}
+            cfg["setup"]["file"] = postproc_yaml
 
             cfg["task"] = task_yaml
             err = 0

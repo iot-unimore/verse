@@ -17,7 +17,7 @@ script_func: noise_mix
 
 samplerates: [ 96000, 48000 ]
 
-names: ["binaural", "array_six_front", "array_six_mid", "array_six_rear" ]
+names: ["binaural", "array_six_front", "array_six_middle", "array_six_rear" ]
 
 files_idx: 0
 

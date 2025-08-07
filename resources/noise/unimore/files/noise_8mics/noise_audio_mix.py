@@ -114,6 +114,8 @@ def getMediaInfo(filename, print_result=True):
 
         print("\n")
 
+    return result
+
 
 #
 ###############################################################################
@@ -219,6 +221,14 @@ if __name__ == "__main__":
             logger.error("{}: input_file {} does not exists.".format(_SCRIPT_NAME, cli_params["input_file"]))
             exit(1)
 
+    if cli_params["param_file"] == None:
+        logger.error("{}: missing parameter file.".format(_SCRIPT_NAME))
+        exit(1)
+    else:
+        if not (os.path.isfile(cli_params["param_file"])):
+            logger.error("{}: input_file {} does not exists.".format(_SCRIPT_NAME, cli_params["param_file"]))
+            exit(1)
+
     if cli_params["output_folder"] == None:
         # logger.error("{}: output_folder is needed.".format(_SCRIPT_NAME))
         # exit(1)
@@ -253,8 +263,101 @@ if __name__ == "__main__":
             exit(1)
 
     #
-    # render
+    # load info files
     #
+
+    #
+    # load params
+    #
+    params_yaml = {}
+    try:
+        params_yaml = readYamlFile(cli_params["param_file"])
+    except:
+        err = -1
+        logger.error("could not read post-processing yaml: {}".format(cli_params["param_file"]))
+        exit(1)
+
+    #
+    # load scene yaml
+    #
+    scene_yaml = {}
+    try:
+        scene_yaml = readYamlFile(params_yaml["scene"]["file"])
+    except:
+        err = -1
+        logger.error("could not read post-processing yaml: {}".format(params_yaml["scene"]["file"]))
+        exit(1)
+
+    #
+    # load noise setup
+    #
+    setup_yaml = {}
+    try:
+        setup_yaml = readYamlFile(params_yaml["setup"]["file"])
+    except:
+        err = -1
+        logger.error("could not read post-processing yaml: {}".format(params_yaml["setup"]["file"]))
+        exit(1)
+
+    # print("---------------------------")
+    # print(params_yaml)
+    # print("---------------------------")
+    # print(scene_yaml)
+    # print("---------------------------")
+    # print(setup_yaml)
+    # print("---------------------------")
+
+    #
+    # check: do we have he correct type of noise
+    #
+    tgt_name = "None"
+    try:
+        tgt_name = params_yaml["task"]["name"]
+
+        # if we do not have a match, warning and pick one
+        if not (tgt_name in setup_yaml["names"]):
+            logger.error(
+                "{} not a noise match for {}, selecting {}".format(_SCRIPT_NAME, tgt_name, setup_yaml["names"][0])
+            )
+            tgt_name = setup_yaml["names"][0]
+        else:
+            logger.info("{} noise name match found: {}".format(_SCRIPT_NAME, tgt_name))
+
+    except:
+        err = -1
+        logger.error("{} invalid task name".format(_SCRIPT_NAME))
+        exit(1)
+
+    #
+    # check: do we have he correct samplerate
+    #
+    tgt_samplerate = 0
+    try:
+        tgt_samplerate = scene_yaml["setup"]["format"]["samplerate"]
+    except:
+        err = -1
+        logger.error("{} invalid scene file syntax".format(_SCRIPT_NAME))
+        exit(1)
+
+    try:
+        src_media_info = getMediaInfo(cli_params["input_file"], print_result=False)
+        if src_media_info["format"]["nb_streams"] != 1:
+            err = -1
+            logger.error("{} more than one stream in file {}".format(_SCRIPT_NAME, cli_params["input_file"]))
+            exit(1)
+        src_samplerate = src_media_info["streams"][0]["sample_rate"]
+    except:
+        err = -1
+        logger.error("{} invalid input file".format(_SCRIPT_NAME))
+        exit(1)
+
+    if tgt_samplerate != src_samplerate:
+        logger.error(
+            "{} rendering scene_samplerate {} != input_file samplerate {}".format(
+                _SCRIPT_NAME, tgt_samplerate, src_samplerate
+            )
+        )
+        logger.info("{} rendering by matching input_file samplerate {}".format(_SCRIPT_NAME, src_samplerate))
 
     print("PIPPO: {}".format(str(cli_params["input_file"])))
     print("PIPPA: {}".format(str(cli_params["param_file"])))
