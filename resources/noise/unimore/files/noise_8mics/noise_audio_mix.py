@@ -118,6 +118,26 @@ def getMediaInfo(filename, print_result=True):
     return result
 
 
+###############################################################################
+# DSP
+###############################################################################
+
+
+def audioMixMono(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
+    err = 0
+    return err
+
+
+def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
+    err = 0
+    return err
+
+
+def audioMix(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
+    err = 0
+    return err
+
+
 #
 ###############################################################################
 # MAIN
@@ -334,6 +354,8 @@ if __name__ == "__main__":
     # check: do we have he correct samplerate
     #
     tgt_samplerate = 0
+    src_samplerate = 0
+    src_channel_count = 0
     try:
         tgt_samplerate = int(scene_yaml["setup"]["format"]["samplerate"])
     except:
@@ -348,6 +370,7 @@ if __name__ == "__main__":
             logger.error("{} more than one stream in file {}".format(_SCRIPT_NAME, cli_params["input_file"]))
             exit(1)
         src_samplerate = int(src_media_info["streams"][0]["sample_rate"])
+        src_channel_count = int(src_media_info["streams"][0]["channels"])
     except:
         err = -1
         logger.error("{} invalid input file".format(_SCRIPT_NAME))
@@ -355,7 +378,7 @@ if __name__ == "__main__":
 
     if tgt_samplerate != src_samplerate:
         logger.error(
-            "{} rendering scene_samplerate {} != input_file samplerate {}".format(
+            "{} rendering scene_samplerate {} != input_file samplerate {}, resampling...".format(
                 _SCRIPT_NAME, tgt_samplerate, src_samplerate
             )
         )
@@ -380,11 +403,24 @@ if __name__ == "__main__":
     # Audio Noise Mixing
     #
     if err == 0:
-        print("======================================================================================")
+        try:
+            rv = audioMix(
+                str(cli_params["input_file"]),
+                os.path.join(_BASE_DIR, setup_yaml["files"][idx_match][tgt_name]["file"]),
+                _OUTPUT_TMP_DIR,
+                tgt_samplerate,
+            )
+            if rv != 0:
+                logger.error("{} cannot perform noise audio mix {}".format(_SCRIPT_NAME, cli_params["input_file"]))
+                exit(1)
+            else:
+                logger.info(
+                    "Noise PostProcessing done: IN: {}, NOISE: {}".format(
+                        str(cli_params["input_file"]),
+                        os.path.join(_BASE_DIR, setup_yaml["files"][idx_match][tgt_name]["file"]),
+                    ),
+                )
 
-        # print("PIPPA: {}".format(str(cli_params["param_file"])))
-
-        print("idx: {}".format(idx_match))
-        print("input: {}".format(str(cli_params["input_file"])))
-        print("noise: {}".format(os.path.join(_BASE_DIR, setup_yaml["files"][idx_match][tgt_name]["file"])))
-        print("======================================================================================")
+        except:
+            logger.error("{} error while performing noise audio mix {}".format(_SCRIPT_NAME, cli_params["input_file"]))
+            exit(1)
