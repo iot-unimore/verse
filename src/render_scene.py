@@ -463,8 +463,6 @@ def executePostProcessingCmd(cmd=""):
 
     try:
         result = check_output(cmd)
-        print(result)
-
     except:
         logger.error("post-processing, could not run cmd: {}".format(cmd))
         err = -1
