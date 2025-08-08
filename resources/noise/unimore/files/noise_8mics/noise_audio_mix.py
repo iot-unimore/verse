@@ -2,6 +2,7 @@
 """apply background noise to input file"""
 
 import os
+import shutil
 import sys
 import yaml
 
@@ -140,9 +141,6 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
     src_info = getMediaInfo(src_file, print_result=False)
     noise_info = getMediaInfo(noise_file, print_result=False)
 
-    print("\n\nSTEREO MIX {}\n\n".format(src_file))
-    print(noise_info["streams"][0]["duration"])
-
     src_duration = float(src_info["streams"][0]["duration"])
     noise_duration = float(noise_info["streams"][0]["duration"])
 
@@ -170,6 +168,8 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
         str(noise_file),
         "-ss",
         str(noise_cut),
+        "-t",
+        str(src_duration),
         str(noise_tmp_filename),
         " > /dev/null 2>&1",
     ]
@@ -188,6 +188,8 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
     #
     # ffmpeg -i input0.mp3 -i input1.mp3 -filter_complex amix=inputs=2:duration=longest output.mp3
 
+    out_tmp_filename = os.path.join(tmp_folder, os.path.basename(src_file))
+
     cmd = [
         _FFMPEG_EXE,
         "-y",
@@ -200,7 +202,7 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
         str(noise_tmp_filename),
         "-filter_complex",
         "amix=inputs=2:duration=longest",
-        str(src_file),
+        str(out_tmp_filename),
         " > /dev/null 2>&1",
     ]
 
@@ -211,6 +213,31 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
         os.system(" ".join(cmd))
     except:
         logger.error("{} cannot mix: error on audio+noise downmix".format(_SCRIPT_NAME))
+        return -1
+
+    # Sanity checks on results
+    if not (os.path.isfile(out_tmp_filename)):
+        logger.error("{} cannot mix: error on audio+noise downmix".format(_SCRIPT_NAME))
+        return -1
+
+    noise_info = getMediaInfo(out_tmp_filename, print_result=False)
+
+    try:
+        noise_duration = float(noise_info["streams"][0]["duration"])
+        if noise_duration != src_duration:
+            logger.error(
+                "{} invalid duration, src_duration={} out_duration={}".format(
+                    _SCRIPT_NAME, src_duration, noise_duration
+                )
+            )
+            return -1
+    except:
+        return -1
+
+    # everything looks good, swap files
+    try:
+        shutil.move(out_tmp_filename, src_file)
+    except:
         return -1
 
     return err
@@ -466,14 +493,6 @@ if __name__ == "__main__":
         err = -1
         logger.error("could not read post-processing yaml: {}".format(params_yaml["setup"]["file"]))
         exit(1)
-
-    # print("---------------------------")
-    # print(params_yaml)
-    # print("---------------------------")
-    # print(scene_yaml)
-    # print("---------------------------")
-    # print(setup_yaml)
-    # print("---------------------------")
 
     #
     # check: do we have he correct type of noise
