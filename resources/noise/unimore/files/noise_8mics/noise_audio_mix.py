@@ -16,6 +16,7 @@ import glob
 
 import json
 import subprocess
+import random
 
 from multiprocessing import Pool
 from setproctitle import setproctitle
@@ -125,16 +126,161 @@ def getMediaInfo(filename, print_result=True):
 
 def audioMixMono(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
     err = 0
+
+    print("MONO MIX {}".format(src_chnum))
+    err = -1
+    logger("noise MONO mixing not yet implemented (tbd)")
+
     return err
 
 
 def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
     err = 0
+
+    src_info = getMediaInfo(src_file, print_result=False)
+    noise_info = getMediaInfo(noise_file, print_result=False)
+
+    print("\n\nSTEREO MIX {}\n\n".format(src_file))
+    print(noise_info["streams"][0]["duration"])
+
+    src_duration = float(src_info["streams"][0]["duration"])
+    noise_duration = float(noise_info["streams"][0]["duration"])
+
+    if noise_duration < src_duration:
+        logger.error("{} cannot mix: noise duration is less than input file".format(_SCRIPT_NAME))
+        return -1
+
+    # shuffe noise if possible
+    noise_cut = 0
+    if noise_duration > src_duration:
+        noise_cut = round(random.uniform(0, (noise_duration - (src_duration * 1.05))), 2)
+
+    #
+    # generate noise chunk
+    #
+    noise_tmp_filename = os.path.join(tmp_folder, os.path.basename(noise_file))
+
+    cmd = [
+        _FFMPEG_EXE,
+        "-y",
+        "-loglevel",
+        "error",
+        "-stats",
+        "-i",
+        str(noise_file),
+        "-ss",
+        str(noise_cut),
+        str(noise_tmp_filename),
+        " > /dev/null 2>&1",
+    ]
+
+    logger.info("Running ffmpeg command:")
+    logger.info(" ".join(cmd))
+
+    try:
+        os.system(" ".join(cmd))
+    except:
+        logger.error("{} cannot mix: error on noise file cut".format(_SCRIPT_NAME))
+        return -1
+
+    #
+    # audio mix
+    #
+    # ffmpeg -i input0.mp3 -i input1.mp3 -filter_complex amix=inputs=2:duration=longest output.mp3
+
+    cmd = [
+        _FFMPEG_EXE,
+        "-y",
+        "-loglevel",
+        "error",
+        "-stats",
+        "-i",
+        str(src_file),
+        "-i",
+        str(noise_tmp_filename),
+        "-filter_complex",
+        "amix=inputs=2:duration=longest",
+        str(src_file),
+        " > /dev/null 2>&1",
+    ]
+
+    logger.info("Running ffmpeg command:")
+    logger.info(" ".join(cmd))
+
+    try:
+        os.system(" ".join(cmd))
+    except:
+        logger.error("{} cannot mix: error on audio+noise downmix".format(_SCRIPT_NAME))
+        return -1
+
     return err
 
 
 def audioMix(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
     err = 0
+
+    if not (os.path.isdir(tmp_folder)):
+        return -1
+
+    try:
+        src_info = getMediaInfo(src_file, print_result=False)
+        noise_info = getMediaInfo(noise_file, print_result=False)
+    except:
+        return -1
+
+    if samplerate < 8000:
+        logger.error("{} invalid samplerate (too low)".format(_SCRIPT_NAME))
+        return -1
+
+    src_chnum = int(src_info["streams"][0]["channels"])
+    noise_chnum = int(src_info["streams"][0]["channels"])
+
+    if (noise_chnum < 1) or (src_chnum < 1) or (noise_chnum < src_chnum) or (noise_chnum > 2) or (src_chnum > 2):
+        logger.error(
+            "{} cannot perform noise audio mix due to channel num mismatch input:{} noise:{}".format(
+                _SCRIPT_NAME, src_chnum, noise_chnum
+            )
+        )
+
+    # resampling
+    if src_info["streams"][0]["sample_rate"] != noise_info["streams"][0]["sample_rate"]:
+        noise_basename = os.path.basename(noise_file)
+        output_file = os.path.join(tmp_folder, noise_basename)
+
+        cmd = [
+            _FFMPEG_EXE,
+            "-y",
+            "-loglevel",
+            "error",
+            "-stats",
+            "-i",
+            str(noise_file),
+            "-ar",
+            str(samplerate),
+            str(output_file),
+            " > /dev/null 2>&1",
+        ]
+
+        logger.info("Running ffmpeg command:")
+        logger.info(" ".join(cmd))
+
+        # execute resampling
+        os.system(" ".join(cmd))
+
+        if os.path.isfile(output_file):
+            noise_file = output_file
+        else:
+            logger.error(
+                "{} cannot perform noise audio mix due to channel num mismatch input:{} noise:{}".format(
+                    _SCRIPT_NAME, src_chnum, noise_chnum
+                )
+            )
+
+    if src_chnum == 1:
+        err = audioMixMono(src_file, noise_file, tmp_folder, samplerate)
+    elif src_chnum == 2:
+        err = audioMixStereo(src_file, noise_file, tmp_folder, samplerate)
+
     return err
 
 
