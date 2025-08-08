@@ -1078,6 +1078,8 @@ def executeSpatializeTasks(cli_params, tasks={}):
             for task in tasks:
                 tmp_filename = task["scene"]["name"] + "_postproc_" + task["name"] + "_" + f"{idx:03d}"
                 cfg_filename = os.path.abspath(os.path.join(_OUTPUT_TMP_DIR, tmp_filename) + ".yaml")
+
+                tmp_filename = task["scene"]["name"] + "_" + task["name"] + "_" + f"{idx:03d}"
                 wav_filename = os.path.abspath(os.path.join(_OUTPUT_REF_DIR + "/../", tmp_filename) + ".wav")
 
                 logger.info("config post-processing on: {}".format(wav_filename))
