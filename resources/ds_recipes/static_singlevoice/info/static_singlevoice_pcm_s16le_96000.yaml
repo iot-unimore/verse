@@ -1,0 +1,110 @@
+---
+# Dataset Recipe:
+# each recipe is a set of rules to select voices/heads/rooms to be used to 
+# render a selection of audio scenes.
+syntax:
+  name: ds_recipe
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+#
+# recipe
+#
+name: static_singlevoice_pcm_s16le_96000
+
+output:
+  path: datasets/static_singlevoice
+  store_info: True
+  audio:
+    format:
+      type: wav
+      subtype: pcm_s16le
+      samplerate: 96000
+
+#
+# set is a collection of scenes that will be grouped in a subfolder (same name)
+#
+sets:
+  # train/test/validate : only listed sets will be rendered
+
+  train:
+    # each task is a separate selection
+    # of voices/heads/rooms needed to render a scene.
+    # if you want to render each scene with default values
+    # leave the voices/heads/rooms empty and the one
+    # specified in the recipe will be used.
+
+    # for voice/heads/rooms specification do not add the ".yaml"
+    # use only filename without extention
+
+    tasks:
+      # note: if multiple voices are listed they will be used 
+      #       according to the scene requirements, matching is done "in sorting order". 
+      #       listing more voices than what is required by the scene will not have effects (skipped)
+
+      # TRAIN/TASK #0      
+      0:
+        # note: this task shows that you can mix&match scenes from different datasets using the right subtype
+        #       in this task we use the resources listed in the recipes itself, no customization
+        voices:
+          0:
+            subtype: unimore
+            #info: ["000005_voice","000006_voice","000007_voice","000008_voice","000009_voice"]
+            info: ["000005_voice","000007_voice"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_004"]
+        rooms:
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # TRAIN/TASK #1      
+      1:
+        # note: this task shows that you can mix&match scenes from different datasets using the right subtype
+        #       in this task we use the resources listed in the recipes itself, no customization
+        voices:
+          0:
+            subtype: unimore
+            #info: ["000005_voice","000006_voice","000007_voice","000008_voice","000009_voice"]
+            info: ["000005_voice","000006_voice"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_004"]
+        rooms:
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+
+
+  test:
+
+
+  validate:
+
+
+
+#EOF
+...
