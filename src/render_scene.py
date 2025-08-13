@@ -337,7 +337,7 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationAnechoic"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationSmoothingAnechoic"] = "yes"
             if cfg["setup"]["room"]["brir_sofa"] == "none":
-                cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
+                cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "no"
             else:
                 cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationReverb"] = "yes"
