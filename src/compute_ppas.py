@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-M-PPAS: Perceptual Phase-Aware Similarity computation between MKV (multi-track) files
+W-PPAS: Perceptual Phase-Aware Similarity computation between MKV (multi-track) files
 """
 
 import os
@@ -38,9 +38,10 @@ _FFPROBE_EXE = "/usr/bin/ffprobe"
 _CTRL_EXIT_SIGNAL = 0  # driven by CTRL-C, 0 to exit threads
 _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-
-_PPAS_GLOBAL_SHIFT_MAX_TH = 0.0008 # in seconds
-
+_DEFAULT_SR=96000 # Hertz
+_PPAS_GLOBAL_SHIFT_MAX_TH = 0.0005 # in seconds
+_WPPAS_SHIFT_MIN = 0.0002 # in seconds
+_WPPAS_SHIFT_MAX = _PPAS_GLOBAL_SHIFT_MAX_TH # in seconds
 
 ####################################################################################################
 # DO NOT MODIFY CODE BELOW THIS LINE
@@ -121,6 +122,39 @@ def extract_track(mkv_path, track_num, out_wav):
     ]
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+# ==========================================================
+# === WPPAS: weighted ppas 
+# ==========================================================
+def compute_wppas(ppas, shift, delta_shift, min_shift=_WPPAS_SHIFT_MIN, max_shift=_WPPAS_SHIFT_MAX, max_delta_shift=_WPPAS_SHIFT_MIN*2, sr=_DEFAULT_SR, weight_linear=True):
+
+    # everything is computed in "samples"
+    shift=np.abs(shift)
+    delta_shift=np.abs(delta_shift)
+
+    max_shift = max_shift * sr
+    min_shift = min_shift * sr
+    max_delta_shift = max_delta_shift * sr
+
+    w=1.0
+    dw=1.0
+
+    # weigth for shift magnitude (linear or cosine)
+    if(weight_linear):
+        # linear weigth
+        w = (-1/(max_shift-min_shift)) * (shift - min_shift) +1
+        w = min(1,(max(0,w)))
+    else:
+        # raised cosine weight
+        shift = min(max_shift, max(min_shift, shift))
+        w =  ( 1+ np.cos( ((np.pi)/((max_shift-min_shift))) * (shift - min_shift) ) ) /2 
+
+    # weigth for delta shift (linear)
+    dw = (-1/max_delta_shift) * (delta_shift) +1
+    dw = min(1,(max(0,dw)))
+
+    # print(f"compute wpas: ppas={ppas} w={w} dw={dw}")
+
+    return (w*dw)
 
 # ==========================================================
 # === Gain Normalization
@@ -227,6 +261,8 @@ def process_recording_folder(folder_path, args):
     - Apply lag to comparison tracks
     - Normalize gain
     """
+    m_wppas = []
+    m_ppas=[]
 
     real_mkv = os.path.join(folder_path, args.reference)
     sim_mkv = os.path.join(folder_path, args.degraded)
@@ -294,21 +330,32 @@ def process_recording_folder(folder_path, args):
                 sim_cmp = sim_cmp[:, :min_len]
 
                 # --- Normalize again after alignment ---
-                # real_cmp, sim_cmp = normalize_gain(real_cmp, sim_cmp)
+                real_cmp, sim_cmp = normalize_gain(real_cmp, sim_cmp)
 
                 # Save temporary aligned versions
-                #temp_real_path = os.path.join(folder_path, 'real_aligned.wav')
-                #temp_sim_path = os.path.join(folder_path, 'sim_aligned.wav')
+                # temp_real_path = os.path.join(folder_path, 'real_aligned.wav')
+                # temp_sim_path = os.path.join(folder_path, 'sim_aligned.wav')
+                # save_multichannel_wav(temp_real_path, real_cmp, sr_real)
+                # save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
+
                 temp_real_path = os.path.join(tmpdir, 'real_aligned.wav')
                 temp_sim_path = os.path.join(tmpdir, 'sim_aligned.wav')
-
                 save_multichannel_wav(temp_real_path, real_cmp, sr_real)
                 save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
 
-                ref_aligned, deg_aligned, ppas = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=0.0008, do_dtw_fallback=False, verbose=args.verbose)
-                print("==================================================")
-                print(f"PPAS ([-1..1]): {ppas:.4f}  -> [0..1] {(ppas+1)/2:.4f}")
-                print("==================================================")
+                ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=_PPAS_GLOBAL_SHIFT_MAX_TH, do_dtw_fallback=False, verbose=args.verbose)
+
+                # print("==================================================")
+                # print(f"PPAS [-1..1]:{ppas:.4f} -> [0..1]:{(ppas+1)/2:.4f}, gcc-phat_shift:{gcc_phat_shift:.2f} [samples] -> {gcc_phat_shift*1000/sr_real:.3f} [ms]")
+                # print("==================================================")
+
+                # --- Adjust PPAS measure by weighting on shift amount and collect results ---
+
+                wppas = compute_wppas(ppas, gcc_phat_shift, gcc_phat_delta_shift, _WPPAS_SHIFT_MIN, _WPPAS_SHIFT_MAX, _WPPAS_SHIFT_MIN*2, sr_real,weight_linear=True)
+
+                m_wppas.append(wppas)
+
+                m_ppas.append(ppas)
 
                 # # --- Phase difference plot ---
                 # title = os.path.basename(folder_path)
@@ -321,6 +368,19 @@ def process_recording_folder(folder_path, args):
                 # overall_error = np.nanmean([v for val in errors.values() for v in val])
                 # print(f"Overall ISO-band phase error: {overall_error:.4f}")
 
+        #
+        # --- Final PPAS result ---
+        #
+        print
+
+        print(m_wppas)
+        wppas_mean = np.mean(m_wppas)
+        ppas_mean = np.mean(m_ppas)
+
+        print(f"WPPAS [0..1]:{wppas_mean*((ppas_mean+1)/2):.4f}, PPAS [0..1]:{(ppas_mean+1)/2:.4f}")
+
+        # return PPAS in scale [0 ..1] only (easier to use), both in scaled and non-scaled version
+        return  wppas_mean*((ppas_mean+1)/2) , ((ppas_mean+1)/2)
 
 def process_all_recordings(base_folder, args):
     """Loop over all subfolders and process each recording pair."""

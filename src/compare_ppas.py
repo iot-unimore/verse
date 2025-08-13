@@ -31,17 +31,26 @@ _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 _PPAS_DEFAULT_SR_HZ=16000 # Herts
 _PPAS_DEFAULT_GLOBAL_SHIFT_MAX_S=0.02 # seconds
 
+_PPAS_DEFAULT_N_MELS=40
+_PPAS_DEFAULT_ALPHA=0.8
+_PPAS_DEFAULT_ENVELOPE_CORRELATION_WINDOW_FRAMES=21
+_PPS_SFFT_TIME_WINDOW=0.1 # seconds
+_PPS_SFFT_LEN_MAX=8192
+_PPS_SFFT_LEN_MIN=256
+_PPS_SFFT_LEN_DEFAULT=2048
+
+
 # -------------------------
 # Perceptual Phase Metric
 # -------------------------
 def perceptual_phase_similarity(x_ref, 
                                 x_deg, 
                                 sr,
-                                n_fft=2048, 
-                                hop_length=256,
-                                n_mels=40, 
-                                alpha=0.7,
-                                env_corr_window_frames=21,
+                                n_fft=_PPS_SFFT_LEN_DEFAULT, 
+                                hop_length=(_PPS_SFFT_LEN_DEFAULT/8),
+                                n_mels=_PPAS_DEFAULT_N_MELS, 
+                                alpha=_PPAS_DEFAULT_ALPHA,
+                                env_corr_window_frames=_PPAS_DEFAULT_ENVELOPE_CORRELATION_WINDOW_FRAMES,
                                 use_vad_mask=None,
                                 eps=1e-8):
 
@@ -203,14 +212,15 @@ def align_and_compute_ppas(file_ref, file_deg, sr_target=96000,
     x_deg_c = x_deg[:minlen]
 
     # Compute optimal FFT size for PPAS, we use a window of ~100ms
-    fft_size = 1 << (int(np.log(sr1 *.1)/np.log(2)))
-    fft_size = min(8192, max(256, fft_size))
+    fft_size = 1 << (int(np.log(sr1 * _PPS_SFFT_TIME_WINDOW)/np.log(2)))
+    fft_size = min(_PPS_SFFT_LEN_MAX, max(_PPS_SFFT_LEN_MIN, fft_size))
     fft_overlap = int(fft_size/4)
 
     if verbose:
         print(f"PPAS optimal FFT size:{fft_size} overlap:{fft_overlap} for samplerate:{sr1}")
 
     # GCC-PHAT (generalized cross correlation phase and transform) for coarse delay (in samples)
+    gcc_phat_shift_nchan =[]
     shift_samples_nchan = []
 
     for idx in np.arange(x_ref.ndim):
@@ -223,8 +233,9 @@ def align_and_compute_ppas(file_ref, file_deg, sr_target=96000,
             print(f"GCC-PHAT coarse shift (samples) for audio track #{idx}: {shift_samples:.3f} -> {shift_samples/sr_target*1000:.3f} ms")
 
         shift_samples_nchan.append(shift_samples)
+        gcc_phat_shift_nchan.append(shift_samples)
 
-    # using one value for shifting all channels: pick MINIMUM
+    # using one value for shifting all channels: we use MIN which would be the most agressive on result (agerage as alternative)
     shift_samples = np.min(shift_samples_nchan)
 
     max_shift_samples = int(max_global_shift_s * sr_target)
@@ -271,8 +282,6 @@ def align_and_compute_ppas(file_ref, file_deg, sr_target=96000,
         x_ref_final = []
         x_deg_final = []
 
-
-
         if(err==0):
             # Ensure equal length
             L=0                
@@ -290,10 +299,15 @@ def align_and_compute_ppas(file_ref, file_deg, sr_target=96000,
             frame_energy = S_ref.mean(axis=0)
             vad_mask = frame_energy > max(frame_energy.max() * 0.02, np.median(frame_energy) * 0.5)
 
-            # PPAS
+            #
+            # PPAS compute
+            #
             ppas = perceptual_phase_similarity(x_ref_final, x_deg_final, sr_target,
-                                               n_fft=fft_size, hop_length=fft_overlap, n_mels=40, alpha=0.8,
-                                               env_corr_window_frames=21, use_vad_mask=vad_mask)
+                                               n_fft=fft_size, hop_length=fft_overlap, 
+                                               n_mels=_PPAS_DEFAULT_N_MELS, 
+                                               alpha=_PPAS_DEFAULT_ALPHA,
+                                               env_corr_window_frames=_PPAS_DEFAULT_ENVELOPE_CORRELATION_WINDOW_FRAMES, 
+                                               use_vad_mask=vad_mask)
         else:
             # out of tolerance, force ppas = -1
             ppas =-1
@@ -301,11 +315,24 @@ def align_and_compute_ppas(file_ref, file_deg, sr_target=96000,
         if verbose:
             print(f"PPAS for track#{idx} ([-1..1]): {ppas:.4f}  -> [0..1] {(ppas+1)/2:.4f}")
 
+        # collect result
         ppas_nchan.append(ppas)
 
+
+    #
+    # TIME SHIFT (can be negative)
+
+    # magnitude
+    gcc_phat_shift = np.max(np.abs(gcc_phat_shift_nchan))
+
+    # delta_between_channels (will be zero for mono audio)
+    gcc_phat_delta_shift = np.abs(np.max(gcc_phat_shift_nchan) - np.min(gcc_phat_shift_nchan))
+
+    #
+    # PPAS: select minimum of the results
     ppas = np.min(ppas_nchan)
 
-    return x_ref_final, x_deg_final, ppas
+    return x_ref_final, x_deg_final, ppas, gcc_phat_shift, gcc_phat_delta_shift
 
 # -------------------------
 # Command-line
@@ -318,7 +345,7 @@ if __name__ == "__main__":
     ref_file = sys.argv[1]; deg_file = sys.argv[2]
     
     # ref_aligned, deg_aligned, ppas = align_and_compute_ppas(ref_file, deg_file, sr_target=96000, max_global_shift_s=0.02, do_dtw_fallback=True)
-    ref_aligned, deg_aligned, ppas = align_and_compute_ppas(ref_file, deg_file, sr_target=16000, max_global_shift_s=0.02, do_dtw_fallback=True)
+    ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(ref_file, deg_file, sr_target=16000, max_global_shift_s=0.02, do_dtw_fallback=True)
     
 
     print("==================================================")
