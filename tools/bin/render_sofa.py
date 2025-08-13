@@ -111,7 +111,9 @@ def main():
 
         ir = pf.Signal(h, fs_sofa)
         out = pf.dsp.convolve(signal, ir)
-        out = pf.dsp.fractional_time_shift(out, delay_samples)
+
+        if(delay_samples>0):
+            out = pf.dsp.fractional_time_shift(out, delay_samples)
 
         out_filename = args.output or "render.wav"
         if num_receivers > 1:
@@ -121,10 +123,14 @@ def main():
 
         sf.write(out_filename, out.time.flatten(), fs_sofa)
 
-        if delay_units.lower() == "seconds":
-            print(f"Saved: {out_filename} (delay {delay_val:.6f} {delay_units})")
-        elif delay_units.lower() == "samples":
-            print(f"Saved: {out_filename} (delay {delay_val:.0f} {delay_units})")
+        if(delay_samples>0):
+            if delay_units.lower() == "seconds":
+                print(f"Saved: {out_filename} (delay {delay_val:.6f} {delay_units})")
+            elif delay_units.lower() == "samples":
+                print(f"Saved: {out_filename} (delay {delay_val:.0f} {delay_units})")
+        else:
+            # print(f"Saved: {out_filename} (delay {delay_val:.0f} {delay_units})")
+            print(f"Saved: {out_filename}")
 
 if __name__ == "__main__":
     main()
