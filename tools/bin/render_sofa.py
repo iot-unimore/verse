@@ -10,6 +10,12 @@ import pyfar.plot as pfplot
 import matplotlib
 import matplotlib.pyplot as plt
 
+#
+# DEFINES / CONSTANT / GLOBALS
+#
+_CTRL_EXIT_SIGNAL = 0  # driven by CTRL-C, 0 to exit threads
+_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Render audio using SOFA HRIRs with multiple receivers.")
     parser.add_argument("wav_file", help="Input mono .wav file")

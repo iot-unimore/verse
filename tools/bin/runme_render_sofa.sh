@@ -19,6 +19,10 @@ if [ "$#" -ne 4 ]; then
     print_help
 fi
 
+
+SCRIPT_PATH=$(realpath "$0")
+SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+
 angle="$1"
 file="$2"
 sofa="$3"
@@ -99,7 +103,7 @@ for ending in "${ending_list[@]}"; do
         echo "No file ending with _binaural.sofa found in $sofa"
         print_help
     fi
-    ./render_sofa.py -sss $1 $2 ${sofafile} -o ${dir}/${filename_no_ext}${ending}.wav
+    $SCRIPT_DIR/render_sofa.py -sss $1 $2 ${sofafile} -o ${dir}/${filename_no_ext}${ending}.wav
 
     ffmpeg -hide_banner -loglevel panic -i ${dir}/${filename_no_ext}${ending}_r0.wav -i ${dir}/${filename_no_ext}${ending}_r1.wav -filter_complex "[0:a][1:a]join=inputs=2:channel_layout=stereo[aout]" -map "[aout]" ${dir}/${filename_no_ext}${ending}.wav
 
