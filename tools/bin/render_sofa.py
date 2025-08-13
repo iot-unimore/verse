@@ -30,6 +30,7 @@ def load_sofa_data(sofa_file):
         ir = f['Data.IR'][:]                           # shape [M, R, N]
         delay = f['Data.Delay'][:]                     # shape [M, R]
         fs = f['Data.SamplingRate'][0]                 # float
+
         # Default unit is seconds if attribute missing
         delay_units_attr = f['Data.Delay'].attrs.get('Units', b'samples')
         # decode bytes to string if needed
@@ -37,7 +38,13 @@ def load_sofa_data(sofa_file):
             delay_units = delay_units_attr.decode('utf-8')
         else:
             delay_units = str(delay_units_attr)
-    return source_pos, ir, delay, fs, delay_units
+
+        try:
+            peaks = f['IRPeakDelay'][:]                    # shape [M, R]
+        except:
+            peaks = -1 * np.ones(delay.shape)
+
+    return source_pos, ir, delay, fs, delay_units, peaks
 
 def find_closest_source_idx(source_pos, target_pos):
     diffs = source_pos - target_pos
@@ -75,7 +82,7 @@ def main():
     # plt.show()
 
     # Load SOFA data
-    source_pos, irs, delays, fs_sofa, delay_units = load_sofa_data(args.sofa_file)
+    source_pos, irs, delays, fs_sofa, delay_units, peaks = load_sofa_data(args.sofa_file)
     print(f"[INFO] Delay units in SOFA file: '{delay_units}'")
 
     fs_sofa = int (fs_sofa)
@@ -107,6 +114,7 @@ def main():
 
         h = irs[idx, r, :]            # IR for this receiver
         delay_val = delays[idx, r]
+        peak_val = peaks[idx, r]
 
         if delay_units.lower() == "seconds":
             delay_samples = delay_val * fs_sofa
@@ -136,7 +144,7 @@ def main():
                 print(f"Saved: {out_filename} (delay {delay_val:.0f} {delay_units})")
         else:
             # print(f"Saved: {out_filename} (delay {delay_val:.0f} {delay_units})")
-            print(f"Saved: {out_filename}")
+            print(f"Saved: {out_filename} (IR-peak at {peak_val:.0f} {delay_units})")
 
 if __name__ == "__main__":
     main()
