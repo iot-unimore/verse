@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Perceptual Phase Aligmenet computation between MKV files.
-
+M-PPAS: Perceptual Phase-Aware Similarity computation between MKV (multi-track) files
 """
 
 import os
@@ -27,6 +26,11 @@ from compare_ppas import align_and_compute_ppas
 logger = logging.getLogger(__name__)
 FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
 
+#
+# EXECUTABLES / EXTERNAL CMDs
+#
+_FFMPEG_EXE = "/usr/bin/ffmpeg"
+_FFPROBE_EXE = "/usr/bin/ffprobe"
 
 #
 # DEFINES / CONSTANT / GLOBALS
@@ -34,11 +38,13 @@ FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(
 _CTRL_EXIT_SIGNAL = 0  # driven by CTRL-C, 0 to exit threads
 _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-# EXECUTABLES / EXTERNAL CMDs
-#
-_FFMPEG_EXE = "/usr/bin/ffmpeg"
-_FFPROBE_EXE = "/usr/bin/ffprobe"
 
+_PPAS_GLOBAL_SHIFT_MAX_TH = 0.0008 # in seconds
+
+
+####################################################################################################
+# DO NOT MODIFY CODE BELOW THIS LINE
+####################################################################################################
 
 def int_or_str(text):
     """Helper function for argument parsing."""
@@ -133,7 +139,7 @@ def normalize_global_gain(real, sim):
     else:
         gain = 1.0 / global_peak
 
-    print(f"Applied global gain: {20 * np.log10(gain):.2f} dB (peak before = {global_peak:.5f})")
+    logger.info(f"Applied global gain: {20 * np.log10(gain):.2f} dB (peak before = {global_peak:.5f})")
     return real * gain, sim * gain
 
 
@@ -147,12 +153,12 @@ def normalize_gain(real, sim):
 
     if peak_real < 1.0:
         gain = 1.0 / peak_real
-        print(f"REAL: Applied gain: {20 * np.log10(gain):.2f} dB")
+        logger.info(f"ref: Applied gain: {20 * np.log10(gain):.2f} dB")
         real = real * gain
 
     if peak_sim < 1.0:
         gain = 1.0 / peak_sim
-        print(f"SIM: Applied gain: {20 * np.log10(gain):.2f} dB")
+        logger.info(f"deg: Applied gain: {20 * np.log10(gain):.2f} dB")
         sim = sim * gain
 
     return real, sim
@@ -186,7 +192,7 @@ def align_and_trim_fft(real, sim):
 
     lag = np.argmax(corr_sum) - (len(sim_ch) - 1)
 
-    print(f"Lag found: {lag} samples, correlation_sum={corr_sum[np.argmax(corr_sum)]}, len_sim={len(sim_ch)}")
+    logger.info(f"Lag found: {lag} samples, correlation_sum={corr_sum[np.argmax(corr_sum)]}, len_sim={len(sim_ch)}")
 
     # Apply lag correction
     if lag > 0:
@@ -256,7 +262,7 @@ def process_recording_folder(folder_path, args):
         
         real_ref_aligned, sim_ref_aligned, lag= align_and_trim_fft(real_ref, sim_ref)
         
-        print(f"Applying lag {lag} to comparison tracks")
+        logger.info(f"Applying lag {lag} to comparison tracks")
 
         for idx in np.arange(ref_media_info["format"]["nb_streams"]):
             if(idx!=args.st):
@@ -277,13 +283,6 @@ def process_recording_folder(folder_path, args):
                     print(f"Skipping {folder_path}: channel count mismatch.")
                     return   
 
-
-                # Save temporary aligned versions
-                # temp_real_path = os.path.join(folder_path, 'ref_real_aligned.wav')
-                # temp_sim_path = os.path.join(folder_path, 'ref_sim_aligned.wav')
-                # save_multichannel_wav(temp_real_path, real_ref_aligned, sr_real)
-                # save_multichannel_wav(temp_sim_path, sim_ref_aligned, sr_real)        
-
                 # --- Apply lag to comparison tracks ---
                 if lag > 0:
                     real_cmp = real_cmp[:, lag:]
@@ -298,12 +297,15 @@ def process_recording_folder(folder_path, args):
                 # real_cmp, sim_cmp = normalize_gain(real_cmp, sim_cmp)
 
                 # Save temporary aligned versions
-                temp_real_path = os.path.join(folder_path, 'real_aligned.wav')
-                temp_sim_path = os.path.join(folder_path, 'sim_aligned.wav')
+                #temp_real_path = os.path.join(folder_path, 'real_aligned.wav')
+                #temp_sim_path = os.path.join(folder_path, 'sim_aligned.wav')
+                temp_real_path = os.path.join(tmpdir, 'real_aligned.wav')
+                temp_sim_path = os.path.join(tmpdir, 'sim_aligned.wav')
+
                 save_multichannel_wav(temp_real_path, real_cmp, sr_real)
                 save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
 
-                ref_aligned, deg_aligned, ppas = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=0.0008, do_dtw_fallback=True)
+                ref_aligned, deg_aligned, ppas = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=0.0008, do_dtw_fallback=False, verbose=args.verbose)
                 print("==================================================")
                 print(f"PPAS ([-1..1]): {ppas:.4f}  -> [0..1] {(ppas+1)/2:.4f}")
                 print("==================================================")

@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-Perceptual Phase Aligmenet computation between WAV files.py
+PPAS: Perceptual Phase-Aware Similarity computation between WAV files
 
 Usage:
-    python align_and_ppas.py ref.wav deg.wav
+    python compare_ppas.py ref.wav deg.wav
 
 Requirements:
     pip install numpy scipy librosa matplotlib
 """
 
+import os
 import sys
 import numpy as np
 import librosa
@@ -17,9 +18,21 @@ from scipy.signal import fftconvolve
 from scipy.ndimage import uniform_filter1d
 import matplotlib.pyplot as plt
 
+
+#
+# DEFINES / CONSTANT / GLOBALS
+#
+_CTRL_EXIT_SIGNAL = 0  # driven by CTRL-C, 0 to exit threads
+_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+
+#
+# PPAS DEFAULTS
+#
+_PPAS_DEFAULT_SR_HZ=16000 # Herts
+_PPAS_DEFAULT_GLOBAL_SHIFT_MAX_S=0.02 # seconds
+
 # -------------------------
 # Perceptual Phase Metric
-# (same as provided earlier, slightly compacted)
 # -------------------------
 def perceptual_phase_similarity(x_ref, 
                                 x_deg, 
@@ -194,7 +207,8 @@ def align_and_compute_ppas(file_ref, file_deg, sr_target=96000,
     fft_size = min(8192, max(256, fft_size))
     fft_overlap = int(fft_size/4)
 
-    print(f"PPAS optimal FFT size:{fft_size} overlap:{fft_overlap} for samplerate:{sr1}")
+    if verbose:
+        print(f"PPAS optimal FFT size:{fft_size} overlap:{fft_overlap} for samplerate:{sr1}")
 
     # GCC-PHAT (generalized cross correlation phase and transform) for coarse delay (in samples)
     shift_samples_nchan = []
@@ -300,7 +314,9 @@ if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python align_and_ppas.py ref.wav deg.wav")
         sys.exit(1)
+    
     ref_file = sys.argv[1]; deg_file = sys.argv[2]
+    
     # ref_aligned, deg_aligned, ppas = align_and_compute_ppas(ref_file, deg_file, sr_target=96000, max_global_shift_s=0.02, do_dtw_fallback=True)
     ref_aligned, deg_aligned, ppas = align_and_compute_ppas(ref_file, deg_file, sr_target=16000, max_global_shift_s=0.02, do_dtw_fallback=True)
     
