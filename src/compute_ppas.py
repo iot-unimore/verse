@@ -274,7 +274,7 @@ def process_recording_folder(folder_path, args):
     # sim_mkv = args.simulated
 
     if not os.path.exists(real_mkv) or not os.path.exists(sim_mkv):
-        print(f"Skipping {folder_path}: missing MKV files.")
+        logger.error(f"Skipping {folder_path}: missing MKV files.")
         return
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -313,10 +313,10 @@ def process_recording_folder(folder_path, args):
                 sim_cmp, _ = load_multichannel_wav(sim_cmp_wav)
 
                 if sr_real != sr_sim:
-                    print(f"Skipping {folder_path}: sampling rate mismatch.")
+                    logger.error(f"Skipping {folder_path}: sampling rate mismatch.")
                     return
                 if real_cmp.shape[0] != sim_cmp.shape[0]:
-                    print(f"Skipping {folder_path}: channel count mismatch.")
+                    logger.error(f"Skipping {folder_path}: channel count mismatch.")
                     return   
 
                 # --- Apply lag to comparison tracks ---
@@ -371,13 +371,11 @@ def process_recording_folder(folder_path, args):
         #
         # --- Final PPAS result ---
         #
-        print
 
-        print(m_wppas)
         wppas_mean = np.mean(m_wppas)
         ppas_mean = np.mean(m_ppas)
 
-        print(f"WPPAS [0..1]:{wppas_mean*((ppas_mean+1)/2):.4f}, PPAS [0..1]:{(ppas_mean+1)/2:.4f}")
+        logger.info(f"WPPAS [0..1]:{wppas_mean*((ppas_mean+1)/2):.4f}, PPAS [0..1]:{(ppas_mean+1)/2:.4f}")
 
         # return PPAS in scale [0 ..1] only (easier to use), both in scaled and non-scaled version
         return  wppas_mean*((ppas_mean+1)/2) , ((ppas_mean+1)/2)
