@@ -31,16 +31,16 @@ hrtf_main_idx: 0
 hrtf:
   0:
     name: binaural
-    file: files/head_004/wilsonClean_20250729-001_binaural.sofa
+    file: files/head_004/wilsonClean_20250817-001_binaural.sofa
   1:
     name: array_six_front
-    file: files/head_004/wilsonClean_20250729-001_array_six_front.sofa
+    file: files/head_004/wilsonClean_20250817-001_array_six_front.sofa
   2:
     name: array_six_middle
-    file: files/head_004/wilsonClean_20250729-001_array_six_middle.sofa
+    file: files/head_004/wilsonClean_20250817-001_array_six_middle.sofa
   3:
     name: array_six_rear
-    file: files/head_004/wilsonClean_20250729-001_array_six_rear.sofa
+    file: files/head_004/wilsonClean_20250817-001_array_six_rear.sofa
 
 #EOF
 ...
