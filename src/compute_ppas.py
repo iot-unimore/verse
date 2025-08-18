@@ -17,6 +17,7 @@ import scipy.signal as sig
 from subprocess import check_output
 from numpy.fft import fft, ifft
 import tempfile
+import json
 
 from compare_ppas import align_and_compute_ppas
 
@@ -252,7 +253,7 @@ def align_and_trim_fft(real, sim):
 # ==========================================================
 # === Folder Processing Logic
 # ==========================================================
-def process_recording_folder(folder_path, args):
+def process_recording_folder(folder_path, args, result):
     """
     Process one folder containing real.mkv and sim.mkv:
     - Extract reference tracks for alignment (mono)
@@ -290,6 +291,8 @@ def process_recording_folder(folder_path, args):
         sim_ref, sr_sim = load_multichannel_wav(sim_ref_wav)
 
         # --- Normalize gain globally for alignment ---
+        logger.info(f"{args.name}: Normalizing reference track: {args.st}")
+
         # real_ref, sim_ref = normalize_global_gain(real_ref, sim_ref)
         real_ref, sim_ref = normalize_gain(real_ref, sim_ref)
 
@@ -298,11 +301,14 @@ def process_recording_folder(folder_path, args):
         
         real_ref_aligned, sim_ref_aligned, lag= align_and_trim_fft(real_ref, sim_ref)
         
-        logger.info(f"Applying lag {lag} to comparison tracks")
+        logger.info(f"{args.name}: Applying lag {lag} to comparison tracks")
 
         for idx in np.arange(ref_media_info["format"]["nb_streams"]):
             if(idx!=args.st):
+
                 # --- Extract comparison tracks ---
+                logger.info(f"{args.name}: Extracting track: {idx}")
+
                 real_cmp_wav = os.path.join(tmpdir, "real_cmp.wav")
                 sim_cmp_wav = os.path.join(tmpdir, "sim_cmp.wav")
                 extract_track(real_mkv, idx, real_cmp_wav)
@@ -329,7 +335,9 @@ def process_recording_folder(folder_path, args):
                 real_cmp = real_cmp[:, :min_len]
                 sim_cmp = sim_cmp[:, :min_len]
 
+
                 # --- Normalize again after alignment ---
+                logger.info(f"{args.name}: Normalizing track: {idx}")
                 real_cmp, sim_cmp = normalize_gain(real_cmp, sim_cmp)
 
                 # Save temporary aligned versions
@@ -343,6 +351,9 @@ def process_recording_folder(folder_path, args):
                 save_multichannel_wav(temp_real_path, real_cmp, sr_real)
                 save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
 
+
+                # --- Normalize again after alignment ---
+                logger.info(f"{args.name}: Coarse alignement track: {idx}")
                 ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=_PPAS_GLOBAL_SHIFT_MAX_TH, do_dtw_fallback=False, verbose=args.verbose)
 
                 # print("==================================================")
@@ -350,7 +361,7 @@ def process_recording_folder(folder_path, args):
                 # print("==================================================")
 
                 # --- Adjust PPAS measure by weighting on shift amount and collect results ---
-
+                logger.info(f"{args.name}: Compute WPPAS track: {idx}")
                 wppas = compute_wppas(ppas, gcc_phat_shift, gcc_phat_delta_shift, _WPPAS_SHIFT_MIN, _WPPAS_SHIFT_MAX, _WPPAS_SHIFT_MIN*2, sr_real,weight_linear=True)
 
                 m_wppas.append(wppas)
@@ -375,18 +386,27 @@ def process_recording_folder(folder_path, args):
         wppas_mean = np.mean(m_wppas)
         ppas_mean = np.mean(m_ppas)
 
-        logger.info(f"WPPAS [0..1]:{wppas_mean*((ppas_mean+1)/2):.4f}, PPAS [0..1]:{(ppas_mean+1)/2:.4f}")
+        logger.info(f"{args.name}: WPPAS [0..1]:{wppas_mean*((ppas_mean+1)/2):.4f}, PPAS [0..1]:{(ppas_mean+1)/2:.4f}")
 
         # return PPAS in scale [0 ..1] only (easier to use), both in scaled and non-scaled version
-        return  wppas_mean*((ppas_mean+1)/2) , ((ppas_mean+1)/2)
+        result.append([wppas_mean*((ppas_mean+1)/2) , ((ppas_mean+1)/2)])
 
-def process_all_recordings(base_folder, args):
+        if(args.json):
+            print(json.dumps({"wppas":wppas_mean*((ppas_mean+1)/2), "ppas": ((ppas_mean+1)/2)}))
+
+        return 
+
+
+def process_all_recordings(base_folder, args, result):
     """Loop over all subfolders and process each recording pair."""
+
     for subfolder in sorted(os.listdir(base_folder)):
         folder_path = os.path.join(base_folder, subfolder)
         if os.path.isdir(folder_path):
-            process_recording_folder(folder_path, args)
+            rv=process_recording_folder(folder_path, args)
+            result.append(rv)
 
+    return
 
 #
 ###############################################################################
@@ -420,6 +440,13 @@ if __name__ == "__main__":
         help="reference (real recorded) MKV audio file (default: %(default)s)",
     )
     parser.add_argument(
+        "-n",
+        "--name",
+        type=str,
+        default="WPPAS",
+        help="name for multiprocess logging (default: %(default)s)",
+    )    
+    parser.add_argument(
         "-l",
         "--logfile",
         type=str,
@@ -433,6 +460,13 @@ if __name__ == "__main__":
         default=False,
         help="verbose (default: %(default)s)",
     )
+    parser.add_argument(
+        "-j",
+        "--json",
+        action="store_true",
+        default=False,
+        help="use json for output results (default: %(default)s)",
+    )    
     parser.add_argument("-st", 
         type=int, 
         default=0, 
@@ -529,5 +563,7 @@ if __name__ == "__main__":
             exit(1)
 
         # process single files
-        process_recording_folder(args.folder, args)
+        result = []
+        process_recording_folder(args.folder, args, result)
 
+        # print(str(result))

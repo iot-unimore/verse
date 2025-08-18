@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 print_help() {
-    echo "Usage: $0 <angle_string> <sofa_folder> <input_file> <output_directory>"
+    echo "Usage: $0 <angle_string> <input_file> <sofa_folder> <output_directory>"
     echo
     echo "  <angle_string>    Format: number,number,number"
     echo "                   - First number: 0 to 360"
