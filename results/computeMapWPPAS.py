@@ -48,7 +48,7 @@ _APLAY_EXE = "/usr/bin/aplay"
 # HW RESOURCES
 #
 _MIN_CPU_COUNT = 1  # we need at least one CPU for each compute process
-_MAX_CPU_COUNT = 16  # this script is not optimized, keep a top limit
+_MAX_CPU_COUNT = 8  # this script is not optimized, and compute_wppas uses 8 threads, so keep a top limit
 _MIN_MEM_GB = 1  # min amount of memory for each compute process
 _MAX_MEM_GB = 2.5  # max amount of memory for each compute process
 
@@ -61,15 +61,15 @@ _VERSE_TYPE="voice"
 _VERSE_SUBTYPE="unimore"
 _VERSE_INFO="000007"
 
-# _AURALYS_AZIMUTH=np.arange(-90,100,10)
-# _AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
-# _AURALYS_DISTANCE=[1]
-
-# _AURALYS_AZIMUTH=np.arange(-60,70,10)
-# _AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
-_AURALYS_AZIMUTH=np.arange(-10,10,10)
-_AURALYS_ELEVATION=[0]
+_AURALYS_AZIMUTH=np.arange(-90,100,10)
+_AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
 _AURALYS_DISTANCE=[1]
+
+# # _AURALYS_AZIMUTH=np.arange(-60,70,10)
+# # _AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
+# _AURALYS_AZIMUTH=np.arange(-30,10,10)
+# _AURALYS_ELEVATION=[-45,-30,-15,0]
+# _AURALYS_DISTANCE=[1]
 
 
 ########################################################################################################################
