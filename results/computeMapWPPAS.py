@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # DEFINES / CONSTANT / GLOBALS
 #
 _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-_VERSE_DIR=os.path.join(_ROOT_DIR, "../../")
+_VERSE_DIR=os.path.join(_ROOT_DIR, "../")
 
 #
 # EXECUTABLES / EXTERNAL CMDs
