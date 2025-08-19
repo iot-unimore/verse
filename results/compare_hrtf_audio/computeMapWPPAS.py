@@ -65,8 +65,10 @@ _VERSE_INFO="000007"
 # _AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
 # _AURALYS_DISTANCE=[1]
 
-_AURALYS_AZIMUTH=np.arange(-60,70,10)
-_AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
+# _AURALYS_AZIMUTH=np.arange(-60,70,10)
+# _AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
+_AURALYS_AZIMUTH=np.arange(-10,10,10)
+_AURALYS_ELEVATION=[0]
 _AURALYS_DISTANCE=[1]
 
 
@@ -126,7 +128,7 @@ def compute_ppas(data=[]):
         logger.error("invalid data for ppas computation, got {}",format(data))
         return result
 
-    cmd_ppas = os.path.join(_VERSE_DIR,"src","compute_ppas.py")
+    cmd_ppas = os.path.join(_VERSE_DIR,"src","compute_wppas.py")
     if not (os.path.isfile(cmd_ppas)):
         logger.error("mising PPAS script: {}".format(cmd))
         return(result)
@@ -251,10 +253,23 @@ def run_main(args):
         table = df.pivot(index=1, columns=0, values=2)
         ax = sns.heatmap(table)
         ax.invert_yaxis()
-        ax.invert_xaxis()        
-        print(table)
-        plt.show()
+        ax.invert_xaxis()
 
+        plt.title('WPPAS: weighted perceptual phase-aware similarity', fontsize=14, y=1.0)
+        plt.suptitle(args.input, fontsize=10, y=0.95)
+
+        plt.xlabel("azimuth (degree)") 
+        plt.ylabel("elevation (degree)")
+        plt.savefig('result.png', format="png", dpi=300, bbox_inches='tight')
+        plt.savefig('result.pdf', format="pdf", dpi=300, bbox_inches='tight')
+        plt.savefig('result.eps', format="eps", dpi=300, bbox_inches='tight')
+
+        if(args.verbose):
+            print("==========================================")
+            print("\n\nWPPAS MAP result (note: axis are inverted)")
+            print("==========================================")
+            print(table)
+            plt.show()
 
     except KeyboardInterrupt:
         print("\nInterrupted by user")

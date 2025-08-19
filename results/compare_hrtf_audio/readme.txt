@@ -15,4 +15,4 @@ auralys_measures/wilsonAudio_20250818_001
 
 COMPARE:
 (make sure to modify the script for recorded audio file locations)
-python ./computeMapPPAS.py -v  -i ../../datasets/static_singlevoice/train/000004_static_singlevoice_0_0_1/static_singlevoice.mkv -c 16
+python ./computeMapWPPAS.py -v  -i ../../datasets/static_singlevoice/train/000004_static_singlevoice_0_0_1/static_singlevoice.mkv -c 16

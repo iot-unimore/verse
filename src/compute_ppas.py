@@ -1,37 +1,23 @@
 #!/usr/bin/env python3
 """
-W-PPAS: Perceptual Phase-Aware Similarity computation between MKV (multi-track) files
+PPAS: Perceptual Phase-Aware Similarity computation between WAV files
+
+Usage:
+    python compare_ppas.py ref.wav deg.wav
+
+Requirements:
+    pip install numpy scipy librosa matplotlib
 """
 
 import os
+import sys
 import numpy as np
 import librosa
+import librosa.display
+from scipy.signal import fftconvolve
+from scipy.ndimage import uniform_filter1d
 import matplotlib.pyplot as plt
-import soundfile as sf
-import logging
-import subprocess
-import argparse
-import tempfile
-import json
-import scipy.signal as sig
-from subprocess import check_output
-from numpy.fft import fft, ifft
-import tempfile
-import json
 
-from compare_ppas import align_and_compute_ppas
-
-#
-# Set logger format and color
-#
-logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
-
-#
-# EXECUTABLES / EXTERNAL CMDs
-#
-_FFMPEG_EXE = "/usr/bin/ffmpeg"
-_FFPROBE_EXE = "/usr/bin/ffprobe"
 
 #
 # DEFINES / CONSTANT / GLOBALS
@@ -39,520 +25,339 @@ _FFPROBE_EXE = "/usr/bin/ffprobe"
 _CTRL_EXIT_SIGNAL = 0  # driven by CTRL-C, 0 to exit threads
 _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
-_DEFAULT_SR=96000 # Hertz
-_PPAS_GLOBAL_SHIFT_MAX_TH = 0.0005 # in seconds
-_WPPAS_SHIFT_MIN = 0.0002 # in seconds
-_WPPAS_SHIFT_MAX = _PPAS_GLOBAL_SHIFT_MAX_TH # in seconds
-
-####################################################################################################
-# DO NOT MODIFY CODE BELOW THIS LINE
-####################################################################################################
-
-def int_or_str(text):
-    """Helper function for argument parsing."""
-    try:
-        return int(text)
-    except ValueError:
-        return text
-
-# ==========================================================
-# === Audio I/O Utilities
-# ==========================================================
-def load_multichannel_wav(path, sr=None):
-    """
-    Load a WAV file and return it as a NumPy array with shape [channels, samples].
-    librosa returns shape [samples,] for mono, so ensure output is always 2D.
-    """
-    y, sr = librosa.load(path, sr=sr, mono=False)
-    if y.ndim == 1:  # mono file
-        y = y[np.newaxis, :]
-    return y, sr
-
-
-def save_multichannel_wav(path, audio, sr):
-    """
-    Save a multichannel NumPy array [channels, samples] to a WAV file.
-    soundfile expects [samples, channels], so we transpose first.
-    """
-    sf.write(path, audio.T, sr)
-
-def get_media_info(filename, print_result=True):
-    """
-    Returns:
-        result = dict with audio info where:
-        result['format'] contains dict of tags, bit rate etc.
-        result['streams'] contains a dict per stream with sample rate, channels etc.
-    """
-    result = check_output(
-        [_FFPROBE_EXE, "-hide_banner", "-loglevel", "panic", "-show_format", "-show_streams", "-of", "json", filename]
-    )
-
-    result = json.loads(result)
-
-    if print_result:
-        print("\nFormat")
-
-        for key, value in result["format"].items():
-            print("   ", key, ":", value)
-
-        print("\nStreams")
-        for stream in result["streams"]:
-            for key, value in stream.items():
-                print("   ", key, ":", value)
-
-        print("\n")
-
-    return result
-
-# ==========================================================
-# === MKV Track Extraction
-# ==========================================================
-def extract_track(mkv_path, track_num, out_wav):
-    """
-    Extract a specific audio track from a MKV file into a WAV file using ffmpeg.
-    - mkv_path: path to the .mkv file
-    - track_num: integer track index (0-based)
-    - out_wav: path where the extracted WAV will be saved
-    """
-    cmd = [
-        "ffmpeg", "-y",              # overwrite without asking
-        "-i", mkv_path,              # input file
-        "-map", f"0:{track_num}",    # select track number
-        "-acodec", "pcm_s24le",      # uncompressed PCM 24-bit
-        out_wav
-    ]
-    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-# ==========================================================
-# === WPPAS: weighted ppas 
-# ==========================================================
-def compute_wppas(ppas, shift, delta_shift, min_shift=_WPPAS_SHIFT_MIN, max_shift=_WPPAS_SHIFT_MAX, max_delta_shift=_WPPAS_SHIFT_MIN*2, sr=_DEFAULT_SR, weight_linear=True):
-
-    # everything is computed in "samples"
-    shift=np.abs(shift)
-    delta_shift=np.abs(delta_shift)
-
-    max_shift = max_shift * sr
-    min_shift = min_shift * sr
-    max_delta_shift = max_delta_shift * sr
-
-    w=1.0
-    dw=1.0
-
-    # weigth for shift magnitude (linear or cosine)
-    if(weight_linear):
-        # linear weigth
-        w = (-1/(max_shift-min_shift)) * (shift - min_shift) +1
-        w = min(1,(max(0,w)))
-    else:
-        # raised cosine weight
-        shift = min(max_shift, max(min_shift, shift))
-        w =  ( 1+ np.cos( ((np.pi)/((max_shift-min_shift))) * (shift - min_shift) ) ) /2 
-
-    # weigth for delta shift (linear)
-    dw = (-1/max_delta_shift) * (delta_shift) +1
-    dw = min(1,(max(0,dw)))
-
-    # print(f"compute wpas: ppas={ppas} w={w} dw={dw}")
-
-    return (w*dw)
-
-# ==========================================================
-# === Gain Normalization
-# ==========================================================
-def normalize_global_gain(real, sim):
-    """
-    Apply the SAME gain to both signals based on the loudest sample across both.
-    This ensures no clipping and keeps the relative balance between them.
-    """
-    peak_real = np.max(np.abs(real))
-    peak_sim = np.max(np.abs(sim))
-    global_peak = max(peak_real, peak_sim)
-
-    if global_peak == 0:
-        gain = 1.0
-    else:
-        gain = 1.0 / global_peak
-
-    logger.info(f"Applied global gain: {20 * np.log10(gain):.2f} dB (peak before = {global_peak:.5f})")
-    return real * gain, sim * gain
-
-
-def normalize_gain(real, sim):
-    """
-    Apply independent peak normalization to each signal so each reaches full scale.
-    Keeps both signals from clipping but does not enforce same gain.
-    """
-    peak_real = np.max(np.abs(real))
-    peak_sim = np.max(np.abs(sim))
-
-    if peak_real < 1.0:
-        gain = 1.0 / peak_real
-        logger.info(f"ref: Applied gain: {20 * np.log10(gain):.2f} dB")
-        real = real * gain
-
-    if peak_sim < 1.0:
-        gain = 1.0 / peak_sim
-        logger.info(f"deg: Applied gain: {20 * np.log10(gain):.2f} dB")
-        sim = sim * gain
-
-    return real, sim
-
-
-# ==========================================================
-# === Alignment (FFT-based, Multi-channel Averaging)
-# ==========================================================
-def align_and_trim_fft(real, sim):
-    """
-    Align two multichannel signals using FFT-based cross-correlation.
-    - real, sim: [channels, samples]
-    - Computes correlation per channel, sums results, finds best lag
-    - Trims both arrays to the same length after alignment
-    """
-    n_channels = real.shape[0]
-
-    n = 1 << (real.shape[1] + sim.shape[1] - 1).bit_length()
-
-    corr_sum = np.zeros(n)
-    for ch in range(n_channels):
-        ref_ch = real[ch]
-        sim_ch = sim[ch]
-        corr_ch = ifft(fft(ref_ch, n) * np.conj(fft(sim_ch, n))).real
-
-        data_corr = sig.correlate(ref_ch, sim_ch)
-
-        corr_ch = np.roll(corr_ch, len(sim_ch) - 1)  # move zero-lag to center
-
-        corr_sum += corr_ch
-
-    lag = np.argmax(corr_sum) - (len(sim_ch) - 1)
-
-    logger.info(f"Lag found: {lag} samples, correlation_sum={corr_sum[np.argmax(corr_sum)]}, len_sim={len(sim_ch)}")
-
-    # Apply lag correction
-    if lag > 0:
-        real = real[:, lag:]
-    elif lag < 0:
-        sim = sim[:, -lag:]
-
-    # Trim to the same length
-    min_len = min(real.shape[1], sim.shape[1])
-
-    # plt.figure()
-    # plt.plot(sim[0,:])
-    # plt.plot(real[0,:])
-    # plt.show()
-    # plt.figure()
-    # plt.plot(sim[1,:])
-    # plt.plot(real[1,:])
-    # plt.show()
-
-    return real[:, :min_len], sim[:, :min_len], lag
-
-
-# ==========================================================
-# === Folder Processing Logic
-# ==========================================================
-def process_recording_folder(folder_path, args, result):
-    """
-    Process one folder containing real.mkv and sim.mkv:
-    - Extract reference tracks for alignment (mono)
-    - Extract stereo comparison tracks
-    - Compute alignment lag using reference tracks
-    - Apply lag to comparison tracks
-    - Normalize gain
-    """
-    m_wppas = []
-    m_ppas=[]
-
-    real_mkv = os.path.join(folder_path, args.reference)
-    sim_mkv = os.path.join(folder_path, args.degraded)
-
-    real_mkv_media_info = get_media_info(real_mkv, print_result=False)
-    sim_mkv_media_info = get_media_info(sim_mkv, print_result=False)
-
-    # real_mkv = args.real
-    # sim_mkv = args.simulated
-
-    if not os.path.exists(real_mkv) or not os.path.exists(sim_mkv):
-        logger.error(f"Skipping {folder_path}: missing MKV files.")
-        return
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-
-        # --- Extract reference tracks from cointainer (MKV) ---
-        real_ref_wav = os.path.join(tmpdir, "real_ref.wav")
-        sim_ref_wav = os.path.join(tmpdir, "sim_ref.wav")
-        extract_track(real_mkv, args.st, real_ref_wav)
-        extract_track(sim_mkv, args.st, sim_ref_wav)
-
-        # --- Load reference tracks as array ---
-        real_ref, sr_real = load_multichannel_wav(real_ref_wav)
-        sim_ref, sr_sim = load_multichannel_wav(sim_ref_wav)
-
-        # --- Normalize gain globally for alignment ---
-        logger.info(f"{args.name}: Normalizing reference track: {args.st}")
-
-        # real_ref, sim_ref = normalize_global_gain(real_ref, sim_ref)
-        real_ref, sim_ref = normalize_gain(real_ref, sim_ref)
-
-        # --- Align reference tracks ---
-        lag=0
-        
-        real_ref_aligned, sim_ref_aligned, lag= align_and_trim_fft(real_ref, sim_ref)
-        
-        logger.info(f"{args.name}: Applying lag {lag} to comparison tracks")
-
-        for idx in np.arange(ref_media_info["format"]["nb_streams"]):
-            if(idx!=args.st):
-
-                # --- Extract comparison tracks ---
-                logger.info(f"{args.name}: Extracting track: {idx}")
-
-                real_cmp_wav = os.path.join(tmpdir, "real_cmp.wav")
-                sim_cmp_wav = os.path.join(tmpdir, "sim_cmp.wav")
-                extract_track(real_mkv, idx, real_cmp_wav)
-                extract_track(sim_mkv, idx, sim_cmp_wav)     
-
-                # --- Load reference and comparison tracks ---
-                real_cmp, _ = load_multichannel_wav(real_cmp_wav)
-                sim_cmp, _ = load_multichannel_wav(sim_cmp_wav)
-
-                if sr_real != sr_sim:
-                    logger.error(f"Skipping {folder_path}: sampling rate mismatch.")
-                    return
-                if real_cmp.shape[0] != sim_cmp.shape[0]:
-                    logger.error(f"Skipping {folder_path}: channel count mismatch.")
-                    return   
-
-                # --- Apply lag to comparison tracks ---
-                if lag > 0:
-                    real_cmp = real_cmp[:, lag:]
-                elif lag < 0:
-                    sim_cmp = sim_cmp[:, -lag:]
-
-                min_len = min(real_cmp.shape[1], sim_cmp.shape[1])
-                real_cmp = real_cmp[:, :min_len]
-                sim_cmp = sim_cmp[:, :min_len]
-
-
-                # --- Normalize again after alignment ---
-                logger.info(f"{args.name}: Normalizing track: {idx}")
-                real_cmp, sim_cmp = normalize_gain(real_cmp, sim_cmp)
-
-                # Save temporary aligned versions
-                # temp_real_path = os.path.join(folder_path, 'real_aligned.wav')
-                # temp_sim_path = os.path.join(folder_path, 'sim_aligned.wav')
-                # save_multichannel_wav(temp_real_path, real_cmp, sr_real)
-                # save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
-
-                temp_real_path = os.path.join(tmpdir, 'real_aligned.wav')
-                temp_sim_path = os.path.join(tmpdir, 'sim_aligned.wav')
-                save_multichannel_wav(temp_real_path, real_cmp, sr_real)
-                save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
-
-
-                # --- sub-align and compute PPAS ---
-                logger.info(f"{args.name}: Coarse alignement track: {idx}")
-                ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=_PPAS_GLOBAL_SHIFT_MAX_TH, do_dtw_fallback=False, verbose=args.verbose)
-
-                # print("==================================================")
-                # print(f"PPAS [-1..1]:{ppas:.4f} -> [0..1]:{(ppas+1)/2:.4f}, gcc-phat_shift:{gcc_phat_shift:.2f} [samples] -> {gcc_phat_shift*1000/sr_real:.3f} [ms]")
-                # print("==================================================")
-
-                # --- Adjust PPAS measure by weighting on shift amount and collect results ---
-                logger.info(f"{args.name}: Compute WPPAS track: {idx}")
-                wppas = compute_wppas(ppas, gcc_phat_shift, gcc_phat_delta_shift, _WPPAS_SHIFT_MIN, _WPPAS_SHIFT_MAX, _WPPAS_SHIFT_MIN*2, sr_real,weight_linear=True)
-
-                # collect results
-                m_wppas.append(wppas)
-                m_ppas.append(ppas)
-
-        #
-        # --- Final PPAS result ---
-        #
-
-        wppas_mean = np.mean(m_wppas)
-        ppas_mean = np.mean(m_ppas)
-
-        logger.info(f"{args.name}: WPPAS [0..1]:{wppas_mean*((ppas_mean+1)/2):.4f}, PPAS [0..1]:{(ppas_mean+1)/2:.4f}")
-
-        # return PPAS in scale [0 ..1] only (easier to use), both in scaled and non-scaled version
-        result.append([wppas_mean*((ppas_mean+1)/2) , ((ppas_mean+1)/2)])
-
-        if(args.json):
-            print(json.dumps({"wppas":wppas_mean*((ppas_mean+1)/2), "ppas": ((ppas_mean+1)/2)}))
-
-        return 
-
-
-def process_all_recordings(base_folder, args, result):
-    """Loop over all subfolders and process each recording pair."""
-
-    for subfolder in sorted(os.listdir(base_folder)):
-        folder_path = os.path.join(base_folder, subfolder)
-        if os.path.isdir(folder_path):
-            rv=process_recording_folder(folder_path, args)
-            result.append(rv)
-
-    return
-
 #
-###############################################################################
-# MAIN
-###############################################################################
+# PPAS DEFAULTS
 #
-if __name__ == "__main__":
+_PPAS_DEFAULT_SR_HZ=16000 # Herts
+_PPAS_DEFAULT_GLOBAL_SHIFT_MAX_S=0.02 # seconds
 
-    parser = argparse.ArgumentParser(description="Compute Perceptual Phase Alignement index between MKV files",add_help=True)
-    # parser.add_argument("folder", help="Root folder with subfolders containing real.mkv and sim.mkv")
-
-    parser.add_argument(
-        "-f",
-        "--folder",
-        type=str,
-        default=None,
-        help="Root folder with subfolders containing real.mkv and sim.mkv (default: %(default)s)",
-    )
-    parser.add_argument(
-        "-d",
-        "--degraded",
-        type=str,
-        default="sim.mkv",
-        help="degraded/simulated MKV audio file (default: %(default)s)",
-    )
-    parser.add_argument(
-        "-r",
-        "--reference",
-        type=str,
-        default="real.mkv",
-        help="reference (real recorded) MKV audio file (default: %(default)s)",
-    )
-    parser.add_argument(
-        "-n",
-        "--name",
-        type=str,
-        default="WPPAS",
-        help="name for multiprocess logging (default: %(default)s)",
-    )    
-    parser.add_argument(
-        "-l",
-        "--logfile",
-        type=str,
-        default=None,
-        help="output logfile (default: %(default)s)",
-    )
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-        default=False,
-        help="verbose (default: %(default)s)",
-    )
-    parser.add_argument(
-        "-j",
-        "--json",
-        action="store_true",
-        default=False,
-        help="use json for output results (default: %(default)s)",
-    )    
-    parser.add_argument("-st", 
-        type=int, 
-        default=0, 
-        help="Sync track index (must be a mono track)"
-    )
-
-    args = parser.parse_args()
+_PPAS_DEFAULT_N_MELS=40
+_PPAS_DEFAULT_ALPHA=0.8
+_PPAS_DEFAULT_ENVELOPE_CORRELATION_WINDOW_FRAMES=21
+_PPS_SFFT_TIME_WINDOW=0.1 # seconds
+_PPS_SFFT_LEN_MAX=8192
+_PPS_SFFT_LEN_MIN=256
+_PPS_SFFT_LEN_DEFAULT=2048
 
 
-    #
-    # set debug verbosity
-    #
-    if args.verbose:
-        if args.logfile != None:
-            logging.basicConfig(filename=args.logfile, encoding="utf-8", level=logging.INFO)
+# -------------------------
+# Perceptual Phase Metric
+# -------------------------
+def perceptual_phase_similarity(x_ref, 
+                                x_deg, 
+                                sr,
+                                n_fft=_PPS_SFFT_LEN_DEFAULT, 
+                                hop_length=(_PPS_SFFT_LEN_DEFAULT/8),
+                                n_mels=_PPAS_DEFAULT_N_MELS, 
+                                alpha=_PPAS_DEFAULT_ALPHA,
+                                env_corr_window_frames=_PPAS_DEFAULT_ENVELOPE_CORRELATION_WINDOW_FRAMES,
+                                use_vad_mask=None,
+                                eps=1e-8):
+
+    S_ref = librosa.stft(x_ref, n_fft=n_fft, hop_length=hop_length, center=True)
+    S_deg = librosa.stft(x_deg, n_fft=n_fft, hop_length=hop_length, center=True)
+    mags_ref = np.abs(S_ref); mags_deg = np.abs(S_deg)
+    mel_fb = librosa.filters.mel(sr=sr, n_fft=n_fft, n_mels=n_mels, fmin=50, fmax=sr/2.0)
+    S_ref_mel = mel_fb @ S_ref
+    S_deg_mel = mel_fb @ S_deg
+    E_ref = np.abs(S_ref_mel); E_deg = np.abs(S_deg_mel)
+    n_frames = S_ref_mel.shape[1]
+
+    # default simple VAD -> speech frames from reference energy
+    if use_vad_mask is None:
+        frame_energy = E_ref.mean(axis=0)
+        thresh = np.maximum(frame_energy.max() * 0.02, np.median(frame_energy) * 0.5)
+        vad_mask = frame_energy > thresh
+    else:
+        vad_mask = np.asarray(use_vad_mask, dtype=bool)
+        if vad_mask.shape[0] != n_frames:
+            raise ValueError("use_vad_mask must have length equal to number of frames")
+
+    # Phase alignment (real part of coherence)
+    prod = S_ref_mel * np.conj(S_deg_mel)
+    denom = (E_ref * E_deg) + eps
+    coherence = prod / denom
+    phase_align = np.real(coherence)
+    phase_align_masked = phase_align.copy()
+    phase_align_masked[:, ~vad_mask] = 0.0
+
+    # Envelope correlation (smoothed)
+    win = max(1, int(env_corr_window_frames))
+    E_ref_smooth = uniform_filter1d(E_ref, size=win, axis=1, mode='nearest')
+    E_deg_smooth = uniform_filter1d(E_deg, size=win, axis=1, mode='nearest')
+
+    n_mels = E_ref.shape[0]
+    env_corr = np.zeros((n_mels, n_frames))
+    for b in range(n_mels):
+        idx = np.where(vad_mask)[0]
+        if idx.size == 0:
+            env_corr[b, :] = 0.0
+            continue
+        r = E_ref_smooth[b, idx]; d = E_deg_smooth[b, idx]
+        if np.std(r) < 1e-10 or np.std(d) < 1e-10:
+            corr_val = 0.0
         else:
-            logging.basicConfig(level=logging.INFO)
-    else:
-        logging.basicConfig(level=logging.WARNING)
+            r_mean = r - r.mean(); d_mean = d - d.mean()
+            corr_val = np.sum(r_mean * d_mean) / (np.sqrt(np.sum(r_mean**2) * np.sum(d_mean**2)) + eps)
+        env_corr[b, :] = corr_val
+
+    pa_mean = np.sum(phase_align_masked[:, vad_mask], axis=1) / (np.sum(vad_mask) + eps)
+    ec_mean = np.mean(env_corr[:, vad_mask], axis=1)
+    band_weights = E_ref.mean(axis=1) + eps
+    combined_band = alpha * pa_mean + (1.0 - alpha) * ec_mean
+    ppas = np.sum(band_weights * combined_band) / (np.sum(band_weights) + eps)
+    return ppas
+
+# -------------------------
+# Alignment helpers
+# -------------------------
+def gcc_phat(sig, refsig, sr, upsample=1):
+    """
+    Estimate time delay (refsig leads sig by delay samples) using GCC-PHAT.
+    Returns delay in samples (can be fractional if upsample>1 via interpolation).
+    """
+    n = sig.shape[0] + refsig.shape[0]
+    # FFT-based cross-correlation with PHAT
+    SIG = np.fft.rfft(sig, n=n)
+    REF = np.fft.rfft(refsig, n=n)
+    R = SIG * np.conj(REF)
+    R /= (np.abs(R) + 1e-12)
+    cc = np.fft.irfft(R, n=n)
+    max_shift = int(n//2)
+    cc = np.concatenate((cc[-max_shift:], cc[:max_shift+1]))
+    # find peak
+    shift = np.argmax(np.abs(cc)) - max_shift
+    if upsample > 1:
+        # refine by parabolic interpolation around peak
+        peak = np.argmax(np.abs(cc))
+        if 1 <= peak < len(cc)-1:
+            y0, y1, y2 = np.abs(cc[peak-1]), np.abs(cc[peak]), np.abs(cc[peak+1])
+            denom = (y0 - 2*y1 + y2)
+            if denom != 0:
+                shift_refined = peak + 0.5 * (y0 - y2) / denom
+            else:
+                shift_refined = peak
+            shift = shift_refined - max_shift
+        # else no refine
+    return shift  # samples
+
+def fractional_shift(x, shift_samples):
+    """
+    Shift signal by fractional samples. Positive shift_samples => delay (move right).
+    We'll implement using linear interpolation of the original samples.
+    """
+    n = len(x)
+    orig_idx = np.arange(n)
+    new_idx = orig_idx - shift_samples  # where to sample from original to produce shifted signal
+    # np.interp handles bounds by filling with left/right values; use 0 outside range
+    shifted = np.interp(new_idx, orig_idx, x, left=0.0, right=0.0)
+    return shifted
+
+def dtw_warp_signal(ref, deg, sr, n_mfcc=13, hop_length=256):
+    """
+    Compute DTW on MFCCs and warp the deg signal to align to reference.
+    Returns warped_deg (length of ref).
+    """
+    # compute MFCC sequences (frames)
+    mf_ref = librosa.feature.mfcc(ref, sr=sr, n_mfcc=n_mfcc, hop_length=hop_length)
+    mf_deg = librosa.feature.mfcc(deg, sr=sr, n_mfcc=n_mfcc, hop_length=hop_length)
+    # cost and DTW path (use cosine distance)
+    D, wp = librosa.sequence.dtw(X=mf_ref, Y=mf_deg, metric='cosine')
+    wp = np.array(wp)[::-1]  # (ref_frame_idx, deg_frame_idx) ordered in time
+    ref_frames = wp[:, 0]
+    deg_frames = wp[:, 1]
+    # create mapping from ref sample indices to deg sample indices via frame centers
+    ref_frame_centers = ref_frames * hop_length + hop_length//2
+    deg_frame_centers = deg_frames * hop_length + hop_length//2
+    # build per-sample warped signal by linear interpolation of deg samples to ref positions
+    # first make deg avail at deg_frame_centers -> sample values by taking nearest sample in deg
+    # We'll create an interpolant mapping deg sample indices -> deg signal, then resample
+    # Simpler: for each ref sample index t, find corresponding deg sample using linear interp of frame centers
+    from scipy.interpolate import interp1d
+    if len(deg_frame_centers) < 2:
+        return deg * 0  # can't warp sensibly
+    interp_deg_center = interp1d(deg_frame_centers, deg_frame_centers, kind='linear', fill_value='extrapolate')
+    # map every ref sample index to a deg sample index via fitting a linear mapping from ref_frame_centers->deg_frame_centers
+    map_func = interp1d(ref_frame_centers, deg_frame_centers, kind='linear', fill_value='extrapolate')
+    ref_indices = np.arange(len(ref))
+    mapped_deg_indices = map_func(ref_indices)  # fractional deg indices
+    # sample deg at these fractional indices
+    warped = np.interp(mapped_deg_indices, np.arange(len(deg)), deg, left=0.0, right=0.0)
+    return warped
+
+# -------------------------
+# Main pipeline
+# -------------------------
+def align_and_compute_ppas(file_ref, file_deg, sr_target=96000,
+                           max_global_shift_s=0.002,  # 2 ms tolerance for global shift
+                           do_dtw_fallback=True,
+                           verbose=True):
+    
+
+    # x_ref, sr1 = librosa.load(file_ref, sr=sr_target, mono=True)
+    # x_deg, sr2 = librosa.load(file_deg, sr=sr_target, mono=True)
+
+    # x_ref, sr1 = librosa.load(file_ref, sr=None, mono=True)
+    # x_deg, sr2 = librosa.load(file_deg, sr=None, mono=True)
+
+    x_ref, sr1 = librosa.load(file_ref, sr=sr_target, mono=False)
+    x_deg, sr2 = librosa.load(file_deg, sr=sr_target, mono=False)
+
+    assert sr1 == sr2 == sr_target
+    assert (x_ref.ndim) == (x_deg.ndim)
+
+    # Trim to same length window for global GCC-PHAT search: use min len to avoid huge introduces
+    minlen = min(len(x_ref), len(x_deg))
+    x_ref_c = x_ref[:minlen]
+    x_deg_c = x_deg[:minlen]
+
+    # Compute optimal FFT size for PPAS, we use a window of ~100ms
+    fft_size = 1 << (int(np.log(sr1 * _PPS_SFFT_TIME_WINDOW)/np.log(2)))
+    fft_size = min(_PPS_SFFT_LEN_MAX, max(_PPS_SFFT_LEN_MIN, fft_size))
+    fft_overlap = int(fft_size/4)
+
+    if verbose:
+        print(f"PPAS optimal FFT size:{fft_size} overlap:{fft_overlap} for samplerate:{sr1}")
+
+    # GCC-PHAT (generalized cross correlation phase and transform) for coarse delay (in samples)
+    gcc_phat_shift_nchan =[]
+    shift_samples_nchan = []
+
+    for idx in np.arange(x_ref.ndim):
+        shift_samples = 0
+        if(x_ref.ndim == 1):
+            shift_samples = gcc_phat(x_deg_c, x_ref_c, sr_target, upsample=4)
+        else:
+            shift_samples = gcc_phat(x_deg_c[idx,:], x_ref_c[idx,:], sr_target, upsample=4)
+        if verbose:
+            print(f"GCC-PHAT coarse shift (samples) for audio track #{idx}: {shift_samples:.3f} -> {shift_samples/sr_target*1000:.3f} ms")
+
+        shift_samples_nchan.append(shift_samples)
+        gcc_phat_shift_nchan.append(shift_samples)
+
+    # using one value for shifting all channels: we use MIN which would be the most agressive on result (agerage as alternative)
+    shift_samples = np.min(shift_samples_nchan)
+
+    max_shift_samples = int(max_global_shift_s * sr_target)
+
+    # collect PPAS for all channels
+    ppas_nchan = []
+
+    for idx in np.arange(x_ref.ndim):
+        err = 0
+
+        # If shift within tolerance, apply fractional shift
+        if abs(shift_samples) <= max_shift_samples:
+
+            try:
+                if(x_ref.ndim == 1):
+                    # fractional shift -> shift deg by shift_samples so deg aligns to ref
+                    x_deg_aligned = fractional_shift(x_deg, shift_samples)
+                    # trim to same length as ref
+                    x_deg_aligned = x_deg_aligned[:len(x_ref)]
+
+                else:
+                    # fractional shift -> shift deg by shift_samples so deg aligns to ref
+                    x_deg_aligned = fractional_shift(x_deg[idx], shift_samples)
+                    # trim to same length as ref
+                    x_deg_aligned = x_deg_aligned[:len(x_ref[idx,:])]
+
+                if verbose:
+                    print(f"Applied fractional global shift for audio track #{idx} of {shift_samples:.3f} samples")
+            except:
+                err = -1
+        else:
+            # out of tolerance, error to force ppas = -1
+            print("Global shift exceeds tolerance, mark as ppas=-1")
+            err = -1
+
+            # # out of tolerance: if DTW allowed, fallback
+            # if do_dtw_fallback:
+            #     if verbose:
+            #         print("Global shift exceeds tolerance -> attempting DTW warp on MFCCs")
+            #     x_deg_aligned = dtw_warp_signal(x_ref, x_deg, sr_target, n_mfcc=20, hop_length=256)
+            # else:
+            #     raise RuntimeError("Global shift exceeds tolerance and DTW fallback disabled")
+
+        x_ref_final = []
+        x_deg_final = []
+
+        if(err==0):
+            # Ensure equal length
+            L=0                
+            if(x_ref.ndim == 1):
+                L = min(len(x_ref), len(x_deg_aligned))
+                x_ref_final = x_ref[:L]
+                x_deg_final = x_deg_aligned[:L]
+            else:
+                L = min(len(x_ref[idx,:]), len(x_deg_aligned))
+                x_ref_final = x_ref[idx,:L]
+                x_deg_final = x_deg_aligned[:L]
+
+            # optional: compute a VAD mask for later PPAS reuse a simple VAD on ref:
+            S_ref = np.abs(librosa.stft(x_ref_final, n_fft=fft_size, hop_length=fft_overlap))
+            frame_energy = S_ref.mean(axis=0)
+            vad_mask = frame_energy > max(frame_energy.max() * 0.02, np.median(frame_energy) * 0.5)
+
+            #
+            # PPAS compute
+            #
+            ppas = perceptual_phase_similarity(x_ref_final, x_deg_final, sr_target,
+                                               n_fft=fft_size, hop_length=fft_overlap, 
+                                               n_mels=_PPAS_DEFAULT_N_MELS, 
+                                               alpha=_PPAS_DEFAULT_ALPHA,
+                                               env_corr_window_frames=_PPAS_DEFAULT_ENVELOPE_CORRELATION_WINDOW_FRAMES, 
+                                               use_vad_mask=vad_mask)
+        else:
+            # out of tolerance, force ppas = -1
+            ppas =-1
+
+        if verbose:
+            print(f"PPAS for track#{idx} ([-1..1]): {ppas:.4f}  -> [0..1] {(ppas+1)/2:.4f}")
+
+        # collect result
+        ppas_nchan.append(ppas)
 
 
     #
-    # setup log
+    # TIME SHIFT (can be negative)
+
+    # magnitude
+    gcc_phat_shift = np.max(np.abs(gcc_phat_shift_nchan))
+
+    # delta_between_channels (will be zero for mono audio)
+    gcc_phat_delta_shift = np.abs(np.max(gcc_phat_shift_nchan) - np.min(gcc_phat_shift_nchan))
+
     #
-    # logger.info("-" * 80)
-    # logger.info("SETUP:")
-    # logger.info("-" * 80)
+    # PPAS: select minimum of the results
+    ppas = np.min(ppas_nchan)
 
-    # for p in args:
-    #     logger.info("{} : {}".format(str(p), str(args)))
+    return x_ref_final, x_deg_final, ppas, gcc_phat_shift, gcc_phat_delta_shift
 
-    #
-    # select behavior: if we do not specify folder we expect full path for file names
+# -------------------------
+# Command-line
+# -------------------------
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python align_and_ppas.py ref.wav deg.wav")
+        sys.exit(1)
+    
+    ref_file = sys.argv[1]; deg_file = sys.argv[2]
+    
+    # ref_aligned, deg_aligned, ppas = align_and_compute_ppas(ref_file, deg_file, sr_target=96000, max_global_shift_s=0.02, do_dtw_fallback=True)
+    ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(ref_file, deg_file, sr_target=16000, max_global_shift_s=0.02, do_dtw_fallback=True)
+    
 
-    process_subfolders=False
-
-    # if there is no folder specified we search for given files
-    if(args.folder==None):
-        args.folder=''
-
-        # sanity check: file presence
-        if not (os.path.isfile(os.path.join(args.folder,args.degraded))):
-            logger.error("missing degraded file: {}".format(os.path.join(args.folder,args.degraded)))
-            exit(1)
-
-        if not (os.path.isfile(os.path.join(args.folder,args.reference))):
-            logger.error("missing reference file: {}".format(os.path.join(args.folder,args.reference)))
-            exit(1)
-    else:
-        process_subfolders=True
+    print("==================================================")
+    print(f"PPAS ([-1..1]): {ppas:.4f}  -> [0..1] {(ppas+1)/2:.4f}")
+    print("==================================================")
 
 
-    # process subfodlers in parallel process
-    if(process_subfolders==True):
-        print("t.b.d")
-        #process_all_recordings(args.folder, args)
-
-
-    else:
-        # single file processing
-
-        # verify MKV structure as identical
-        ref_filename = os.path.join(args.folder,args.reference)
-        ref_media_info = get_media_info(ref_filename, print_result=False)
-
-        deg_filename = os.path.join(args.folder,args.degraded)
-        deg_media_info = get_media_info(deg_filename, print_result=False)
-
-        try:
-            # MATROSKA
-            if ("matroska" in ref_media_info["format"]["format_name"]) or ("matroska" in deg_media_info["format"]["format_name"]) :
-                # they mast be the same
-                if(ref_media_info["format"]["format_name"] != deg_media_info["format"]["format_name"]) :
-                    logger.error("input files of different types, must be the same")
-                    exit(1)
-
-                # must have the same number of tracks
-                if(ref_media_info["format"]["nb_streams"] != deg_media_info["format"]["nb_streams"]) :
-                    logger.error("input files with different numebr of streams, must be the same")
-                    exit(1)
-
-                # must have the same structure (i.e. channels per stream)
-                for idx in np.arange(ref_media_info["format"]["nb_streams"]):
-                    if (ref_media_info["streams"][idx]["channels"]!= deg_media_info["streams"][idx]["channels"]):
-                        logger.error("input files differ in channels num [{} vs {}] for substream #{}".format(deg_media_info["streams"][idx]["channels"],ref_media_info["streams"][idx]["channels"]),idx)
-                        exit(1)
-
-            # WAV
-            if ("wav" in ref_media_info["format"]["format_name"]) or ("wav" in deg_media_info["format"]["format_name"]) :
-                logger.error("PPAS computation not yet implemented for native .WAV files")
-                exit(1)
-        except:
-            logger.error("incorrect media info on given files")
-            exit(1)
-
-        # process single files
-        result = []
-        process_recording_folder(args.folder, args, result)
-
-        # print(str(result))
+    # # Plot quick overlay
+    # plt.figure(figsize=(10,3))
+    # plt.plot(ref_aligned, label='ref', alpha=0.7)
+    # plt.plot(deg_aligned, label='deg', alpha=0.7)
+    # plt.legend()
+    # plt.title(f"Aligned signals (PPAS={(ppas+1)/2:.3f})")
+    # plt.tight_layout()
+    # plt.show()
