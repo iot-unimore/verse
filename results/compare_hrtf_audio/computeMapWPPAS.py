@@ -243,7 +243,7 @@ def run_main(args):
     try:
         result = compute_ppas_map(args,"./",cpu_cores=args.cpu_process)
 
-        # # print map
+        # show wppas map
         ppas_map_reduced=np.delete(result,2,1)
         ppas_map_reduced=np.delete(ppas_map_reduced,3,1)
 
@@ -251,6 +251,7 @@ def run_main(args):
         table = df.pivot(index=1, columns=0, values=2)
         ax = sns.heatmap(table)
         ax.invert_yaxis()
+        ax.invert_xaxis()        
         print(table)
         plt.show()
 

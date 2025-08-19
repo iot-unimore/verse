@@ -352,7 +352,7 @@ def process_recording_folder(folder_path, args, result):
                 save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
 
 
-                # --- Normalize again after alignment ---
+                # --- sub-align and compute PPAS ---
                 logger.info(f"{args.name}: Coarse alignement track: {idx}")
                 ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=_PPAS_GLOBAL_SHIFT_MAX_TH, do_dtw_fallback=False, verbose=args.verbose)
 
@@ -364,20 +364,9 @@ def process_recording_folder(folder_path, args, result):
                 logger.info(f"{args.name}: Compute WPPAS track: {idx}")
                 wppas = compute_wppas(ppas, gcc_phat_shift, gcc_phat_delta_shift, _WPPAS_SHIFT_MIN, _WPPAS_SHIFT_MAX, _WPPAS_SHIFT_MIN*2, sr_real,weight_linear=True)
 
+                # collect results
                 m_wppas.append(wppas)
-
                 m_ppas.append(ppas)
-
-                # # --- Phase difference plot ---
-                # title = os.path.basename(folder_path)
-                # phase_diffs, freqs = compute_phase_difference(real_cmp, sim_cmp, sr_real)
-                # plot_phase_diff(phase_diffs, freqs, title)
-
-                # --- ISO band errors ---
-                # errors = compute_iso_octave_phase_error(real_cmp, sim_cmp, sr_real)
-                # plot_iso_band_errors(errors)
-                # overall_error = np.nanmean([v for val in errors.values() for v in val])
-                # print(f"Overall ISO-band phase error: {overall_error:.4f}")
 
         #
         # --- Final PPAS result ---
