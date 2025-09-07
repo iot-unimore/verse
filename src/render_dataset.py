@@ -384,7 +384,7 @@ def buildDataSetRecipe(data=None):
 
                         # customize rooms
                         if rooms_iteration_count > 0:
-                            if roomss_iteration_count > 1:
+                            if rooms_iteration_count > 1:
                                 logger.error("there must be only one room (max) for each scene")
                             tmp_idx = it_idx % rooms_iteration_count
                             custom_scene_yaml["setup"]["rooms_count"] = 1
