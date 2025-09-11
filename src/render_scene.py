@@ -343,7 +343,7 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationReverb"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableFarDistanceEffect"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "no"
-            cfg["setup"]["sources"][sidx]["3dti"]["enablePropagationDelay"] = "no"
+            cfg["setup"]["sources"][sidx]["3dti"]["enablePropagationDelay"] = "yes"
 
         #
         # listeners
