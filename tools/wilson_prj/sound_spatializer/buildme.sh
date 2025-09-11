@@ -86,7 +86,18 @@ if [ ! -d 3dti_AudioToolkit ] ; then
         echo "Cannot fetch 3dti_AudioToolkit, exit"
         exit 0
    else
-        echo "3dti_AudioToolkit: OK"   	
+        echo "3dti_AudioToolkit: OK"
+
+        # apply custom patches
+
+        # HRTF
+        echo "3dti_AudioToolkit: adding HRTF patch"
+        cp $SCRIPT_DIR/HRTF_patch.cpp $EXTERNALS_DIR/3dTuneIn/3dti_AudioToolkit/3dti_Toolkit/BinauralSpatializer/
+        pushd .
+        cd $EXTERNALS_DIR/3dTuneIn/3dti_AudioToolkit/3dti_Toolkit/BinauralSpatializer
+        git apply HRTF_patch.cpp
+        rm -f ./HRTF_patch.cpp
+        popd    
    fi
 else
     echo "3dti_AudioToolkit: OK"   	
