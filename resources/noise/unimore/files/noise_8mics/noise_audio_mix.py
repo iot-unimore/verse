@@ -23,6 +23,9 @@ from multiprocessing import Pool
 from setproctitle import setproctitle
 from subprocess import check_output
 
+import soundfile as sf
+import numpy as np
+
 #
 # Set logger format and color
 #
@@ -190,30 +193,38 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
 
     out_tmp_filename = os.path.join(tmp_folder, os.path.basename(src_file))
 
-    cmd = [
-        _FFMPEG_EXE,
-        "-y",
-        "-loglevel",
-        "error",
-        "-stats",
-        "-i",
-        str(src_file),
-        "-i",
-        str(noise_tmp_filename),
-        "-filter_complex",
-        "amix=inputs=2:duration=longest",
-        str(out_tmp_filename),
-        " > /dev/null 2>&1",
-    ]
+    audio1, sr1 = sf.read(src_file)
+    audio2, sr2 = sf.read(noise_tmp_filename)
 
-    logger.info("Running ffmpeg command:")
-    logger.info(" ".join(cmd))
+    # Check that both are stereo
+    if audio1.ndim != 2 or audio1.shape[1] != 2:
+        raise ValueError(f"{file1_path} is not stereo")
+    if audio2.ndim != 2 or audio2.shape[1] != 2:
+        raise ValueError(f"{file2_path} is not stereo")
 
-    try:
-        os.system(" ".join(cmd))
-    except:
-        logger.error("{} cannot mix: error on audio+noise downmix".format(_SCRIPT_NAME))
-        return -1
+    # Check sample rate consistency
+    if sr1 != sr2:
+        raise ValueError(f"Sample rates differ: {sr1} vs {sr2}. Resample before mixing.")
+
+    # Pad shorter file with zeros (on the time axis)
+    max_len = max(audio1.shape[0], audio2.shape[0])
+    if audio1.shape[0] < max_len:
+        pad_width = max_len - audio1.shape[0]
+        audio1 = np.pad(audio1, ((0, pad_width), (0, 0)))
+    if audio2.shape[0] < max_len:
+        pad_width = max_len - audio2.shape[0]
+        audio2 = np.pad(audio2, ((0, pad_width), (0, 0)))
+
+    # Mix audio
+    mixed = audio1 + audio2
+
+    # Normalize to avoid clipping (optional)
+    max_abs = np.max(np.abs(mixed))
+    if max_abs > 1.0:
+        mixed = mixed / max_abs
+
+    # Save the result
+    sf.write(out_tmp_filename, mixed, sr1)
 
     # Sanity checks on results
     if not (os.path.isfile(out_tmp_filename)):
@@ -241,6 +252,8 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
         return -1
 
     return err
+
+
 
 
 def audioMix(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
