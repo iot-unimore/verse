@@ -58,6 +58,9 @@ sets:
             subtype: unimore
             info: ["head_004"]
         rooms:
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_001"]          
         scenes:
           0:
             subtype: unimore
@@ -81,12 +84,16 @@ sets:
           0:
             subtype: unimore
             #info: ["000005_voice","000006_voice","000007_voice","000008_voice","000009_voice"]
-            info: ["000005_voice","000006_voice"]
+            info: ["000005_voice","000007_voice"]
         heads:
           0:
             subtype: unimore
             info: ["head_004"]
         rooms:
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_001"]          
+
         scenes:
           0:
             subtype: unimore
@@ -97,6 +104,10 @@ sets:
             # add here pre-processing of voice audio files
         postproc: 
           # add here post-processing of output audio files
+          # 0:
+          #   type: noise
+          #   subtype: unimore
+          #   info: ["noise_8mics"]
 
 
   test:
