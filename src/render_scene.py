@@ -334,15 +334,15 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
             cfg["setup"]["sources"][sidx]["3dti"] = {}
             cfg["setup"]["sources"][sidx]["3dti"]["enableInterpolation"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableAnechoicProcess"] = "yes"
-            cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationAnechoic"] = "yes"
-            cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationSmoothingAnechoic"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationAnechoic"] = "no"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationSmoothingAnechoic"] = "no"
             if cfg["setup"]["room"]["brir_sofa"] == "none":
                 cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "no"
             else:
                 cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationReverb"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableFarDistanceEffect"] = "yes"
-            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "no"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enablePropagationDelay"] = "yes"
 
         #
