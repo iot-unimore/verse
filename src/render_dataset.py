@@ -530,7 +530,7 @@ def soundSpatializeDataSet(cli_params=None):
     logger.info("soundSpatializeDataSet Pool size: {}".format(max_pool_size))
     cpu_pool = Pool(max_pool_size)
 
-    result = cpu_pool.map(soundSpatializeScene, scenes_yaml)
+    result = cpu_pool.imap_unordered(soundSpatializeScene, scenes_yaml)
 
     cpu_pool.close()
     cpu_pool.join()
