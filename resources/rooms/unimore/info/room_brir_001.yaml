@@ -30,7 +30,7 @@ brir:
       format:
         type: wav
         subtype: pcm_s24le
-        samplerate: 96000
+        samplerate: 44100
     default:  
       file: files/room_brir_001.sofa
 
