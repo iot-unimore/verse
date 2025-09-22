@@ -1,0 +1,46 @@
+---
+# binaural room impulse response (BRIR)
+
+syntax:
+  name: brir_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+name: room_002
+
+description: medium room, normal reverb
+
+format: sofa
+
+format_3dti: yes
+
+names: ["binaural", "array_six_front", "array_six_middle", "array_six_rear" ]
+
+brir_count: 1
+
+brir_main_idx: 1
+
+brir_samplerates: [ 96000 ]
+
+brir:
+  0:
+    audio:
+      format:
+        type: wav
+        subtype: pcm_s24le
+        samplerate: 96000
+    binaural:
+      file: files/wilsonClean_BRIR_20250817-001_binaural.sofa
+    array_six_front:
+      file: files/wilsonClean_BRIR_20250817-001_array_six_front.sofa
+    array_six_middle:
+      file: files/wilsonClean_BRIR_20250817-001_array_six_middle.sofa
+    array_six_rear:
+      file: files/wilsonClean_BRIR_20250817-001_array_six_rear.sofa
+    default:
+      file: files/wilsonClean_BRIR_20250817-001_array_six_front.sofa
+
+#EOF
+...
