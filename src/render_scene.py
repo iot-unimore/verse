@@ -839,26 +839,38 @@ def audioSpatialize(
             # redundant but preferred
             scene_listener_idx = scene_yaml["setup"]["listeners_count"] - 1
 
-            #
-            # room
-            #
-            rooms_brir_file = ""
-            if scene_yaml["setup"]["rooms_count"] > 1:
-                err = -1
-                logger.error("invalid rooms count (must be 1)")
-            else:
-                if scene_yaml["setup"]["rooms_count"] == 1:
-                    rooms_brir_file = os.path.join(
-                        _RESOURCES_DIR,
-                        scene_yaml["setup"]["rooms"][scene_listener_idx]["type"],
-                        scene_yaml["setup"]["rooms"][scene_listener_idx]["subtype"],
-                        rooms_yaml[0]["brir"][0]["file"],
-                    )
-                else:
-                    rooms_brir_file = "none"
-
             if err == 0:
                 for lidx in listener["hrtf"]:
+
+                    #
+                    # room
+                    #
+                    rooms_brir_file = ""
+                    if scene_yaml["setup"]["rooms_count"] > 1:
+                        err = -1
+                        logger.error("invalid rooms count (must be 1)")
+                    else:
+                        rooms_brir_file = "none"
+
+                        if scene_yaml["setup"]["rooms_count"] == 1:
+                            # check for BRIR samplerate
+                            if (scene_yaml["setup"]["format"]["samplerate"] in rooms_yaml[0]["brir_samplerates"]):
+                                # index match
+                                sr_idx = rooms_yaml[0]["brir_samplerates"].index(scene_yaml["setup"]["format"]["samplerate"])
+
+                                # check for BRIR name match
+                                if (listener["hrtf"][lidx]["name"]) in rooms_yaml[0]["names"]:
+                                    rooms_brir_file = rooms_yaml[0]["brir"][sr_idx][listener["hrtf"][lidx]["name"]]["file"]
+                                else:
+                                    rooms_brir_file = rooms_yaml[0]["brir"][sr_idx]["default"]["file"]
+         
+                                rooms_brir_file = os.path.join(
+                                    _RESOURCES_DIR,
+                                    scene_yaml["setup"]["rooms"][scene_listener_idx]["type"],
+                                    scene_yaml["setup"]["rooms"][scene_listener_idx]["subtype"],
+                                    rooms_brir_file,
+                                )
+
                     logger.info("==============================")
                     logger.info("LISTENER IDX: " + str(lidx))
                     logger.info("==============================")
