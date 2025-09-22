@@ -43,6 +43,9 @@ files:
       file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_96000_array_six_middle.wav
     array_six_rear:
       file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_96000_array_six_rear.wav
+    default:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_96000_binaural.wav
+
   1:
     audio:
       format:
@@ -57,6 +60,8 @@ files:
       file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_48000_array_six_middle.wav
     array_six_rear:
       file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_48000_array_six_rear.wav
+    default:
+      file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_48000_binaural.wav
 
 #EOF
 ...
