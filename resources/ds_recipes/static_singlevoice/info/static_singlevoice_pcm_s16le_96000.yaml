@@ -44,7 +44,9 @@ sets:
       #       according to the scene requirements, matching is done "in sorting order". 
       #       listing more voices than what is required by the scene will not have effects (skipped)
 
-      # TRAIN/TASK #0      
+      #
+      # TRAIN/TASK #0: anechoic path, no reverb, no background noise
+      #
       0:
         # note: this task shows that you can mix&match scenes from different datasets using the right subtype
         #       in this task we use the resources listed in the recipes itself, no customization
@@ -71,12 +73,14 @@ sets:
             # add here pre-processing of voice audio files
         postproc: 
           # add here post-processing of output audio files
-          0:
-            type: noise
-            subtype: unimore
-            info: ["noise_8mics"]
+          # 0:
+          #   type: noise
+          #   subtype: unimore
+          #   info: ["noise_8mics"]
 
-      # TRAIN/TASK #1      
+      #
+      # TRAIN/TASK #1: anechoic path, no reverb, + background noise
+      #
       1:
         # note: this task shows that you can mix&match scenes from different datasets using the right subtype
         #       in this task we use the resources listed in the recipes itself, no customization
@@ -104,17 +108,86 @@ sets:
             # add here pre-processing of voice audio files
         postproc: 
           # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      #
+      # TRAIN/TASK #2: anechoic path, + reverb, no backgound noise
+      #
+      2:
+        # note: this task shows that you can mix&match scenes from different datasets using the right subtype
+        #       in this task we use the resources listed in the recipes itself, no customization
+        voices:
+          0:
+            subtype: unimore
+            #info: ["000005_voice","000006_voice","000007_voice","000008_voice","000009_voice"]
+            info: ["000005_voice","000007_voice"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_004"]
+        rooms:
+          0:
+            subtype: unimore
+            info: ["room_brir_002"]          
+
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
           # 0:
           #   type: noise
           #   subtype: unimore
           #   info: ["noise_8mics"]
 
+      #
+      # TRAIN/TASK #3: anechoic path, +reverb, +background noise
+      #
+      3:
+        # note: this task shows that you can mix&match scenes from different datasets using the right subtype
+        #       in this task we use the resources listed in the recipes itself, no customization
+        voices:
+          0:
+            subtype: unimore
+            #info: ["000005_voice","000006_voice","000007_voice","000008_voice","000009_voice"]
+            info: ["000005_voice","000007_voice"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_004"]
+        rooms:
+          0:
+            subtype: unimore
+            info: ["room_brir_002"]          
+
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
 
   test:
-
+      # no files for testing
 
   validate:
-
+      # no files for validation
 
 
 #EOF
