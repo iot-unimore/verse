@@ -7,9 +7,9 @@ syntax:
     minor: 1
     revision: 0
 
-name: wilson_prj_head_barebone
+name: wilsonClean_5ms
 
-description: wilson_prj head with no hair/hat on top (barebone) with glasses having six microphones (three pairs of L/R mics). Mics are also inside ears (binaural) for reference.
+description: wilson_prj head with no hair/hat on top (barebone) with glasses having six microphones (three pairs of L/R mics). Mics are also inside ears (binaural) for reference. This HRTF has ben cut by a window of 5ms.
 
 format: sofa
 
