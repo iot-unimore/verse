@@ -5,6 +5,35 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 #
 ########################### DO NOT MODIFY BELOW THIS LINE ##########################################
 
-# nothing to fetch for this resource
+RESOURCES_TAR_FILE="verse_unimore_head-003_files_20250924.tar"
+
+RESOURCES_TAR_LINK="http://www.brainworks.it/$RESOURCES_TAR_FILE"
+
+RESOURCES_README="head_003/readme.txt"
+
+WGET=`which wget`
+
+cd $SCRIPT_DIR
+
+if [ ! -f  $SCRIPT_DIR/files/$RESOURCES_README ] ; then
+  $WGET $RESOURCES_TAR_LINK
+
+  if [ ! -f ./$RESOURCES_TAR_FILE ] ; then
+    echo "Error: could not fetch the remote file: $RESOURCES_TAR_LINK"
+    exit 0
+  fi    
+
+  echo "extracting files.."
+  tar -xvf $RESOURCES_TAR_FILE > ./error.log
+
+  if [ ! -f  $SCRIPT_DIR/files/$RESOURCES_README ] ; then
+    echo "Error: could not extract files from: $RESOURCES_TAR_LINK, see error.log"
+    exit 0
+  fi    
+
+fi
+
+rm -rf ./$RESOURCES_TAR_FILE
+rm -rf ./error.log
 
 echo "done."
