@@ -128,7 +128,7 @@ def getMediaInfo(filename, print_result=True):
 ###############################################################################
 
 
-def audioMixMono(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
+def audioMixMono(src_file=None, noise_file=None, tmp_folder=None, samplerate=0, gain_pre=1.0, gain_post=1.0):
     err = 0
 
     print("MONO MIX {}".format(src_chnum))
@@ -138,7 +138,7 @@ def audioMixMono(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
     return err
 
 
-def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
+def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0, gain_pre=1.0, gain_post=1.0):
     err = 0
 
     src_info = getMediaInfo(src_file, print_result=False)
@@ -215,8 +215,8 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
         pad_width = max_len - audio2.shape[0]
         audio2 = np.pad(audio2, ((0, pad_width), (0, 0)))
 
-    # Mix audio
-    mixed = audio1 + audio2
+    # Mix audio with pre/post gain control
+    mixed = (gain_pre*audio1 + audio2) * gain_post
 
     # Normalize to avoid clipping (optional)
     max_abs = np.max(np.abs(mixed))
@@ -256,7 +256,7 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
 
 
 
-def audioMix(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
+def audioMix(src_file=None, noise_file=None, tmp_folder=None, samplerate=0, gain_pre=1.0, gain_post=1.0):
     err = 0
 
     if not (os.path.isdir(tmp_folder)):
@@ -317,9 +317,9 @@ def audioMix(src_file=None, noise_file=None, tmp_folder=None, samplerate=0):
             )
 
     if src_chnum == 1:
-        err = audioMixMono(src_file, noise_file, tmp_folder, samplerate)
+        err = audioMixMono(src_file, noise_file, tmp_folder, samplerate, gain_pre, gain_post)
     elif src_chnum == 2:
-        err = audioMixStereo(src_file, noise_file, tmp_folder, samplerate)
+        err = audioMixStereo(src_file, noise_file, tmp_folder, samplerate, gain_pre, gain_post)
 
     return err
 
@@ -587,6 +587,8 @@ if __name__ == "__main__":
                 os.path.join(_BASE_DIR, setup_yaml["files"][idx_match][tgt_name]["file"]),
                 _OUTPUT_TMP_DIR,
                 tgt_samplerate,
+                setup_yaml["files"][idx]["audio"]["gain"]["pre"], # gain_pre
+                setup_yaml["files"][idx]["audio"]["gain"]["post"], # gain_post
             )
             if rv != 0:
                 logger.error("{} cannot perform noise audio mix {}".format(_SCRIPT_NAME, cli_params["input_file"]))

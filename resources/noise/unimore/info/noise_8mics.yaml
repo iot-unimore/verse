@@ -35,6 +35,10 @@ files:
         type: wav
         subtype: pcm_s24le
         samplerate: 96000
+      # source audio gain for SNR control
+      gain:
+        pre: 0.75 # ~ -2dBu
+        post: 1.0 # 0dBu
     binaural:
       file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_96000_binaural.wav
     array_six_front:
@@ -52,6 +56,10 @@ files:
         type: wav
         subtype: pcm_s24le
         samplerate: 48000
+      # source audio gain for SNR control
+      gain:
+        pre: 0.75 # ~ -2dBu
+        post: 1.0 # 0dBu
     binaural:
       file: files/noise_8mics/wilsonClean_20250729-001_noise_pcm_s24le_48000_binaural.wav
     array_six_front:
