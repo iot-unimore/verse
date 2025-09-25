@@ -7,9 +7,9 @@ syntax:
     minor: 1
     revision: 0
 
-name: wilsonClean_300ms
+name: wilsonShortHair_5ms
 
-description: wilson_prj head with no hair/hat on top (barebone) with glasses having six microphones (three pairs of L/R mics + binaural). This HRTF has been cut with a window of 300ms to retain the BRIR inside the HRTF. It should be used WITHOUT any additional reverberation (only anechoic rendering)
+description: wilson_prj head with short hair on top (barebone) with glasses having six microphones (three pairs of L/R mics). Mics are also inside ears (binaural) for reference. This HRTF has ben cut by a window of 5ms.
 
 format: sofa
 
@@ -31,16 +31,16 @@ hrtf_main_idx: 0
 hrtf:
   0:
     name: binaural
-    file: files/head_003/wilsonClean_20250817-001_binaural.sofa
+    file: files/head_008/wilsonShortHair_20250920-001_binaural.sofa
   1:
     name: array_six_front
-    file: files/head_003/wilsonClean_20250817-001_array_six_front.sofa
+    file: files/head_008/wilsonShortHair_20250920-001_array_six_front.sofa
   2:
     name: array_six_middle
-    file: files/head_003/wilsonClean_20250817-001_array_six_middle.sofa
+    file: files/head_008/wilsonShortHair_20250920-001_array_six_middle.sofa
   3:
     name: array_six_rear
-    file: files/head_003/wilsonClean_20250817-001_array_six_rear.sofa
+    file: files/head_008/wilsonShortHair_20250920-001_array_six_rear.sofa
 
 #EOF
 ...
