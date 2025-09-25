@@ -20,7 +20,7 @@ names: ["binaural", "array_six_front", "array_six_middle", "array_six_rear" ]
 
 brir_count: 1
 
-brir_main_idx: 1
+brir_main_idx: 0
 
 brir_samplerates: [ 96000 ]
 
