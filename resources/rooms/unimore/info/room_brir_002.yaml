@@ -32,15 +32,15 @@ brir:
         subtype: pcm_s24le
         samplerate: 96000
     binaural:
-      file: files/wilsonClean_BRIR_20250817-001_binaural.sofa
+      file: files/room_002/wilsonClean_BRIR_20250817-001_binaural.sofa
     array_six_front:
-      file: files/wilsonClean_BRIR_20250817-001_array_six_front.sofa
+      file: files/room_002/wilsonClean_BRIR_20250817-001_array_six_front.sofa
     array_six_middle:
-      file: files/wilsonClean_BRIR_20250817-001_array_six_middle.sofa
+      file: files/room_002/wilsonClean_BRIR_20250817-001_array_six_middle.sofa
     array_six_rear:
-      file: files/wilsonClean_BRIR_20250817-001_array_six_rear.sofa
+      file: files/room_002/wilsonClean_BRIR_20250817-001_array_six_rear.sofa
     default:
-      file: files/wilsonClean_BRIR_20250817-001_array_six_front.sofa
+      file: files/room_002/wilsonClean_BRIR_20250817-001_array_six_front.sofa
 
 #EOF
 ...
