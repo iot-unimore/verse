@@ -71,7 +71,7 @@ setup:
     0:
       type: heads
       subtype: unimore 
-      info: head_001
+      info: head_004
 
       # positioning: listener is static
       position:
