@@ -30,27 +30,60 @@ echo "=== checking for packages to install ==="
 #
 # check for required packages
 #
-if dpkg -s libpulse-dev &>/dev/null; then
-  echo 'libpulse-dev is installed'
-else
-  echo 'libpulse-dev is NOT installed, installing...'
-  sudo apt-get install libpulse-dev
-  if ! dpkg -s libpulse-dev &>/dev/null; then
-      echo "Cannot install libpulse-dev, exit"
-      exit 0
-  fi
-fi
 
-if dpkg -s libnetcdf-c++4-dev &>/dev/null; then
-  echo 'libnetcdf-c++ is installed'
-else
-  echo 'libnetcdf-c++ is NOT installed, installing...'
-  sudo apt-get install libnetcdf-c++4-dev libnetcdf-c++4 
-  if ! dpkg -s libnetcdf-c++4-dev &>/dev/null; then
-      echo "Cannot install libnetcdf-c++, exit"
-      exit 0
+#!/usr/bin/env bash
+
+#
+# check for required packages
+#
+
+declare -A packages
+packages=(
+  [cmake]="cmake"
+  [build-essential]="build-essential"
+  [libsndfile]="libsndfile1"
+  [libpulse]="libpulse-dev"
+  [libnetcdf]="libnetcdf-c++4 libnetcdf-c++4-dev"
+)
+
+for check_pkg in "${!packages[@]}"; do
+  install_pkgs=${packages[$check_pkg]}
+
+  echo "Checking group: $check_pkg"
+  echo "Packages: $install_pkgs"
+
+  missing=false
+
+  # Check each package individually
+  for pkg in $install_pkgs; do
+    if dpkg -s "$pkg" &>/dev/null; then
+      echo "  - $pkg is installed"
+    else
+      echo "  - $pkg is NOT installed"
+      missing=true
+    fi
+  done
+
+  if [ "$missing" = false ]; then
+    echo "All packages for $check_pkg are installed"
+  else
+    echo "Installing missing packages for $check_pkg..."
+    sudo apt-get install -y $install_pkgs
+
+    # Verify installation
+    for pkg in $install_pkgs; do
+      if ! dpkg -s "$pkg" &>/dev/null; then
+        echo "ERROR: Cannot install $pkg (group: $check_pkg)"
+        exit 1
+      fi
+    done
+
+    echo "Installation successful for $check_pkg"
   fi
-fi
+
+  echo ""
+done
+
 
 #
 # check for external folder
