@@ -285,11 +285,31 @@ def buildDataSetRecipe(data=None):
                         logger.error("could not create recipe folder: {}".format(recipe_output_folder))
 
                     if err == 0:
-                        # copy scene file
-                        recipe_output_filename = os.path.join(recipe_output_folder, recipe_name + ".yaml")
-                        # print(scene[1] + " -> " + os.path.join(recipe_output_filename))
+                        # copy scene file but override dataset parameters if needed
 
-                        shutil.copy(scene[1], recipe_output_filename)
+                        recipe_output_filename = os.path.join(recipe_output_folder, recipe_name + ".yaml")
+
+                        custom_scene_yaml = readYamlFile(scene[1])
+
+                        #
+                        # dataset audio output format has priority on scene audio output format
+                        #
+
+                        # type (WAV)
+                        if custom_scene_yaml["setup"]["format"]["type"] != data["formats_dict"]["type"]:
+                            custom_scene_yaml["setup"]["format"]["type"] = data["formats_dict"]["type"]
+                        # subtype (pcm_s16le, pcm_s24le)
+                        if custom_scene_yaml["setup"]["format"]["subtype"] != data["formats_dict"]["subtype"]:
+                            custom_scene_yaml["setup"]["format"]["subtype"] = data["formats_dict"]["subtype"]
+                        # samplerate (Hz)
+                        if custom_scene_yaml["setup"]["format"]["samplerate"] != data["formats_dict"]["samplerate"]:
+                            custom_scene_yaml["setup"]["format"]["samplerate"] = data["formats_dict"]["samplerate"]
+
+                        print(custom_scene_yaml)
+
+                        # write custom scene yaml
+                        with open(recipe_output_filename, "w") as file:
+                            yaml.dump(custom_scene_yaml, file)
 
                     recipe_custom_id += 1
 
@@ -369,8 +389,8 @@ def buildDataSetRecipe(data=None):
 
                         # customize heads
                         if heads_iteration_count > 0:
-                            if heads_iteration_count > 1:
-                                logger.error("there must be only one listener/head for each scene")
+                            # if heads_iteration_count > 1:
+                            #     logger.error("there must be only one listener/head for each scene")
                             tmp_idx = it_idx % heads_iteration_count
                             custom_scene_yaml["setup"]["listeners_count"] = 1
                             # set the subtype
@@ -403,8 +423,8 @@ def buildDataSetRecipe(data=None):
 
                         # customize postprocessing
                         if postprocessing_iteration_count > 0:
-                            if postprocessing_iteration_count > 1:
-                                logger.error("there must be only one listener/head for each scene")
+                            # if postprocessing_iteration_count > 1:
+                            #     logger.error("posproc: there must be only one listener/head for each scene ")
                             custom_scene_yaml["postproc"] = {}
                             custom_scene_yaml["postproc"][0] = {}
                             custom_scene_yaml["postproc"][0]["type"] = data["postproc_list"][0][0].split("/")[0]
