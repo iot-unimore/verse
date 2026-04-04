@@ -2,6 +2,7 @@
 """Render audio scene"""
 
 import os
+import re
 import sys
 import yaml
 import coloredlogs
@@ -34,7 +35,9 @@ FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(
 _CTRL_EXIT_SIGNAL = 0  # driven by CTRL-C, 0 to exit threads
 
 _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-_RESOURCES_DIR = os.path.abspath(os.path.dirname(__file__)) + "/../resources"
+_RESOURCES_DIR = os.path.abspath(os.path.dirname(__file__)) + "/../resources/"
+_TOOLS_DIR = _ROOT_DIR + "/../tools/bin/"
+
 _OUTPUT_REF_DIR = "/ref/"
 _OUTPUT_TMP_DIR = "/tmp/"
 
@@ -46,7 +49,8 @@ _MAX_MEM_GB = 1  # max amount of memory for each compute process
 #
 # EXECUTABLES / EXTERNAL CMDs
 #
-_SSPAT_EXE = _ROOT_DIR + "/../tools/bin/sspat"
+_SOFA_PARSE_EXE = _TOOLS_DIR + "/parse_sofa.py"
+_SSPAT_EXE = _TOOLS_DIR + "/sspat"
 _FFMPEG_EXE = "/usr/bin/ffmpeg"
 _FFPROBE_EXE = "/usr/bin/ffprobe"
 
@@ -103,6 +107,26 @@ def get_channel_count(wav_file):
     info = json.loads(result.stdout)
     return info["streams"][0]["channels"]
 
+def get_samplerate(wav_file):
+    """Uses ffprobe to get number of audio channels in a WAV file."""
+    cmd = [
+        _FFPROBE_EXE,
+        "-hide_banner",
+        "-loglevel",
+        "panic",
+        "-select_streams",
+        "a:0",
+        "-show_entries",
+        "stream=sample_rate",
+        "-of",
+        "json",
+        str(wav_file),
+    ]
+    # '-v', 'error',
+
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
+    info = json.loads(result.stdout)
+    return info["streams"][0]["sample_rate"]
 
 def muxWavFilesMKV(mono_files, stereo_files, output_file):
     """
@@ -379,19 +403,80 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
     return err
 
 
+def get_flag_value(cmd, flag):
+    for i, token in enumerate(cmd):
+        if token == flag and i + 1 < len(cmd):
+            return cmd[i + 1]
+    return None
+
 def executeSoundSpatializerCmd(cmd=""):
     err = 0
-    logger.info("soundSpatializer, executing:" + str(cmd))
 
-    try:
-        result = check_output(cmd)
-    except:
-        logger.error("spatializer, could not run cmd: {}".format(cmd))
-        err = -1
+    if(cmd==""):
+        err=-1
 
-    if not (os.path.isfile(cmd[4])):
-        err = -1
-        logger.error("spatializer, missing audio output file: {}".format(cmd[4]))
+    if(err==0):
+        out_file = get_flag_value(cmd, "-o")
+        param_file = get_flag_value(cmd, "-p")
+        yaml_param=readYamlFile(param_file)
+
+        # extract HRTF sampling rate
+        head_samplerate = 0
+        head_samplerate_match = True
+    
+        tmp_cmd = [_SOFA_PARSE_EXE, "-i", str(yaml_param["setup"]["head"]["hrtf_sofa"])]
+
+        try:
+            result = check_output(tmp_cmd)
+            #print(result)
+            text = result.decode("utf-8")
+            match = re.search(r"Data_SamplingRate\s*:\s*([0-9.]+)", text)
+            head_samplerate = float(match.group(1)) if match else None
+        except:
+            logger.error("executeSoundSpatializerCmd, could not parse sofa file: {}".format(task["head"]))
+            err = -1
+
+        # extract input files sampling rate
+        # check if we have to match samples
+        
+        audio_sources = yaml_param["setup"]["sources"]
+
+        for src_id, src in audio_sources.items():
+            src_samplerate = get_samplerate(src["file_wav"])
+            if(int(src_samplerate) != int(head_samplerate)):
+                head_samplerate_match = False
+
+        #
+        # rate sampling adaptation on mismatch
+        if not head_samplerate_match:
+            logger.error("sspat samplerate mismatch: will resample inputs (suboptimal)")
+            for src_id, src in audio_sources.items():
+                #print(src["file_wav"])
+                # ToDo: resample with ffmpeg to a temp file
+                # ToDo: update file wav input in yaml_param
+                print(src["ToDo: remove this checkmark err=-1"])
+                err = -1 # remove this!!
+
+        # now execute command
+        if (err == 0):
+            logger.info("soundSpatializer, executing:" + str(cmd))
+
+            try:
+                result = check_output(cmd)
+
+                if not head_samplerate_match:
+                    logger.info("sspat samplerate mismatch: will resample output (suboptimal)")
+                    # ToDo: resample sspat output with ffmpeg to a temp file
+
+            except:
+                logger.error("spatializer, could not run cmd: {}".format(cmd))
+                err = -1
+
+            if not (os.path.isfile(cmd[4])):
+                err = -1
+                logger.error("spatializer, missing audio output file: {}".format(cmd[4]))
+        else:
+            logger.error("spatializer, error on input data, rendering skipped: {}".format(cmd))
 
     return err
 
@@ -900,6 +985,9 @@ def audioSpatialize(
 
                                 # check for HRTF name match
                                 names = [ entry["name"] for entry in listener["hrtf"].values() ]
+
+                                print(names)
+
                                 if (listener["hrtf"][lidx]["name"]) in names:
                                     head_sofa_file = os.path.join(
                                         _RESOURCES_DIR,
@@ -915,9 +1003,19 @@ def audioSpatialize(
                                         scene_yaml["setup"]["listeners"][scene_listener_idx]["subtype"],
                                         listener["hrtf"][listener["hrtf_main_idx"]]["file"],
                                     )
+                            else:
+                                logger.error("render_scene: missing match on HRTF samplerate, fallback on default")
+                                head_sofa_file = os.path.join(
+                                    _RESOURCES_DIR,
+                                    scene_yaml["setup"]["listeners"][scene_listener_idx]["type"],
+                                    scene_yaml["setup"]["listeners"][scene_listener_idx]["subtype"],
+                                    listener["hrtf"][listener["hrtf_main_idx"]]["file"],
+                                )
 
                             sound_spatializer_cmd["head"] = head_sofa_file
                             sound_spatializer_cmd["head_radius"] = listener["geometry"]["head_radius"]
+
+                            print(head_sofa_file)
 
                     # read sources
                     for sidx in range(len(sources_wav[0])):
@@ -1050,7 +1148,7 @@ def executeSpatializeTasks(cli_params, tasks={}):
     err = 0
     idx = 0
     for task in tasks:
-        # print(yaml.dump(task))
+        #print(yaml.dump(task))
 
         tmp_filename = task["scene"]["name"] + "_" + task["name"] + "_" + f"{idx:03d}"
         cfg_filename = os.path.abspath(os.path.join(_OUTPUT_TMP_DIR, tmp_filename) + ".yaml")
