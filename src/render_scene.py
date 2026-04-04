@@ -859,9 +859,12 @@ def audioSpatialize(
                                 sr_idx = rooms_yaml[0]["brir_samplerates"].index(scene_yaml["setup"]["format"]["samplerate"])
 
                                 # check for BRIR name match
-                                if (listener["hrtf"][lidx]["name"]) in rooms_yaml[0]["names"]:
+                                names = [k for k in rooms_yaml["brir"][0].keys() if k != "audio"]
+                                #if (listener["hrtf"][lidx]["name"]) in rooms_yaml[0]["names"]:
+                                if (listener["hrtf"][lidx]["name"]) in names:
                                     rooms_brir_file = rooms_yaml[0]["brir"][sr_idx][listener["hrtf"][lidx]["name"]]["file"]
                                 else:
+                                    logger.error("render_scene: missing match on room BRIR name, fallback on default")
                                     rooms_brir_file = rooms_yaml[0]["brir"][sr_idx]["default"]["file"]
          
                                 rooms_brir_file = os.path.join(
@@ -882,14 +885,39 @@ def audioSpatialize(
                     #
                     # head
                     #
-                    head_sofa_file = os.path.join(
-                        _RESOURCES_DIR,
-                        scene_yaml["setup"]["listeners"][scene_listener_idx]["type"],
-                        scene_yaml["setup"]["listeners"][scene_listener_idx]["subtype"],
-                        listener["hrtf"][lidx]["file"],
-                    )
-                    sound_spatializer_cmd["head"] = head_sofa_file
-                    sound_spatializer_cmd["head_radius"] = listener["geometry"]["head_radius"]
+                    head_sofa_file = ""
+                    if scene_yaml["setup"]["listeners_count"] > 1:
+                        err = -1
+                        logger.error("invalid listeners count (must be 1)")
+                    else:
+                        head_sofa_file = "none"
+
+                        if scene_yaml["setup"]["listeners_count"] == 1:
+                            # check for HRTF samplerate
+                            if (scene_yaml["setup"]["format"]["samplerate"] in listeners_yaml[0]["hrtf_samplerates"]):
+                                # index match
+                                sr_idx = listeners_yaml[0]["hrtf_samplerates"].index(scene_yaml["setup"]["format"]["samplerate"])
+
+                                # check for HRTF name match
+                                names = [ entry["name"] for entry in listener["hrtf"].values() ]
+                                if (listener["hrtf"][lidx]["name"]) in names:
+                                    head_sofa_file = os.path.join(
+                                        _RESOURCES_DIR,
+                                        scene_yaml["setup"]["listeners"][scene_listener_idx]["type"],
+                                        scene_yaml["setup"]["listeners"][scene_listener_idx]["subtype"],
+                                        listener["hrtf"][lidx]["file"],
+                                    )
+                                else:
+                                    logger.error("render_scene: missing match on HRTF name, fallback on default")
+                                    head_sofa_file = os.path.join(
+                                        _RESOURCES_DIR,
+                                        scene_yaml["setup"]["listeners"][scene_listener_idx]["type"],
+                                        scene_yaml["setup"]["listeners"][scene_listener_idx]["subtype"],
+                                        listener["hrtf"][listener["hrtf_main_idx"]]["file"],
+                                    )
+
+                            sound_spatializer_cmd["head"] = head_sofa_file
+                            sound_spatializer_cmd["head_radius"] = listener["geometry"]["head_radius"]
 
                     # read sources
                     for sidx in range(len(sources_wav[0])):

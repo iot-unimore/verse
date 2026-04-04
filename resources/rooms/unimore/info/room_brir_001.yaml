@@ -16,7 +16,7 @@ format: sofa
 
 format_3dti: yes
 
-names: [ ]
+#names: [ ]
 
 brir_count: 1
 
@@ -31,6 +31,8 @@ brir:
         type: wav
         subtype: pcm_s24le
         samplerate: 44100
+    binaural:  
+      file: files/room_brir_001.sofa        
     default:  
       file: files/room_brir_001.sofa
 

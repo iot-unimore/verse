@@ -16,7 +16,7 @@ format: sofa
 
 format_3dti: yes
 
-names: ["binaural", "array_six_front", "array_six_middle", "array_six_rear" ]
+#names: ["binaural", "array_six_front", "array_six_middle", "array_six_rear" ]
 
 brir_count: 1
 
