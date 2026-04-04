@@ -305,8 +305,6 @@ def buildDataSetRecipe(data=None):
                         if custom_scene_yaml["setup"]["format"]["samplerate"] != data["formats_dict"]["samplerate"]:
                             custom_scene_yaml["setup"]["format"]["samplerate"] = data["formats_dict"]["samplerate"]
 
-                        print(custom_scene_yaml)
-
                         # write custom scene yaml
                         with open(recipe_output_filename, "w") as file:
                             yaml.dump(custom_scene_yaml, file)
