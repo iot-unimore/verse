@@ -107,6 +107,7 @@ def get_channel_count(wav_file):
     info = json.loads(result.stdout)
     return info["streams"][0]["channels"]
 
+
 def get_samplerate(wav_file):
     """Uses ffprobe to get number of audio channels in a WAV file."""
     cmd = [
@@ -127,6 +128,7 @@ def get_samplerate(wav_file):
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
     info = json.loads(result.stdout)
     return info["streams"][0]["sample_rate"]
+
 
 def muxWavFilesMKV(mono_files, stereo_files, output_file):
     """
@@ -409,26 +411,27 @@ def get_flag_value(cmd, flag):
             return cmd[i + 1]
     return None
 
+
 def executeSoundSpatializerCmd(cmd=""):
     err = 0
 
-    if(cmd==""):
-        err=-1
+    if cmd == "":
+        err = -1
 
-    if(err==0):
+    if err == 0:
         out_file = get_flag_value(cmd, "-o")
         param_file = get_flag_value(cmd, "-p")
-        yaml_param=readYamlFile(param_file)
+        yaml_param = readYamlFile(param_file)
 
         # extract HRTF sampling rate
         head_samplerate = 0
         head_samplerate_match = True
-    
+
         tmp_cmd = [_SOFA_PARSE_EXE, "-i", str(yaml_param["setup"]["head"]["hrtf_sofa"])]
 
         try:
             result = check_output(tmp_cmd)
-            #print(result)
+            # print(result)
             text = result.decode("utf-8")
             match = re.search(r"Data_SamplingRate\s*:\s*([0-9.]+)", text)
             head_samplerate = float(match.group(1)) if match else None
@@ -438,12 +441,12 @@ def executeSoundSpatializerCmd(cmd=""):
 
         # extract input files sampling rate
         # check if we have to match samples
-        
+
         audio_sources = yaml_param["setup"]["sources"]
 
         for src_id, src in audio_sources.items():
             src_samplerate = get_samplerate(src["file_wav"])
-            if(int(src_samplerate) != int(head_samplerate)):
+            if int(src_samplerate) != int(head_samplerate):
                 head_samplerate_match = False
 
         #
@@ -451,14 +454,14 @@ def executeSoundSpatializerCmd(cmd=""):
         if not head_samplerate_match:
             logger.error("sspat samplerate mismatch: will resample inputs (suboptimal)")
             for src_id, src in audio_sources.items():
-                #print(src["file_wav"])
+                # print(src["file_wav"])
                 # ToDo: resample with ffmpeg to a temp file
                 # ToDo: update file wav input in yaml_param
                 print(src["ToDo: remove this checkmark err=-1"])
-                err = -1 # remove this!!
+                err = -1  # remove this!!
 
         # now execute command
-        if (err == 0):
+        if err == 0:
             logger.info("soundSpatializer, executing:" + str(cmd))
 
             try:
@@ -926,7 +929,6 @@ def audioSpatialize(
 
             if err == 0:
                 for lidx in listener["hrtf"]:
-
                     #
                     # room
                     #
@@ -939,19 +941,23 @@ def audioSpatialize(
 
                         if scene_yaml["setup"]["rooms_count"] == 1:
                             # check for BRIR samplerate
-                            if (scene_yaml["setup"]["format"]["samplerate"] in rooms_yaml[0]["brir_samplerates"]):
+                            if scene_yaml["setup"]["format"]["samplerate"] in rooms_yaml[0]["brir_samplerates"]:
                                 # index match
-                                sr_idx = rooms_yaml[0]["brir_samplerates"].index(scene_yaml["setup"]["format"]["samplerate"])
+                                sr_idx = rooms_yaml[0]["brir_samplerates"].index(
+                                    scene_yaml["setup"]["format"]["samplerate"]
+                                )
 
                                 # check for BRIR name match
                                 names = [k for k in rooms_yaml["brir"][0].keys() if k != "audio"]
-                                #if (listener["hrtf"][lidx]["name"]) in rooms_yaml[0]["names"]:
+                                # if (listener["hrtf"][lidx]["name"]) in rooms_yaml[0]["names"]:
                                 if (listener["hrtf"][lidx]["name"]) in names:
-                                    rooms_brir_file = rooms_yaml[0]["brir"][sr_idx][listener["hrtf"][lidx]["name"]]["file"]
+                                    rooms_brir_file = rooms_yaml[0]["brir"][sr_idx][listener["hrtf"][lidx]["name"]][
+                                        "file"
+                                    ]
                                 else:
                                     logger.error("render_scene: missing match on room BRIR name, fallback on default")
                                     rooms_brir_file = rooms_yaml[0]["brir"][sr_idx]["default"]["file"]
-         
+
                                 rooms_brir_file = os.path.join(
                                     _RESOURCES_DIR,
                                     scene_yaml["setup"]["rooms"][scene_listener_idx]["type"],
@@ -979,12 +985,14 @@ def audioSpatialize(
 
                         if scene_yaml["setup"]["listeners_count"] == 1:
                             # check for HRTF samplerate
-                            if (scene_yaml["setup"]["format"]["samplerate"] in listeners_yaml[0]["hrtf_samplerates"]):
+                            if scene_yaml["setup"]["format"]["samplerate"] in listeners_yaml[0]["hrtf_samplerates"]:
                                 # index match
-                                sr_idx = listeners_yaml[0]["hrtf_samplerates"].index(scene_yaml["setup"]["format"]["samplerate"])
+                                sr_idx = listeners_yaml[0]["hrtf_samplerates"].index(
+                                    scene_yaml["setup"]["format"]["samplerate"]
+                                )
 
                                 # check for HRTF name match
-                                names = [ entry["name"] for entry in listener["hrtf"].values() ]
+                                names = [entry["name"] for entry in listener["hrtf"].values()]
 
                                 print(names)
 
@@ -1148,7 +1156,7 @@ def executeSpatializeTasks(cli_params, tasks={}):
     err = 0
     idx = 0
     for task in tasks:
-        #print(yaml.dump(task))
+        # print(yaml.dump(task))
 
         tmp_filename = task["scene"]["name"] + "_" + task["name"] + "_" + f"{idx:03d}"
         cfg_filename = os.path.abspath(os.path.join(_OUTPUT_TMP_DIR, tmp_filename) + ".yaml")

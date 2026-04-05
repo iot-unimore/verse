@@ -53,14 +53,15 @@ _MAX_MEM_GB = 1  # max amount of memory for each compute process
 #
 # AUDIO
 #
-_DEFAULT_SR=96000 # Hertz
-_PPAS_GLOBAL_SHIFT_MAX_TH = 0.0005 # in seconds
-_WPPAS_SHIFT_MIN = 0.0002 # in seconds
-_WPPAS_SHIFT_MAX = _PPAS_GLOBAL_SHIFT_MAX_TH # in seconds
+_DEFAULT_SR = 96000  # Hertz
+_PPAS_GLOBAL_SHIFT_MAX_TH = 0.0005  # in seconds
+_WPPAS_SHIFT_MIN = 0.0002  # in seconds
+_WPPAS_SHIFT_MAX = _PPAS_GLOBAL_SHIFT_MAX_TH  # in seconds
 
 ####################################################################################################
 # DO NOT MODIFY CODE BELOW THIS LINE
 ####################################################################################################
+
 
 def int_or_str(text):
     """Helper function for argument parsing."""
@@ -75,7 +76,8 @@ def restore_terminal():
         termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, termios.tcgetattr(sys.stdin.fileno()))
     except:
         pass
-    os.system("stty sane")  # fallback        
+    os.system("stty sane")  # fallback
+
 
 # ----------------------------------------------------------
 #  Audio I/O Utilities
@@ -97,6 +99,7 @@ def save_multichannel_wav(path, audio, sr):
     soundfile expects [samples, channels], so we transpose first.
     """
     sf.write(path, audio.T, sr)
+
 
 def get_media_info(filename, print_result=True):
     """
@@ -126,6 +129,7 @@ def get_media_info(filename, print_result=True):
 
     return result
 
+
 # ----------------------------------------------------------
 #  MKV Track Extraction
 # ----------------------------------------------------------
@@ -137,47 +141,61 @@ def extract_track(mkv_path, track_num, out_wav):
     - out_wav: path where the extracted WAV will be saved
     """
     cmd = [
-        "ffmpeg", "-y",              # overwrite without asking
-        "-i", mkv_path,              # input file
-        "-map", f"0:{track_num}",    # select track number
-        "-acodec", "pcm_s24le",      # uncompressed PCM 24-bit
-        out_wav
+        "ffmpeg",
+        "-y",  # overwrite without asking
+        "-i",
+        mkv_path,  # input file
+        "-map",
+        f"0:{track_num}",  # select track number
+        "-acodec",
+        "pcm_s24le",  # uncompressed PCM 24-bit
+        out_wav,
     ]
     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-# ----------------------------------------------------------
-#  WPPAS: weighted ppas 
-# ----------------------------------------------------------
-def compute_wppas(ppas, shift, delta_shift, min_shift=_WPPAS_SHIFT_MIN, max_shift=_WPPAS_SHIFT_MAX, max_delta_shift=_WPPAS_SHIFT_MIN*2, sr=_DEFAULT_SR, weight_linear=True):
 
+# ----------------------------------------------------------
+#  WPPAS: weighted ppas
+# ----------------------------------------------------------
+def compute_wppas(
+    ppas,
+    shift,
+    delta_shift,
+    min_shift=_WPPAS_SHIFT_MIN,
+    max_shift=_WPPAS_SHIFT_MAX,
+    max_delta_shift=_WPPAS_SHIFT_MIN * 2,
+    sr=_DEFAULT_SR,
+    weight_linear=True,
+):
     # everything is computed in "samples"
-    shift=np.abs(shift)
-    delta_shift=np.abs(delta_shift)
+    shift = np.abs(shift)
+    delta_shift = np.abs(delta_shift)
 
     max_shift = max_shift * sr
     min_shift = min_shift * sr
     max_delta_shift = max_delta_shift * sr
 
-    w=1.0
-    dw=1.0
+    w = 1.0
+    dw = 1.0
 
     # weigth for shift magnitude (linear or cosine)
-    if(weight_linear):
+    if weight_linear:
         # linear weigth
-        w = (-1/(max_shift-min_shift)) * (shift - min_shift) +1
-        w = min(1,(max(0,w)))
+        w = (-1 / (max_shift - min_shift)) * (shift - min_shift) + 1
+        w = min(1, (max(0, w)))
     else:
         # raised cosine weight
         shift = min(max_shift, max(min_shift, shift))
-        w =  ( 1+ np.cos( ((np.pi)/((max_shift-min_shift))) * (shift - min_shift) ) ) /2 
+        w = (1 + np.cos(((np.pi) / (max_shift - min_shift)) * (shift - min_shift))) / 2
 
     # weigth for delta shift (linear)
-    dw = (-1/max_delta_shift) * (delta_shift) +1
-    dw = min(1,(max(0,dw)))
+    dw = (-1 / max_delta_shift) * (delta_shift) + 1
+    dw = min(1, (max(0, dw)))
 
     # print(f"compute wpas: ppas={ppas} w={w} dw={dw}")
 
-    return (w*dw)
+    return w * dw
+
 
 # ----------------------------------------------------------
 #  Gain Normalization
@@ -276,27 +294,26 @@ def align_and_trim_fft(real, sim):
 #  Multi-process: single audio track computation
 # ----------------------------------------------------------
 def process_audio_ppas(data=[]):
-
-    if(len(data)<6):
+    if len(data) < 6:
         return result
 
-    name=data[0]
-    idx=data[1]
-    tmpdir=data[2]
-    lag=int(float(data[3]))
-    sim_mkv=data[4]
-    real_mkv=data[5]
+    name = data[0]
+    idx = data[1]
+    tmpdir = data[2]
+    lag = int(float(data[3]))
+    sim_mkv = data[4]
+    real_mkv = data[5]
 
     # --- default result zero ---
-    result = (idx,[0.0,0.0])
+    result = (idx, [0.0, 0.0])
 
     # --- Extract comparison tracks ---
     logger.info(f"{name}:{idx}: Extracting track: {idx}")
 
-    real_cmp_wav = os.path.join(tmpdir, "_"+str(idx)+"real_cmp.wav")
-    sim_cmp_wav = os.path.join(tmpdir, "_"+str(idx)+"sim_cmp.wav")
+    real_cmp_wav = os.path.join(tmpdir, "_" + str(idx) + "real_cmp.wav")
+    sim_cmp_wav = os.path.join(tmpdir, "_" + str(idx) + "sim_cmp.wav")
     extract_track(real_mkv, idx, real_cmp_wav)
-    extract_track(sim_mkv, idx, sim_cmp_wav)     
+    extract_track(sim_mkv, idx, sim_cmp_wav)
 
     # --- Load reference and comparison tracks ---
     real_cmp, sr_real = load_multichannel_wav(real_cmp_wav)
@@ -307,7 +324,7 @@ def process_audio_ppas(data=[]):
         return result
     if real_cmp.shape[0] != sim_cmp.shape[0]:
         logger.error(f"{name}:{idx} Skipping {sim_mkv}: channel count mismatch.")
-        return result  
+        return result
 
     # --- Apply lag to comparison tracks ---
     if lag > 0:
@@ -319,7 +336,6 @@ def process_audio_ppas(data=[]):
     real_cmp = real_cmp[:, :min_len]
     sim_cmp = sim_cmp[:, :min_len]
 
-
     # --- Normalize again after alignment ---
     logger.info(f"{name}:{idx}: Normalizing track: {idx}")
     real_cmp, sim_cmp = normalize_gain(real_cmp, sim_cmp)
@@ -330,15 +346,21 @@ def process_audio_ppas(data=[]):
     # save_multichannel_wav(temp_real_path, real_cmp, sr_real)
     # save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
 
-    temp_real_path = os.path.join(tmpdir, "_"+str(idx)+'real_aligned.wav')
-    temp_sim_path = os.path.join(tmpdir, "_"+str(idx)+'sim_aligned.wav')
+    temp_real_path = os.path.join(tmpdir, "_" + str(idx) + "real_aligned.wav")
+    temp_sim_path = os.path.join(tmpdir, "_" + str(idx) + "sim_aligned.wav")
     save_multichannel_wav(temp_real_path, real_cmp, sr_real)
     save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
 
-
     # --- sub-align and compute PPAS ---
     logger.info(f"{name}:{idx}: Coarse alignement track: {idx}")
-    ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=_PPAS_GLOBAL_SHIFT_MAX_TH, do_dtw_fallback=False, verbose=args.verbose)
+    ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(
+        temp_real_path,
+        temp_sim_path,
+        sr_target=sr_real,
+        max_global_shift_s=_PPAS_GLOBAL_SHIFT_MAX_TH,
+        do_dtw_fallback=False,
+        verbose=args.verbose,
+    )
 
     # print("==================================================")
     # print(f"PPAS [-1..1]:{ppas:.4f} -> [0..1]:{(ppas+1)/2:.4f}, gcc-phat_shift:{gcc_phat_shift:.2f} [samples] -> {gcc_phat_shift*1000/sr_real:.3f} [ms]")
@@ -346,10 +368,19 @@ def process_audio_ppas(data=[]):
 
     # --- Adjust PPAS measure by weighting on shift amount and collect results ---
     logger.info(f"{name}:{idx}: Compute WPPAS track: {idx}")
-    wppas = compute_wppas(ppas, gcc_phat_shift, gcc_phat_delta_shift, _WPPAS_SHIFT_MIN, _WPPAS_SHIFT_MAX, _WPPAS_SHIFT_MIN*2, sr_real,weight_linear=True)
+    wppas = compute_wppas(
+        ppas,
+        gcc_phat_shift,
+        gcc_phat_delta_shift,
+        _WPPAS_SHIFT_MIN,
+        _WPPAS_SHIFT_MAX,
+        _WPPAS_SHIFT_MIN * 2,
+        sr_real,
+        weight_linear=True,
+    )
 
     # # collect results
-    result=(idx, [wppas, ppas])
+    result = (idx, [wppas, ppas])
 
     # m_wppas.append(wppas)
     # m_ppas.append(ppas)
@@ -370,7 +401,7 @@ def process_recording_folder(folder_path, args, result):
     - Normalize gain
     """
     m_wppas = []
-    m_ppas=[]
+    m_ppas = []
 
     real_mkv = os.path.join(folder_path, args.reference)
     sim_mkv = os.path.join(folder_path, args.degraded)
@@ -386,7 +417,6 @@ def process_recording_folder(folder_path, args, result):
         return
 
     with tempfile.TemporaryDirectory() as tmpdir:
-
         # --- Extract reference tracks from cointainer (MKV) ---
         real_ref_wav = os.path.join(tmpdir, "real_ref.wav")
         sim_ref_wav = os.path.join(tmpdir, "sim_ref.wav")
@@ -404,20 +434,20 @@ def process_recording_folder(folder_path, args, result):
         real_ref, sim_ref = normalize_gain(real_ref, sim_ref)
 
         # --- Align reference tracks ---
-        lag=0
-        
-        real_ref_aligned, sim_ref_aligned, lag= align_and_trim_fft(real_ref, sim_ref)
-        
+        lag = 0
+
+        real_ref_aligned, sim_ref_aligned, lag = align_and_trim_fft(real_ref, sim_ref)
+
         logger.info(f"{args.name}: Applying lag {lag} to comparison tracks")
 
-        if(1):
-            ppas_list=[]
+        if 1:
+            ppas_list = []
             for idx in np.arange(ref_media_info["format"]["nb_streams"]):
-                if(idx!=args.st):
-                    task_params=[args.name, idx, tmpdir, str(lag), sim_mkv, real_mkv]
+                if idx != args.st:
+                    task_params = [args.name, idx, tmpdir, str(lag), sim_mkv, real_mkv]
                     ppas_list.append(task_params)
 
-            if(len(ppas_list)>0):
+            if len(ppas_list) > 0:
                 # compute process pool size based on CPU/MEM requirements
                 mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")  # e.g. 4015976448
                 mem_gib = mem_bytes / (1024.0**3)  # e.g. 3.74
@@ -427,10 +457,10 @@ def process_recording_folder(folder_path, args, result):
                 cpu_count = min([_MAX_CPU_COUNT, cpu_count])
 
                 max_pool_size = min(cpu_count, int(mem_gib / _MIN_MEM_GB))
-                cpu_pool_result={}
+                cpu_pool_result = {}
                 cpu_pool = Pool(max_pool_size)
                 if len(ppas_list) > 0:
-                    cpu_pool_result=dict(cpu_pool.map(process_audio_ppas,ppas_list))
+                    cpu_pool_result = dict(cpu_pool.map(process_audio_ppas, ppas_list))
                 cpu_pool.close()
                 cpu_pool.join()
 
@@ -440,15 +470,14 @@ def process_recording_folder(folder_path, args, result):
 
         else:
             for idx in np.arange(ref_media_info["format"]["nb_streams"]):
-                if(idx!=args.st):
-
+                if idx != args.st:
                     # --- Extract comparison tracks ---
                     logger.info(f"{args.name}: Extracting track: {idx}")
 
-                    real_cmp_wav = os.path.join(tmpdir, "_"+str(idx)+"real_cmp.wav")
-                    sim_cmp_wav = os.path.join(tmpdir, "_"+str(idx)+"sim_cmp.wav")
+                    real_cmp_wav = os.path.join(tmpdir, "_" + str(idx) + "real_cmp.wav")
+                    sim_cmp_wav = os.path.join(tmpdir, "_" + str(idx) + "sim_cmp.wav")
                     extract_track(real_mkv, idx, real_cmp_wav)
-                    extract_track(sim_mkv, idx, sim_cmp_wav)     
+                    extract_track(sim_mkv, idx, sim_cmp_wav)
 
                     # --- Load reference and comparison tracks ---
                     real_cmp, sr_real = load_multichannel_wav(real_cmp_wav)
@@ -459,7 +488,7 @@ def process_recording_folder(folder_path, args, result):
                         return
                     if real_cmp.shape[0] != sim_cmp.shape[0]:
                         logger.error(f"Skipping {sim_mkv}: channel count mismatch.")
-                        return   
+                        return
 
                     # --- Apply lag to comparison tracks ---
                     if lag > 0:
@@ -471,7 +500,6 @@ def process_recording_folder(folder_path, args, result):
                     real_cmp = real_cmp[:, :min_len]
                     sim_cmp = sim_cmp[:, :min_len]
 
-
                     # --- Normalize again after alignment ---
                     logger.info(f"{args.name}: Normalizing track: {idx}")
                     real_cmp, sim_cmp = normalize_gain(real_cmp, sim_cmp)
@@ -482,15 +510,21 @@ def process_recording_folder(folder_path, args, result):
                     # save_multichannel_wav(temp_real_path, real_cmp, sr_real)
                     # save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
 
-                    temp_real_path = os.path.join(tmpdir, "_"+str(idx)+'real_aligned.wav')
-                    temp_sim_path = os.path.join(tmpdir, "_"+str(idx)+'sim_aligned.wav')
+                    temp_real_path = os.path.join(tmpdir, "_" + str(idx) + "real_aligned.wav")
+                    temp_sim_path = os.path.join(tmpdir, "_" + str(idx) + "sim_aligned.wav")
                     save_multichannel_wav(temp_real_path, real_cmp, sr_real)
                     save_multichannel_wav(temp_sim_path, sim_cmp, sr_real)
 
-
                     # --- sub-align and compute PPAS ---
                     logger.info(f"{args.name}: Coarse alignement track: {idx}")
-                    ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(temp_real_path, temp_sim_path, sr_target=sr_real, max_global_shift_s=_PPAS_GLOBAL_SHIFT_MAX_TH, do_dtw_fallback=False, verbose=args.verbose)
+                    ref_aligned, deg_aligned, ppas, gcc_phat_shift, gcc_phat_delta_shift = align_and_compute_ppas(
+                        temp_real_path,
+                        temp_sim_path,
+                        sr_target=sr_real,
+                        max_global_shift_s=_PPAS_GLOBAL_SHIFT_MAX_TH,
+                        do_dtw_fallback=False,
+                        verbose=args.verbose,
+                    )
 
                     # print("==================================================")
                     # print(f"PPAS [-1..1]:{ppas:.4f} -> [0..1]:{(ppas+1)/2:.4f}, gcc-phat_shift:{gcc_phat_shift:.2f} [samples] -> {gcc_phat_shift*1000/sr_real:.3f} [ms]")
@@ -498,7 +532,16 @@ def process_recording_folder(folder_path, args, result):
 
                     # --- Adjust PPAS measure by weighting on shift amount and collect results ---
                     logger.info(f"{args.name}: Compute WPPAS track: {idx}")
-                    wppas = compute_wppas(ppas, gcc_phat_shift, gcc_phat_delta_shift, _WPPAS_SHIFT_MIN, _WPPAS_SHIFT_MAX, _WPPAS_SHIFT_MIN*2, sr_real,weight_linear=True)
+                    wppas = compute_wppas(
+                        ppas,
+                        gcc_phat_shift,
+                        gcc_phat_delta_shift,
+                        _WPPAS_SHIFT_MIN,
+                        _WPPAS_SHIFT_MAX,
+                        _WPPAS_SHIFT_MIN * 2,
+                        sr_real,
+                        weight_linear=True,
+                    )
 
                     # collect results
                     m_wppas.append(wppas)
@@ -513,12 +556,12 @@ def process_recording_folder(folder_path, args, result):
         logger.info(f"{args.name}: WPPAS [0..1]:{wppas_mean*((ppas_mean+1)/2):.4f}, PPAS [0..1]:{(ppas_mean+1)/2:.4f}")
 
         # return PPAS in scale [0 ..1] only (easier to use), both in scaled and non-scaled version
-        result.append([wppas_mean*((ppas_mean+1)/2) , ((ppas_mean+1)/2)])
+        result.append([wppas_mean * ((ppas_mean + 1) / 2), ((ppas_mean + 1) / 2)])
 
-        if(args.json):
-            print(json.dumps({"wppas":wppas_mean*((ppas_mean+1)/2), "ppas": ((ppas_mean+1)/2)}))
+        if args.json:
+            print(json.dumps({"wppas": wppas_mean * ((ppas_mean + 1) / 2), "ppas": ((ppas_mean + 1) / 2)}))
 
-        return 
+        return
 
 
 def process_all_recordings(base_folder, args, result):
@@ -527,10 +570,11 @@ def process_all_recordings(base_folder, args, result):
     for subfolder in sorted(os.listdir(base_folder)):
         folder_path = os.path.join(base_folder, subfolder)
         if os.path.isdir(folder_path):
-            rv=process_recording_folder(folder_path, args)
+            rv = process_recording_folder(folder_path, args)
             result.append(rv)
 
     return
+
 
 #
 ###############################################################################
@@ -538,8 +582,9 @@ def process_all_recordings(base_folder, args, result):
 ###############################################################################
 #
 if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(description="Compute Perceptual Phase Alignement index between MKV files",add_help=True)
+    parser = argparse.ArgumentParser(
+        description="Compute Perceptual Phase Alignement index between MKV files", add_help=True
+    )
     # parser.add_argument("folder", help="Root folder with subfolders containing real.mkv and sim.mkv")
 
     parser.add_argument(
@@ -569,7 +614,7 @@ if __name__ == "__main__":
         type=str,
         default="WPPAS",
         help="name for multiprocess logging (default: %(default)s)",
-    )    
+    )
     parser.add_argument(
         "-l",
         "--logfile",
@@ -590,15 +635,10 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="use json for output results (default: %(default)s)",
-    )    
-    parser.add_argument("-st", 
-        type=int, 
-        default=0, 
-        help="Sync track index (must be a mono track)"
     )
+    parser.add_argument("-st", type=int, default=0, help="Sync track index (must be a mono track)")
 
     args = parser.parse_args()
-
 
     #
     # set debug verbosity
@@ -610,7 +650,6 @@ if __name__ == "__main__":
             logging.basicConfig(level=logging.INFO)
     else:
         logging.basicConfig(level=logging.WARNING)
-
 
     #
     # setup log
@@ -625,70 +664,74 @@ if __name__ == "__main__":
     #
     # select behavior: if we do not specify folder we expect full path for file names
 
-    process_subfolders=False
+    process_subfolders = False
 
     # if there is no folder specified we search for given files
-    if(args.folder==None):
-        args.folder=''
+    if args.folder == None:
+        args.folder = ""
 
         # sanity check: file presence
-        if not (os.path.isfile(os.path.join(args.folder,args.degraded))):
-            logger.error("missing degraded file: {}".format(os.path.join(args.folder,args.degraded)))
+        if not (os.path.isfile(os.path.join(args.folder, args.degraded))):
+            logger.error("missing degraded file: {}".format(os.path.join(args.folder, args.degraded)))
             exit(1)
 
-        if not (os.path.isfile(os.path.join(args.folder,args.reference))):
-            logger.error("missing reference file: {}".format(os.path.join(args.folder,args.reference)))
+        if not (os.path.isfile(os.path.join(args.folder, args.reference))):
+            logger.error("missing reference file: {}".format(os.path.join(args.folder, args.reference)))
             exit(1)
     else:
-        process_subfolders=True
-
+        process_subfolders = True
 
     # process subfodlers in parallel process
-    if(process_subfolders==True):
+    if process_subfolders == True:
         print("t.b.d")
-        #process_all_recordings(args.folder, args)
-
+        # process_all_recordings(args.folder, args)
 
     else:
         # single file processing
 
         # verify MKV structure as identical
-        ref_filename = os.path.join(args.folder,args.reference)
+        ref_filename = os.path.join(args.folder, args.reference)
         ref_media_info = get_media_info(ref_filename, print_result=False)
 
-        deg_filename = os.path.join(args.folder,args.degraded)
+        deg_filename = os.path.join(args.folder, args.degraded)
         deg_media_info = get_media_info(deg_filename, print_result=False)
 
         try:
             # MATROSKA
-            if ("matroska" in ref_media_info["format"]["format_name"]) or ("matroska" in deg_media_info["format"]["format_name"]) :
+            if ("matroska" in ref_media_info["format"]["format_name"]) or (
+                "matroska" in deg_media_info["format"]["format_name"]
+            ):
                 # they mast be the same
-                if(ref_media_info["format"]["format_name"] != deg_media_info["format"]["format_name"]) :
+                if ref_media_info["format"]["format_name"] != deg_media_info["format"]["format_name"]:
                     logger.error("input files of different types, must be the same")
                     exit(1)
 
                 # must have the same number of tracks
-                if(ref_media_info["format"]["nb_streams"] != deg_media_info["format"]["nb_streams"]) :
+                if ref_media_info["format"]["nb_streams"] != deg_media_info["format"]["nb_streams"]:
                     logger.error("input files with different numebr of streams, must be the same")
                     exit(1)
 
                 # must have the same structure (i.e. channels per stream)
                 for idx in np.arange(ref_media_info["format"]["nb_streams"]):
-                    if (ref_media_info["streams"][idx]["channels"]!= deg_media_info["streams"][idx]["channels"]):
-                        logger.error("input files differ in channels num [{} vs {}] for substream #{}".format(deg_media_info["streams"][idx]["channels"],ref_media_info["streams"][idx]["channels"]),idx)
+                    if ref_media_info["streams"][idx]["channels"] != deg_media_info["streams"][idx]["channels"]:
+                        logger.error(
+                            "input files differ in channels num [{} vs {}] for substream #{}".format(
+                                deg_media_info["streams"][idx]["channels"], ref_media_info["streams"][idx]["channels"]
+                            ),
+                            idx,
+                        )
                         exit(1)
 
             # WAV
-            if ("wav" in ref_media_info["format"]["format_name"]) or ("wav" in deg_media_info["format"]["format_name"]) :
+            if ("wav" in ref_media_info["format"]["format_name"]) or ("wav" in deg_media_info["format"]["format_name"]):
                 logger.error("PPAS computation not yet implemented for native .WAV files")
                 exit(1)
         except:
             logger.error("incorrect media info on given files")
             exit(1)
 
-
         # process single files
-        try:         
+        try:
             result = []
             process_recording_folder(args.folder, args, result)
         except KeyboardInterrupt:
