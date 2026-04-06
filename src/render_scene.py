@@ -133,6 +133,39 @@ def get_samplerate(wav_file):
     return info["streams"][0]["sample_rate"]
 
 
+def waitFileCompleted(filepath, stable_time=3.0, timeout=120.0, check_interval=0.5):
+    filepath = Path(filepath)
+
+    start_time = time.time()
+    last_size = -1
+    stable_start = None
+
+    logger.warning("waiting for file complete: {}".format(filepath))
+
+    while True:
+        # Timeout check
+        if time.time() - start_time > timeout:
+            # raise TimeoutError(f"Timeout waiting for file to stabilize: {filepath}")
+            return False
+
+        if not filepath.exists():
+            time.sleep(check_interval)
+            continue
+
+        size = filepath.stat().st_size
+
+        if size == last_size:
+            if stable_start is None:
+                stable_start = time.time()
+            elif time.time() - stable_start >= stable_time:
+                logger.warning("waiting for file complete. DONE.: {}".format(filepath))
+                return True  # file stable
+        else:
+            stable_start = None  # reset stability timer
+
+        last_size = size
+        time.sleep(check_interval)
+
 def resampleAudioFile(input_file, output_file, samplerate=0, overwrite=False):
     """ """
 
@@ -442,7 +475,7 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
                 cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationReverb"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableFarDistanceEffect"] = "yes"
-            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "no"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enablePropagationDelay"] = "yes"
 
         #
@@ -915,9 +948,11 @@ def audioSceneRender(cli_params=None):
 
                 if not os.path.isfile(out_filename):
                     logger.info("convert audio file {}".format(out_filename))
+
                     result = check_output(os_cmd)
                     # os.system(" ".join(os_cmd))
                 else:
+                    waitFileCompleted(out_filename)
                     logger.info("audio file already converted {}".format(out_filename))
 
                 tmp_sources_wav.append(os.path.join(_ROOT_DIR, out_filename))
@@ -1054,6 +1089,7 @@ def audioSpatialize(
                         rooms_brir_file = "none"
 
                         if scene_yaml["setup"]["rooms_count"] == 1:
+
                             # check for BRIR samplerate
                             if scene_yaml["setup"]["format"]["samplerate"] in rooms_yaml[0]["brir_samplerates"]:
                                 # index match
@@ -1062,8 +1098,8 @@ def audioSpatialize(
                                 )
 
                                 # check for BRIR name match
-                                names = [k for k in rooms_yaml["brir"][0].keys() if k != "audio"]
-                                # if (listener["hrtf"][lidx]["name"]) in rooms_yaml[0]["names"]:
+                                names = [k for k in rooms_yaml[0]["brir"][0].keys() if k != "audio"]
+
                                 if (listener["hrtf"][lidx]["name"]) in names:
                                     rooms_brir_file = rooms_yaml[0]["brir"][sr_idx][listener["hrtf"][lidx]["name"]][
                                         "file"
