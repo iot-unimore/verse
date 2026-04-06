@@ -1069,7 +1069,7 @@ def audioSpatialize(
                                         "file"
                                     ]
                                 else:
-                                    logger.error("render_scene: missing match on room BRIR name, fallback on default")
+                                    logger.warning("render_scene: missing match on room BRIR name, fallback on default")
                                     rooms_brir_file = rooms_yaml[0]["brir"][sr_idx]["default"]["file"]
 
                                 rooms_brir_file = os.path.join(
