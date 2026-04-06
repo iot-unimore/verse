@@ -10,6 +10,7 @@ import logging
 import signal
 import argparse
 import sys
+import random
 
 import shutil
 import glob
@@ -21,6 +22,8 @@ from subprocess import check_output
 from multiprocessing import Pool
 from setproctitle import setproctitle
 from subprocess import check_output
+from pathlib import Path
+from datetime import datetime
 
 #
 # Set logger format and color
@@ -128,6 +131,77 @@ def get_samplerate(wav_file):
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
     info = json.loads(result.stdout)
     return info["streams"][0]["sample_rate"]
+
+
+def resampleAudioFile(input_file, output_file, samplerate=0, overwrite=False):
+    """ """
+
+    codec_types = ["pcm_s16le", "pcm_s24le", "pcm_s32le", "pcm_f32le", "pcm_f64le"]
+
+    if not input_file and not output_file:
+        raise ValueError("resampleAudioFile: provide in/out files.")
+
+    if samplerate not in [8000, 16000, 32000, 44100, 48000, 96000]:
+        raise ValueError("resampleAudioFile: invalid sample rate.")
+
+    if not (Path(input_file).exists()):
+        raise ValueError("resampleAudioFile: cannot open input file.")
+
+    # skip unless overwrite requested
+    elif (not (Path(output_file).exists())) or (overwrite == True):
+        # detect audio file format
+        cmd = [
+            _FFPROBE_EXE,
+            "-hide_banner",
+            "-loglevel",
+            "panic",
+            "-select_streams",
+            "a:0",
+            "-show_entries",
+            "stream=codec_name",
+            "-of",
+            "csv=p=0",
+            str(input_file),
+        ]
+        try:
+            codec_type = check_output(cmd, stderr=subprocess.DEVNULL).decode("utf-8").strip()
+        except:
+            raise ValueError("resampleAudioFile: cannot detect input codec type.")
+
+        codec_supported = False
+        for codec in codec_types:
+            if codec in codec_type:
+                codec_supported = True
+                codec_type = codec
+
+        if not codec_supported:
+            raise ValueError("resampleAudioFile: invalid input codec type.")
+
+        # resample without re-encoding
+        cmd = [
+            _FFMPEG_EXE,
+            "-y",
+            "-i",
+            str(input_file),
+            "-ar",
+            str(samplerate),
+            "-c:a",
+            str(codec_type),
+            str(output_file),
+        ]
+
+        try:
+            logger.info("Running ffmpeg audio_resampling command:")
+            logger.info(" ".join(cmd))
+            _ = check_output(cmd, stderr=subprocess.DEVNULL).decode("utf-8").strip()
+
+        except:
+            raise ValueError("resampleAudioFile: cannot resample audio file: {}.".format(input_file))
+    else:
+        logger.info("file {} already done, skipping resample".format(str(output_file)))
+
+    if not (Path(output_file).exists()):
+        raise ValueError("resampleAudioFile: missing output file {}.".format(output_file))
 
 
 def muxWavFilesMKV(mono_files, stereo_files, output_file):
@@ -368,16 +442,17 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
                 cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationReverb"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableFarDistanceEffect"] = "yes"
-            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "no"
             cfg["setup"]["sources"][sidx]["3dti"]["enablePropagationDelay"] = "yes"
 
         #
         # listeners
         #
+
         cfg["setup"]["listeners_count"] = 1
         cfg["setup"]["listeners"] = {}
         cfg["setup"]["listeners"][0] = {}
-        cfg["setup"]["listeners"][0]["coord"] = [0, 0, 1]
+        cfg["setup"]["listeners"][0]["coord"] = cfg_yaml["listeners"][0]["position"]["coord"]["value"]
         cfg["setup"]["listeners"][0]["path_csv"] = "none"
         cfg["setup"]["listeners"][0]["head"] = {}
         cfg["setup"]["listeners"][0]["head"]["hrtf_sofa"] = cfg_yaml["head"]
@@ -452,25 +527,39 @@ def executeSoundSpatializerCmd(cmd=""):
         #
         # rate sampling adaptation on mismatch
         if not head_samplerate_match:
-            logger.error("sspat samplerate mismatch: will resample inputs (suboptimal)")
+            logger.warning("sspat samplerate mismatch: will resample inputs (suboptimal) ")
             for src_id, src in audio_sources.items():
-                # print(src["file_wav"])
-                # ToDo: resample with ffmpeg to a temp file
-                # ToDo: update file wav input in yaml_param
-                print(src["ToDo: remove this checkmark err=-1"])
-                err = -1  # remove this!!
+                # resampled file
+                p = Path(src["file_wav"])
+                # f = p.with_name(p.stem + "_" + str(int(head_samplerate)) + p.suffix)
+                f = p.with_name(
+                    p.stem + "_" + str(datetime.now().microsecond) + "_" + str(random.randint(0, 999999)) + p.suffix
+                )
+
+                resampleAudioFile(input_file=src["file_wav"], output_file=f, samplerate=head_samplerate)
+                if not (Path(f).exists()):
+                    err = -1
+
+                # change input param for sspat config
+                yaml_param["setup"]["sources"][src_id]["file_wav"] = str(f).strip()
+
+            # rewrite param file after mods
+            with open(param_file, "w") as f:
+                yaml.dump(yaml_param, f, default_flow_style=False, sort_keys=False)
 
         # now execute command
         if err == 0:
             logger.info("soundSpatializer, executing:" + str(cmd))
 
+            # rename output if needed
+            if not head_samplerate_match:
+                p = Path(str(out_file))
+                f = p.with_name(p.stem + "_" + str(int(head_samplerate)) + p.suffix)
+                cmd[4] = str(f)
+
+            # execute sspat
             try:
-                result = check_output(cmd)
-
-                if not head_samplerate_match:
-                    logger.info("sspat samplerate mismatch: will resample output (suboptimal)")
-                    # ToDo: resample sspat output with ffmpeg to a temp file
-
+                _ = check_output(cmd)
             except:
                 logger.error("spatializer, could not run cmd: {}".format(cmd))
                 err = -1
@@ -478,6 +567,21 @@ def executeSoundSpatializerCmd(cmd=""):
             if not (os.path.isfile(cmd[4])):
                 err = -1
                 logger.error("spatializer, missing audio output file: {}".format(cmd[4]))
+            else:
+                if not head_samplerate_match:
+                    logger.info("sspat samplerate mismatch: will resample output (suboptimal)")
+                    resampleAudioFile(input_file=str(cmd[4]), output_file=out_file, samplerate=int(src_samplerate))
+                    if not (Path(out_file).exists()):
+                        err = -1
+
+                    # remove temporary audio files
+                    if Path(str(cmd[4])).exists():
+                        Path(str(cmd[4])).unlink()
+
+                    for src_id, src in yaml_param["setup"]["sources"].items():
+                        if Path(yaml_param["setup"]["sources"][src_id]["file_wav"]).exists():
+                            Path(yaml_param["setup"]["sources"][src_id]["file_wav"]).unlink()
+
         else:
             logger.error("spatializer, error on input data, rendering skipped: {}".format(cmd))
 
@@ -648,6 +752,11 @@ def audioSceneRender(cli_params=None):
         except:
             err = -1
             logger.error("cannot open/parse scene yaml file: {}".format(cli_params["scene_file"]))
+
+        try:
+            _ = scene_yaml["setup"]["listeners"][0]["position"]
+        except:
+            err = -1
 
     # check syntax
     if (err == 0) and (scene_yaml["syntax"]["name"] != "audio_rendering_scene"):
@@ -874,6 +983,11 @@ def audioSceneRender(cli_params=None):
                 err = -1
                 logger.error("cannot open/parse room yaml file: {}".format(tmp_filename))
 
+    try:
+        _ = scene_yaml["setup"]["listeners"][0]["position"]
+    except:
+        err = -1
+
     #
     # render scene or exit on error
     #
@@ -984,6 +1098,15 @@ def audioSpatialize(
                         head_sofa_file = "none"
 
                         if scene_yaml["setup"]["listeners_count"] == 1:
+                            # copy listener definition
+                            sound_spatializer_cmd["listeners"] = ""
+                            sound_spatializer_cmd["listeners"] = scene_yaml["setup"]["listeners"]
+
+                            try:
+                                _ = scene_yaml["setup"]["listeners"][0]["position"]
+                            except:
+                                err = -1
+
                             # check for HRTF samplerate
                             if scene_yaml["setup"]["format"]["samplerate"] in listeners_yaml[0]["hrtf_samplerates"]:
                                 # index match
@@ -993,8 +1116,6 @@ def audioSpatialize(
 
                                 # check for HRTF name match
                                 names = [entry["name"] for entry in listener["hrtf"].values()]
-
-                                print(names)
 
                                 if (listener["hrtf"][lidx]["name"]) in names:
                                     head_sofa_file = os.path.join(
@@ -1022,8 +1143,6 @@ def audioSpatialize(
 
                             sound_spatializer_cmd["head"] = head_sofa_file
                             sound_spatializer_cmd["head_radius"] = listener["geometry"]["head_radius"]
-
-                            print(head_sofa_file)
 
                     # read sources
                     for sidx in range(len(sources_wav[0])):
@@ -1383,6 +1502,9 @@ if __name__ == "__main__":
 
     # set user friendly process name for MAIN
     setproctitle("verse_render_scene")
+
+    # random init
+    random.seed()
 
     # parse input params
     parser = argparse.ArgumentParser()
