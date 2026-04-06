@@ -390,15 +390,33 @@ def buildDataSetRecipe(data=None):
                             # if heads_iteration_count > 1:
                             #     logger.error("there must be only one listener/head for each scene")
                             tmp_idx = it_idx % heads_iteration_count
+
+                            head_position_bkp = {}
+                            head_position_bkp = custom_scene_yaml["setup"]["listeners"][0]["position"]
+
                             custom_scene_yaml["setup"]["listeners_count"] = 1
                             # set the subtype
                             custom_scene_yaml["setup"]["listeners"][0] = {}
+                            custom_scene_yaml["setup"]["listeners"][0]["position"] = head_position_bkp
                             custom_scene_yaml["setup"]["listeners"][0]["type"] = "heads"
                             custom_scene_yaml["setup"]["listeners"][0]["subtype"] = data["heads_list"][tmp_idx][0]
                             # set the info file (remove path and file extensions)
                             custom_scene_yaml["setup"]["listeners"][0]["info"] = os.path.split(
                                 data["heads_list"][tmp_idx][1]
                             )[1][0:-5]
+
+                            # check that each head has a position
+                            try:
+                                if "static" == custom_scene_yaml["setup"]["listeners"][0]["position"]["type"]:
+                                    _ = custom_scene_yaml["setup"]["listeners"][0]["position"]["coord"]["value"]
+                                elif "dynamic" == custom_scene_yaml["setup"]["listeners"][0]["position"]["type"]:
+                                    _ = custom_scene_yaml["setup"]["listeners"][0]["position"]["value"]["info"]
+                                else:
+                                    logger.error("listener invalid position type")
+                                    err = -1
+                            except:
+                                logger.error("listener invalid position syntax")
+                                err = -1
 
                         # customize rooms
                         if rooms_iteration_count > 0:
