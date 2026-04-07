@@ -311,7 +311,7 @@ def getSourceFilesSoundSpatializer(cfg_yaml={}):
     return source_files
 
 
-def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[]):
+def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[] ):
     """
     write a descriptor file (.yaml) for audio_scene final wav file (multi-track)
 
@@ -329,6 +329,8 @@ def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[]):
     yaml_descriptor = {}
 
     if filename != None:
+        yaml_descriptor["sources_count"] = len(mono_files)
+ 
         yaml_descriptor["sources_count"] = len(mono_files)
         yaml_descriptor["sources"] = {}
         idx = 0
@@ -360,7 +362,7 @@ def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[]):
             yaml.dump(yaml_descriptor, file)
 
 
-def writeAudioMKVDescriptor(filename=None, mono_files=[], stereo_files=[], mkv_filename=None):
+def writeAudioMKVDescriptor(filename=None, mono_files=[], stereo_files=[], mkv_filename=None, scene_filename=None):
     """
     write a descriptor file (.yaml) for audio_scene final wav file (multi-track)
 
@@ -412,6 +414,11 @@ def writeAudioMKVDescriptor(filename=None, mono_files=[], stereo_files=[], mkv_f
         yaml_descriptor["name"] = "verse rendered audio scene"
 
         yaml_descriptor["description"] = "none"
+
+        # reference to the rendering scene config
+        yaml_descriptor["scene"] = "none"
+        if scene_filename != None:
+            yaml_descriptor["scene"] = scene_filename
 
         with open(filename, "w") as file:
             yaml.dump(yaml_descriptor, file)
@@ -1489,7 +1496,7 @@ def executeSpatializeTasks(cli_params, tasks={}):
         logger.info("file:{}".format(tmp_filename))
 
         writeAudioMKVDescriptor(
-            filename=tmp_filename, mono_files=ref_files, stereo_files=sspat_files, mkv_filename=ffmpeg_file
+            filename=tmp_filename, mono_files=ref_files, stereo_files=sspat_files, mkv_filename=ffmpeg_file, scene_filename=cli_params["scene_file"]
         )
 
     if (err == 0) and (cli_params["keep_files"] == False):

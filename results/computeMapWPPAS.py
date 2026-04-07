@@ -19,6 +19,7 @@ import shutil
 import seaborn as sns 
 import pandas as pd
 import matplotlib.pylab as plt
+from pathlib import Path
 
 import multiprocessing as mp
 from multiprocessing import current_process, Pool
@@ -57,9 +58,9 @@ _MAX_MEM_GB = 2.5  # max amount of memory for each compute process
 _AURALYS_AUDIO_FOLDER= "/media/gfilippi/bigdata_01/auralys_measures/wilsonAudio_20250818_001/"
 _AURALYS_AUDIO_SUBFOLDER="wilsonAudio_"
 
-_VERSE_TYPE="voice"
-_VERSE_SUBTYPE="unimore"
-_VERSE_INFO="000007"
+# _VERSE_TYPE="voice"
+# _VERSE_SUBTYPE="unimore"
+# _VERSE_INFO="000005"
 
 _AURALYS_AZIMUTH=np.arange(-90,100,10)
 _AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
@@ -82,6 +83,26 @@ def int_or_str(text):
         return int(text)
     except ValueError:
         return text
+
+
+def read_yaml_file(filepath):
+    err = -1
+
+    p = Path(filepath)
+
+    if not p.is_file():
+        return err, f"File not found: {p}"
+
+    try:
+        with p.open("r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        return err, f"YAML parsing error: {e}"
+    except Exception as e:
+        return err, f"Unexpected error: {e}"
+
+    err=0
+    return err, data
 
 
 def restore_terminal():
@@ -159,6 +180,44 @@ def compute_ppas_map(args, path, cpu_cores=1):
 
     auralys_audio_list=[]
     ppas_list=[]
+    err = -1
+
+    # check requirements
+    p = Path(args.input)
+
+    # check input file exists
+    if not p.is_file():
+        logger.error(f"Input file does not exist: {p}")
+        return err, -1
+
+    # check for yaml desctriptor 
+    yaml_path = p.with_suffix("")  # remove .mkv
+    yaml_path = yaml_path.with_name(yaml_path.name + "_mkv.yaml")
+
+    # check YAML file exists
+    if not yaml_path.is_file():
+        logger.error(f"YAML file does not exist: {yaml_path}")
+        return err, -1
+
+    # now read yaml file
+    err, input_yaml = read_yaml_file(yaml_path)
+
+    # sanity checks on input file
+    if(input_yaml["sources_count"]!=1):
+        logger.error("only 1 source is supported. Found {} sources in {}.".format(str(input_yaml["sources_count"]),yaml_path))
+        return err, -1
+
+    scene_yaml={}
+    try:
+        err, scene_yaml = read_yaml_file(input_yaml["scene"])
+    except:
+        err=-1
+
+    # sanity checks on scene file
+    if(scene_yaml["setup"]["sources_count"]!=1):
+        logger.error("only 1 source is supported. Found {} sources in {}.".format(str(scene_yaml["setup"]["sources_count"]),input_yaml["scene"]))
+        err = -1
+        return err, -1
 
     idx=0
     for distance in _AURALYS_DISTANCE:
@@ -173,7 +232,11 @@ def compute_ppas_map(args, path, cpu_cores=1):
                 ele="-000" if (int(elevation)==0) else str(f'{elevation:+04d}')
                 dis="-000" if (int(distance)==0) else str(f'{distance:+04d}')
 
-                filename= os.path.join(_AURALYS_AUDIO_FOLDER,_AURALYS_AUDIO_SUBFOLDER+azi+ele+dis+"_xAngle",str(_VERSE_SUBTYPE),str(_VERSE_INFO)+"_"+str(_VERSE_TYPE),"audio_0.mkv")
+                # filename= os.path.join(_AURALYS_AUDIO_FOLDER,_AURALYS_AUDIO_SUBFOLDER+azi+ele+dis+"_xAngle",str(_VERSE_SUBTYPE),str(_VERSE_INFO)+"_"+str(_VERSE_TYPE),"audio_0.mkv")
+
+                verse_info = scene_yaml["setup"]["sources"][0]["info"]
+                verse_subtype = scene_yaml["setup"]["sources"][0]["subtype"]
+                filename= os.path.join(_AURALYS_AUDIO_FOLDER,_AURALYS_AUDIO_SUBFOLDER+azi+ele+dis+"_xAngle",str(verse_subtype),str(verse_info),"audio_0.mkv")
 
                 if os.path.isfile (filename):
                     tmp=[idx, int(azimuth),int(elevation),int(distance),args.input,filename]
@@ -230,7 +293,10 @@ def compute_ppas_map(args, path, cpu_cores=1):
             for d in cpu_pool_result:
                 cpu_result[int(d)]=cpu_pool_result[d]
 
-    return cpu_result
+        # all done.
+        err = 0
+
+    return err, cpu_result
 
 # #############################################################################################################
 # MAIN
@@ -243,33 +309,36 @@ def run_main(args):
 
 
     try:
-        result = compute_ppas_map(args,"./",cpu_cores=args.cpu_process)
+        err, result = compute_ppas_map(args,"./",cpu_cores=args.cpu_process)
 
-        # show wppas map
-        ppas_map_reduced=np.delete(result,2,1)
-        ppas_map_reduced=np.delete(ppas_map_reduced,3,1)
+        if( err != 0):
+            logger.error("failed ppas map for {}.".format(str(args.input)))
+        else:
+            # show wppas map
+            ppas_map_reduced=np.delete(result,2,1)
+            ppas_map_reduced=np.delete(ppas_map_reduced,3,1)
 
-        df = pd.DataFrame(ppas_map_reduced)
-        table = df.pivot(index=1, columns=0, values=2)
-        ax = sns.heatmap(table)
-        ax.invert_yaxis()
-        ax.invert_xaxis()
+            df = pd.DataFrame(ppas_map_reduced)
+            table = df.pivot(index=1, columns=0, values=2)
+            ax = sns.heatmap(table)
+            ax.invert_yaxis()
+            ax.invert_xaxis()
 
-        plt.title('WPPAS: weighted perceptual phase-aware similarity', fontsize=14, y=1.0)
-        plt.suptitle(args.input, fontsize=10, y=0.95)
+            plt.title('WPPAS: weighted perceptual phase-aware similarity', fontsize=14, y=1.0)
+            plt.suptitle(args.input, fontsize=10, y=0.95)
 
-        plt.xlabel("azimuth (degree)") 
-        plt.ylabel("elevation (degree)")
-        plt.savefig('result.png', format="png", dpi=300, bbox_inches='tight')
-        plt.savefig('result.pdf', format="pdf", dpi=300, bbox_inches='tight')
-        plt.savefig('result.eps', format="eps", dpi=300, bbox_inches='tight')
+            plt.xlabel("azimuth (degree)") 
+            plt.ylabel("elevation (degree)")
+            plt.savefig('result.png', format="png", dpi=300, bbox_inches='tight')
+            plt.savefig('result.pdf', format="pdf", dpi=300, bbox_inches='tight')
+            plt.savefig('result.eps', format="eps", dpi=300, bbox_inches='tight')
 
-        if(args.verbose):
-            print("==========================================")
-            print("\n\nWPPAS MAP result (note: axis are inverted)")
-            print("==========================================")
-            print(table)
-            plt.show()
+            if(args.verbose):
+                print("==========================================")
+                print("\n\nWPPAS MAP result (note: axis are inverted)")
+                print("==========================================")
+                print(table)
+                plt.show()
 
     except KeyboardInterrupt:
         print("\nInterrupted by user")
