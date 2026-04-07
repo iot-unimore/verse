@@ -58,9 +58,6 @@ _MAX_MEM_GB = 2.5  # max amount of memory for each compute process
 _AURALYS_AUDIO_FOLDER= "/media/gfilippi/bigdata_01/auralys_measures/wilsonAudio_20250818_001/"
 _AURALYS_AUDIO_SUBFOLDER="wilsonAudio_"
 
-# _VERSE_TYPE="voice"
-# _VERSE_SUBTYPE="unimore"
-# _VERSE_INFO="000005"
 
 _AURALYS_AZIMUTH=np.arange(-90,100,10)
 _AURALYS_ELEVATION=[-45,-30,-15,0,15,30,45]
