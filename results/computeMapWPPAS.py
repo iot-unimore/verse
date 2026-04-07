@@ -240,7 +240,8 @@ def compute_ppas_map(args, path, cpu_cores=1):
                     auralys_audio_list.append(tmp)
                     idx+=1
                 else:
-                    logger.error("missing file {}",filename)
+                    err = -1
+                    logger.error("missing file {}".format(filename))
 
 
     # for l in auralys_audio_list:
@@ -258,8 +259,9 @@ def compute_ppas_map(args, path, cpu_cores=1):
 
     #
     # compute map
-    if(len(ppas_list)>0):
-
+    cpu_result = ""
+    if(len(ppas_list)>0) and (err==0):
+        print("ZIOCANEEE")
         # compute process pool size based on CPU/MEM requirements
         mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")  # e.g. 4015976448
         mem_gib = mem_bytes / (1024.0**3)  # e.g. 3.74
