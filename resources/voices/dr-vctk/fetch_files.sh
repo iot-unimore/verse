@@ -66,7 +66,7 @@ if [ -d  $SCRIPT_DIR/files ] ; then
 
   echo "generating info files"
   cd $SCRIPT_DIR
-  ./parse_wav.sh >> ./error.log
+  ./parse_wav.sh
 
 fi
 

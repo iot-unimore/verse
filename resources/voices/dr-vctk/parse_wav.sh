@@ -14,6 +14,14 @@ export LC_NUMERIC=C
 
 cd $SCRIPT_DIR
 
+verbose=0
+
+if [[ "${1:-}" == "-v" ]]; then
+    verbose=1
+    shift
+fi
+
+
 if [ ! -d  $SCRIPT_DIR/$OUTPUT_DIR ] ; then
    mkdir -p "$OUTPUT_DIR"
 fi
@@ -35,15 +43,31 @@ format_duration() {
     }'
 }
 
-find "$INPUT_DIR" -type f -iname "*.wav" | while IFS= read -r wavfile; do
+tmpfile=$(mktemp)
+find "$INPUT_DIR" -type f -iname "*.wav" > "$tmpfile"
 
-    # Extract base filename
+# get the total wav file count
+
+total=$(wc -l < "$tmpfile")
+count=0
+spinner='-\|/'
+i=0
+
+exec 3< "$tmpfile"
+
+while IFS= read -r wavfile <&3; do
+    count=$((count + 1))   
+    
+    percent=$((count * 100 / total))
+    spin_char=${spinner:i++%${#spinner}:1}
+
+    if (( ! (( $verbose )) )); then
+      printf "\r[%c] %3d%% (%d/%d)" "$spin_char" "$percent" "$count" "$total"
+    fi
+
+    # ---- your existing code ----
     filename=$(basename "$wavfile")
-
-
     wavdir="${wavfile%/*}/"
-    echo $wavfile
-    echo $wavdir
 
     str=$wavfile
     prefix=""
@@ -61,28 +85,13 @@ find "$INPUT_DIR" -type f -iname "*.wav" | while IFS= read -r wavfile; do
             prefix="clean_train_"
             description="clean audio file, train"
         elif [[ "$str" == *"testset"* ]]; then
-            prefix="clain_test_"
+            prefix="clean_test_"
             description="clean audio file, test"
         fi
     fi
 
-    echo $filename
-    
     name="$prefix${filename%.*}"
-
-    # Output YAML file
     yaml_out="$OUTPUT_DIR/${name}.yaml"
-
-    # Probe audio with ffprobe
-    # read -r samplerate channels duration <<<"$(
-    #     ffprobe -v error \
-    #         -select_streams a:0 \
-    #         -show_entries stream=sample_rate,channels \
-    #         -show_entries format=duration \
-    #         -of default=noprint_wrappers=1:nokey=1 \
-    #         "$wavfile"
-    # )"
-
 
     mapfile -t probe < <(
         ffprobe -v error \
@@ -97,9 +106,6 @@ find "$INPUT_DIR" -type f -iname "*.wav" | while IFS= read -r wavfile; do
     channels=${probe[1]}
     duration=${probe[2]}
 
-    echo $duration
-
-    # Format duration
     duration_fmt=$(format_duration "$duration")
 
     # Generate YAML
@@ -131,7 +137,21 @@ playback:
 #EOF
 ...
 EOF
-
-    echo "Generated: $yaml_out"
-
+     
+     if (( verbose )); then
+        echo "Generated: $yaml_out"
+     fi
 done
+
+exec 3<&-
+
+# Move to next line after loop
+echo
+
+rm -f "$tmpfile"
+#rm -rf ./$RESOURCES_TAR_FILE
+rm -rf ./error.log
+
+
+
+
