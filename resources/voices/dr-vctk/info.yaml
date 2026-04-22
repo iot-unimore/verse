@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: DR-VCTK
+
+type: dataset
+
+content: audio
+
+description: This dataset is a new variant of the voice cloning toolkit (VCTK) dataset, device-recorded VCTK (DR-VCTK), where the high-quality speech signals recorded in a semi-anechoic chamber using professional audio devices are played back and re-recorded in office environments using relatively inexpensive consumer devices
+
+size_bytes: 3G
+
+source: https://datashare.ed.ac.uk/handle/10283/3038
+
+source_original: https://datashare.ed.ac.uk/handle/10283/3038
+
+fetch_script: fetch_files.sh
+
+copyright: CC-A-ND-4.0
+
+license: https://datashare.ed.ac.uk/bitstream/handle/10283/3038/license_text?sequence=9&isAllowed=y
+
+details: We used the original VCTK corpus as the clean speech-signal source for the device-recorded signals, as it was recorded at high-quality using professional audio devices. This dataset contains recordings of 109 English speakers with different accents. There are around 400 sentences available from each speaker.
+
+#EOF
+...
