@@ -261,7 +261,6 @@ def compute_ppas_map(args, path, cpu_cores=1):
     # compute map
     cpu_result = ""
     if(len(ppas_list)>0) and (err==0):
-        print("ZIOCANEEE")
         # compute process pool size based on CPU/MEM requirements
         mem_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")  # e.g. 4015976448
         mem_gib = mem_bytes / (1024.0**3)  # e.g. 3.74
