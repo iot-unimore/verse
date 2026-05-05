@@ -406,7 +406,7 @@ def verse_to_locata(idx, path, **kwargs):
     mic_array_name=scene_yaml["setup"]["listeners"][0]["subtype"]+"_"+scene_yaml["setup"]["listeners"][0]["info"]
 
     # additional locata data structure
-    output_locata_path = os.path.join(output_locata_path, task_type, "recording"+str(idx), mic_array_name)
+    output_locata_path = os.path.join(output_locata_path, data_type, task_type, "recording"+str(idx), mic_array_name)
 
     # create output folder as per Locata syntax
     if not ( check_folder_exists(output_locata_path) ):
