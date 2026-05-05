@@ -3,23 +3,41 @@
 import os
 import argparse
 import yaml
+import subprocess
+import json
 import time
+import re
 import logging
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed, TimeoutError
 from tqdm import tqdm
-
+from datetime import datetime, timedelta
+from functools import partial
+from pathlib import Path
 
 # --- GLOBALS ---
 manager = multiprocessing.Manager()
 stop_event = manager.Event()
 
-LOCATA_TASK_TYPES={'task1':"task1",'task2':"task2",'task3':"task3",'task4':"task4",'task5':"task5",'task6':"task6"}
+LOCATA_DATA_TYPES={"train":"dev","test":"eval","validate":"eval"}
 
 REQUIRED_SYNTAX_NAMES = {
     "audio_rendering_scene",
     "verse_audio_mkv"
 }
+
+
+####################################################################################################
+# DO NOT MODIFY CODE BELOW THIS LINE
+####################################################################################################
+
+_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
+_RESOURCES_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../", "resources")
+_DATASET_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../", "datasets")
+
+_FFPROBE_EXE = "/usr/bin/ffprobe"
+
+_LOCATA_TASK_TYPES={'task1':"task1",'task2':"task2",'task3':"task3",'task4':"task4",'task5':"task5",'task6':"task6"}
 
 
 # --- LOGGING SETUP ---
@@ -55,7 +73,7 @@ def extract_syntax_name(yaml_data):
 
 
 # --- VALIDATION ---
-def is_measurement_folder(folder_path):
+def is_measurement_folder(idx, folder_path, **kwargs):
     if stop_event.is_set():
         return None
 
@@ -93,6 +111,15 @@ def is_measurement_folder(folder_path):
         return folder_path
 
     return None
+
+
+def check_folder_exists(path_str):
+    path = Path(path_str)
+    
+    if not path.exists():
+        path.mkdir(parents=True, exist_ok=True)
+    
+    return path.exists()    
 
 
 # --- YAML SEARCH ---
@@ -149,12 +176,13 @@ def find_measurement_folders(base_path):
 
 
 # --- GENERIC PARALLEL EXECUTION ---
-def run_parallel(folders, worker_fn, num_workers, timeout, verbose):
+def run_parallel(folders, worker_fn, num_workers, timeout, verbose, **kwargs):
     results = []
 
     try:
+
         with ProcessPoolExecutor(max_workers=num_workers) as executor:
-            futures = {executor.submit(worker_fn, f): f for f in folders}
+            futures = {executor.submit(worker_fn, idx, f, **kwargs): f for idx, f in enumerate(folders)}
 
             iterator = as_completed(futures)
 
@@ -184,14 +212,129 @@ def run_parallel(folders, worker_fn, num_workers, timeout, verbose):
 
 
 # --- PIPELINE STEPS ---
-def find_verse_dataset(path, num_workers, timeout, verbose):
+
+def _run_ffprobe(cmd):
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr)
+    return json.loads(result.stdout)
+
+
+def _parse_duration_to_seconds(duration_str):
+    # supports "HH:MM:SS.micro"
+    h, m, s = duration_str.split(":")
+    return float(h) * 3600 + float(m) * 60 + float(s)
+
+
+def get_audio_info(mkv_path):
+    # 1. Get global container duration (more reliable)
+    fmt_cmd = [
+        _FFPROBE_EXE,
+        "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "json",
+        mkv_path
+    ]
+    fmt_data = _run_ffprobe(fmt_cmd)
+
+    duration = float(fmt_data["format"]["duration"])
+
+    # 2. Get ALL audio streams
+    stream_cmd = [
+        _FFPROBE_EXE,
+        "-v", "error",
+        "-select_streams", "a",
+        "-show_entries", "stream=sample_rate,channels,codec_name",
+        "-of", "json",
+        mkv_path
+    ]
+    stream_data = _run_ffprobe(stream_cmd)
+
+    streams = stream_data.get("streams", [])
+    if not streams:
+        raise ValueError("No audio streams found")
+
+    # 3. Choose a “best” stream (prefer highest sample rate)
+    best_stream = None
+    best_sr = -1
+
+    for s in streams:
+        sr = int(s.get("sample_rate", 0))
+        if sr > best_sr:
+            best_sr = sr
+            best_stream = s
+
+    if best_stream is None or best_sr <= 0:
+        raise ValueError("Could not determine sample rate")
+
+    sample_rate = best_sr
+
+    # 4. Compute total samples (robust)
+    total_samples = int(round(sample_rate * duration))
+
+    return sample_rate, duration, total_samples
+
+
+def generate_required_time_file(mkv_path, start_datetime, output_path="/tmp/", output_file="required_time.txt"):
+    try:
+        Fs, duration, total_samples = get_audio_info(mkv_path)
+    except:
+        logger.error(f"Invalid audio file: {mkv_path}")
+        return 0
+    
+    # --- ALIGNMENT on 8ms boundaries for locata 8ms (120Hz) ---
+    target_step_sec = 0.008
+    samples_per_step = round(Fs * target_step_sec)
+    step_duration = samples_per_step / Fs
+    
+    logger.debug(f"Sample rate: {Fs} Hz")
+    logger.debug(f"Samples per step: {samples_per_step}")
+    logger.debug(f"Actual step duration: {step_duration:.9f} s")
+    
+    current_sample = 0
+
+    data_file = os.path.join(output_path, output_file)
+    
+    with open(data_file, "w") as f:
+        f.write("year \tmonth \tday \thour \tminute \tsecond \tvalid_flag\n")
+        
+        while current_sample < total_samples:
+            current_time = current_sample / Fs
+            dt = start_datetime + timedelta(seconds=current_time)
+            
+            seconds = dt.second + dt.microsecond / 1e6
+            
+            row = [
+                dt.year,
+                dt.month,
+                dt.day,
+                dt.hour,
+                dt.minute,
+                f"{seconds:.3f}",
+                1
+            ]
+            
+            f.write("\t".join(map(str, row)) + "\n")
+            
+            current_sample += samples_per_step
+    
+    return total_samples
+
+
+def find_verse_dataset(path, output_path, num_workers, timeout, verbose ):
     folders = find_measurement_folders(path)
     logger.info(f"Found {len(folders)} candidate folders")
-    return run_parallel(folders, is_measurement_folder, num_workers, timeout, verbose)
+    return run_parallel(folders, is_measurement_folder, num_workers, timeout, verbose, output_path=output_path)
 
 
-def verse_to_locata(path):
+def verse_to_locata(idx, path, **kwargs):
     if stop_event.is_set():
+        return None
+
+    output_path = ""
+    if "output_path" in kwargs:
+        output_path = kwargs["output_path"]
+    else:
         return None
 
     logger.debug(f"Processing folder: {path}")
@@ -229,38 +372,71 @@ def verse_to_locata(path):
 
     # select the locata task type
 
-    task_type=None
+    task_type=""
     
     if(scene_yaml["setup"]["sources_count"] == 1):
         if ((scene_yaml["setup"]["sources"][0]["position"]["type"] == "static")):
-            task_type = LOCATA_TASK_TYPES["task1"]
+            task_type = _LOCATA_TASK_TYPES["task1"]
         else:
-            task_type = LOCATA_TASK_TYPES["task3"]
+            task_type = _LOCATA_TASK_TYPES["task3"]
     else:
-        task_type = LOCATA_TASK_TYPES["task2"]
+        task_type = _LOCATA_TASK_TYPES["task2"]
 
         for s in scene_yaml["setup"]["sources"]:
             if scene_yaml["setup"]["sources"][s]["position"]["type"] == "dynamic":
-               task_type = LOCATA_TASK_TYPES["task4"]
+               task_type = _LOCATA_TASK_TYPES["task4"]
 
+    # select the locata data type
 
-    print(len(scene_yaml["setup"]["sources"]))
-    print(task_type)
-    print(scene_yaml)
+    data_type=""
+    tmp_list = os.path.normpath(mkv_yaml["file"]).lstrip(os.path.sep).split(os.path.sep)
+    for d in LOCATA_DATA_TYPES:
+        if d in tmp_list:
+            data_type = LOCATA_DATA_TYPES[d]
+
+    output_locata_path = ""
+    if "datasets" in tmp_list:
+        output_locata_path = os.path.join(output_path, "locata", tmp_list[tmp_list.index("datasets")+1])
+    else:
+        for d in LOCATA_DATA_TYPES:
+            if d in tmp_list:
+                output_locata_path = os.path.join(output_path, "locata", tmp_list[tmp_list.index("datasets")+1])
+
+    # mic array name from head definition in audio scene
+    mic_array_name=scene_yaml["setup"]["listeners"][0]["subtype"]+"_"+scene_yaml["setup"]["listeners"][0]["info"]
+
+    # additional locata data structure
+    output_locata_path = os.path.join(output_locata_path, task_type, "recording"+str(idx), mic_array_name)
+
+    # create output folder as per Locata syntax
+    if not ( check_folder_exists(output_locata_path) ):
+        return None
+
+    # print("===")
+    # print(idx)
+    # print(output_locata_path)
+    # print(len(scene_yaml["setup"]["sources"]))
+    # print(task_type)
+    # # print(scene_yaml)
+
+    start_dt = datetime.now()
+
+    total_audio_samples = generate_required_time_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_file="required_time.txt")
 
     time.sleep(1)  # simulate work
 
     return (path, mkv_descriptor, source)
 
 
-def export_to_locata(folders, num_workers, timeout, verbose):
-    return run_parallel(folders, verse_to_locata, num_workers, timeout, verbose)
+def export_to_locata(folders, output_path, num_workers, timeout, verbose):
+    return run_parallel(folders, verse_to_locata, num_workers, timeout, verbose, output_path=output_path)
 
 
 # --- MAIN ---
 def main():
     parser = argparse.ArgumentParser(description="Dataset pipeline")
-    parser.add_argument("-p", "--path", required=True)
+    parser.add_argument("-p", "--input_path", required=True)
+    parser.add_argument("-o", "--output_path", required=True)
     parser.add_argument("-m", "--max-workers", type=int, default=os.cpu_count())
     parser.add_argument("-t", "--timeout", type=int, default=10, help="Timeout per task (seconds)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging (disables progress bar)")
@@ -269,14 +445,18 @@ def main():
 
     setup_logging(args.verbose)
 
-    if not os.path.isdir(args.path):
+    if not os.path.isdir(args.input_path):
         logger.error(f"Invalid path: {args.path}")
         return
 
-    results = find_verse_dataset(args.path, args.max_workers, args.timeout, args.verbose)
+    if not os.path.isdir(args.output_path):
+        logger.error(f"Invalid path: {args.path}")
+        return
+
+    results = find_verse_dataset(args.input_path, args.output_path, args.max_workers, args.timeout, args.verbose)
     logger.info(f"Valid folders: {len(results)}")
 
-    results = export_to_locata(results, args.max_workers, args.timeout, args.verbose)
+    results = export_to_locata(results, args.output_path, args.max_workers, args.timeout, args.verbose)
     logger.info(f"Processed results: {len(results)}")
 
 
