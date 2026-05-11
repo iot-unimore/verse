@@ -49,20 +49,62 @@ _MKVMERGE_EXE = "/usr/bin/mkvmerge"
 _LOCATA_TASK_TYPES={'task1':"task1",'task2':"task2",'task3':"task3",'task4':"task4",'task5':"task5",'task6':"task6"}
 
 
+class ColoredFormatter(logging.Formatter):
+
+    # ANSI escape codes
+    COLORS = {
+        logging.DEBUG: "\033[90m",      # light gray
+        logging.INFO: "\033[92m",       # green
+        logging.WARNING: "\033[93m",    # yellow
+        logging.ERROR: "\033[91m",      # red
+        logging.CRITICAL: "\033[1;91m", # bold red
+    }
+
+    RESET = "\033[0m"
+
+    def format(self, record):
+
+        color = self.COLORS.get(
+            record.levelno,
+            self.RESET
+        )
+
+        message = super().format(record)
+
+        return f"{color}{message}{self.RESET}"
+
+
 # --- LOGGING SETUP ---
-def setup_logging(verbose: bool):
+def setup_logging_simple(verbose: bool):
     level = logging.DEBUG if verbose else logging.INFO
 
     logging.basicConfig(
         level=level,
         format="%(asctime)s [%(levelname)s] %(message)s"
     )
-
     #logging.FileHandler("run.log")
-
-
 logger = logging.getLogger(__name__)
 
+
+def setup_logging(verbose: bool):
+    level = logging.DEBUG if verbose else logging.INFO
+
+    handler = logging.StreamHandler()
+
+    formatter = ColoredFormatter(
+        "%(asctime)s [%(levelname)s] %(message)s"
+    )
+
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger()
+
+    logger.setLevel(level)
+
+    # Remove duplicated handlers
+    logger.handlers.clear()
+
+    logger.addHandler(handler)
 
 # --- YAML HELPERS ---
 def safe_load_yaml(file_path):
@@ -265,20 +307,81 @@ def float_to_pcm16(audio):
     return (audio * 32767).astype(np.int16)
 
 
+# def remap_vad_mask_to_original_sr(
+#     vad_mask_16k,
+#     original_num_samples,
+#     original_sr,
+#     vad_sr=16000
+# ):
+#     # if VAD is computed at sr different from the one we need, apply a simple expansion.
+#     # this is sub-optimal, but I have no other methods for now.
+
+#     out_mask = np.zeros(
+#         original_num_samples,
+#         dtype=np.uint8
+#     )
+
+#     # Time mapping
+
+#     scale = vad_sr / original_sr
+
+#     # Map each original sample -> corresponding VAD sample
+
+#     for i in range(original_num_samples):
+
+#         vad_index = int(i * scale)
+
+#         if vad_index >= len(vad_mask_16k):
+#             vad_index = len(vad_mask_16k) - 1
+
+#         out_mask[i] = vad_mask_16k[vad_index]
+
+#     return out_mask
+
+def remap_vad_mask_to_original_sr(
+    vad_mask_16k,
+    original_num_samples,
+    original_sr,
+    vad_sr=16000
+):
+
+    # if VAD is computed at sr different from the one we need, apply a simple expansion.
+    # this is sub-optimal, but I have no other methods for now.
+
+    indices = (
+        np.arange(original_num_samples)
+        * vad_sr
+        / original_sr
+    ).astype(np.int64)
+
+    indices = np.clip(
+        indices,
+        0,
+        len(vad_mask_16k) - 1
+    )
+
+    return vad_mask_16k[indices]
+
 def generate_vad_mask(
     wav_path,
-    output_txt,
     target_peak_dbfs=-3.0,
     vad_mode=2,
     vad_frame_ms=30,
     tolerance_ms=100
 ):
+    # this is mandator for webrtc-wad
+    vad_target_sr = 16000
 
     # Load audio : WAV only
     audio, sr = sf.read(wav_path)
 
+    input_samples = len(audio)
+    input_sr = sr
+
     if audio.ndim != 1:
         raise ValueError("Input WAV must be mono")
+
+    logger.debug(f"Generating VAD mask for file:{wav_path}")
 
     # Normalize peak for more robust detection
     audio = adjust_peak_dbfs(
@@ -290,7 +393,7 @@ def generate_vad_mask(
     audio, sr = resample_if_needed(
         audio,
         sr,
-        target_sr=16000
+        target_sr=vad_target_sr
     )
 
     # Convert to PCM16
@@ -352,14 +455,16 @@ def generate_vad_mask(
         vad_mask = (vad_mask > 0).astype(np.uint8)
 
     # Save text file
+    # with open(output_file, "w") as f:
+    #     for i, flag in enumerate(vad_mask):
+    #         f.write(f"{i} {flag}\n")
 
-    with open(output_txt, "w") as f:
+    final_vad_mask = vad_mask
 
-        for i, flag in enumerate(vad_mask):
+    if (input_sr!=vad_target_sr):
+        remap_vad_mask_to_original_sr( vad_mask, input_samples, input_sr, vad_sr = sr)
 
-            f.write(f"{i} {flag}\n")
-
-    return vad_mask, sr
+    return final_vad_mask, input_sr
 
 
 # --- PIPELINE STEPS ---
@@ -428,15 +533,15 @@ def get_audio_info(mkv_path):
     return sample_rate, duration, total_samples, codec_name
 
 
-def generate_timestamps_file(mkv_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008, vad=False):
+def generate_timestamps_file(file_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008):
     try:
-        Fs, duration, total_samples, codec_name = get_audio_info(mkv_path)
+        Fs, duration, total_samples, codec_name = get_audio_info(file_path)
     except:
-        logger.error(f"Invalid audio file: {mkv_path}")
+        logger.error(f"Invalid audio file: {file_path}")
         return 0
     
     if(target_time_step_seconds < 0):
-        logger.error(f"Invalid time_step for: {mkv_path}")
+        logger.error(f"Invalid time_step for: {file_path}")
         return 0
 
     # note: if target_time_step is zero we want ALL samples
@@ -456,6 +561,8 @@ def generate_timestamps_file(mkv_path, start_datetime, output_path="/tmp/", outp
     current_sample = 0
 
     data_file = os.path.join(output_path, output_file)
+
+    logger.debug(f"Generating timestamp file for: {file_path}")
     
     with open(data_file, "w") as f:
 
@@ -465,6 +572,10 @@ def generate_timestamps_file(mkv_path, start_datetime, output_path="/tmp/", outp
             f.write("year \tmonth \tday \thour \tminute \tsecond\n")
 
         while current_sample < total_samples:
+
+            if stop_event.is_set():
+                return -1
+
             current_time = current_sample / Fs
             dt = start_datetime + timedelta(seconds=current_time)
             
@@ -493,8 +604,64 @@ def generate_timestamps_file(mkv_path, start_datetime, output_path="/tmp/", outp
             f.write("\t".join(map(str, row)) + "\n")
             
             current_sample += samples_per_step
+
     
     return total_samples
+
+
+
+def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008):
+    try:
+        Fs, duration, total_samples, codec_name = get_audio_info(file_path)
+    except:
+        logger.error(f"Invalid audio file: {file_path}")
+        return 0
+    
+    if(target_time_step_seconds < 0):
+        logger.error(f"Invalid time_step for: {file_path}")
+        return 0
+
+    # note: if target_time_step is zero we want ALL samples
+    if(target_time_step_seconds > 0):
+        # --- ALIGNMENT on 8ms boundaries for locata 8ms (120Hz) ---
+        target_step_sec = target_time_step_seconds
+        samples_per_step = round(Fs * target_step_sec)
+        step_duration = samples_per_step / Fs
+        
+        logger.debug(f"Sample rate: {Fs} Hz")
+        logger.debug(f"Samples per step: {samples_per_step}")
+        logger.debug(f"Actual step duration: {step_duration:.9f} s")
+    else:
+        samples_per_step = 1
+    
+    if stop_event.is_set():
+        return -1
+
+    vad_mask, sr = generate_vad_mask(
+        wav_path = file_path,
+        target_peak_dbfs = -3.0,
+        vad_mode = 2,
+        vad_frame_ms = 10,
+        tolerance_ms = 12
+    )
+
+    if stop_event.is_set():
+        return -1
+
+    data_file = os.path.join(output_path, output_file)
+
+    logger.debug(f"Generating VAD file for: {file_path}")
+    
+    with open(data_file, "w") as f:
+        if stop_event.is_set():
+            return -1
+        f.write("VAD\n")
+        for i, flag in enumerate(vad_mask):
+            f.write(f"{flag}\n")
+
+    return len(vad_mask)
+
+
 
 def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_source_", output_postfix="loudspeaker_", audio_samples=0):
     err = 0
@@ -561,7 +728,7 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
         if stop_event.is_set():
             return -1
 
-        filename = f"{output_prefix}_timestamps_{output_postfix}{str(track_id)}.txt"
+        filename = f"{output_prefix}timestamps_{output_postfix}{str(track_id)}.txt"
         audio_samples = generate_timestamps_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
         if(audio_samples != total_samples):
             logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file timestamps: {output_filename}")
@@ -571,6 +738,14 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
         if stop_event.is_set():
             return -1
 
+        filename = f"VAD_source_{output_postfix}{str(track_id)}.txt"
+        audio_samples = generate_vad_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
+        if(audio_samples != total_samples):
+            logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file VAD: {output_filename}")
+            err=-1
+
+        if stop_event.is_set():
+            return -1
 
     return err
 
@@ -603,8 +778,6 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
     
     output_filename = os.path.join(output_path, filename)        
 
-    # print(mkv_path)
-
     with tempfile.TemporaryDirectory() as tmpdir:
 
         extracted_wavs = []
@@ -612,8 +785,6 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
         for receiver_number, receiver_info in yaml_data["receivers"].items():
             channels = receiver_info.get("channels")
             track_id = receiver_info.get("track_id")
-
-            # print(f"receiver #{receiver_number}: channels {channels} track_id {track_id}")
 
             # extract audio tracks into mono files (ordered list)
 
