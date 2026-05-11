@@ -273,15 +273,17 @@ def get_audio_info(mkv_path):
 
     sample_rate = best_sr
 
+    codec_name = str(s.get("codec_name",0))
+
     # 4. Compute total samples 
     total_samples = int(round(sample_rate * duration))
 
-    return sample_rate, duration, total_samples
+    return sample_rate, duration, total_samples, codec_name
 
 
 def generate_required_time_file(mkv_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008):
     try:
-        Fs, duration, total_samples = get_audio_info(mkv_path)
+        Fs, duration, total_samples, codec_name = get_audio_info(mkv_path)
     except:
         logger.error(f"Invalid audio file: {mkv_path}")
         return 0
@@ -329,7 +331,7 @@ def generate_source_audio_files(mkv_path, output_path="/tmp/", output_prefix="au
 
     # check for mkv presence
     try:
-        Fs, duration, total_samples = get_audio_info(mkv_path)
+        Fs, duration, total_samples, codec_name = get_audio_info(mkv_path)
     except:
         logger.error(f"Invalid audio file: {mkv_path}")
         err = -1
@@ -366,7 +368,7 @@ def generate_source_audio_files(mkv_path, output_path="/tmp/", output_prefix="au
             subprocess.run(cmd, check=True, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
             try:
-                Fs, duration, total_samples = get_audio_info(output_filename)
+                Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
             except:
                 logger.error(f"Invalid audio file: {output_filename}")
                 err = -1
@@ -388,7 +390,7 @@ def generate_array_audio_files(mkv_path, output_path="/tmp/", output_prefix="aud
 
     # check for mkv presence
     try:
-        Fs, duration, total_samples = get_audio_info(mkv_path)
+        Fs, duration, total_samples, codec_name = get_audio_info(mkv_path)
     except:
         logger.error(f"Invalid audio file: {mkv_path}")
         err = -1
@@ -465,7 +467,7 @@ def generate_array_audio_files(mkv_path, output_path="/tmp/", output_prefix="aud
                             "-y",
                             "-i", str(track_wav),
                             "-filter:a", pan_filter,                    
-                            "-c:a", "pcm_s16le",
+                            "-c:a", codec_name,
                             str(tmp_wav)
                         ]
 
@@ -497,12 +499,12 @@ def generate_array_audio_files(mkv_path, output_path="/tmp/", output_prefix="aud
 
             cmd += [
                 "-filter_complex", filter_complex,
-                "-c:a", "pcm_s16le",
+                "-c:a", codec_name,
                 str(output_filename)
             ]
 
             logger.debug(f"Extracting array audio file: {output_filename}")
-            
+
             subprocess.run(
                 cmd,
                 check=True,
@@ -511,7 +513,7 @@ def generate_array_audio_files(mkv_path, output_path="/tmp/", output_prefix="aud
             )
 
             try:
-                Fs, duration, total_samples = get_audio_info(output_filename)
+                Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
             except:
                 logger.error(f"Invalid audio file: {output_filename}")
                 err = -1
