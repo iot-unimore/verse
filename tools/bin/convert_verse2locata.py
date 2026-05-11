@@ -15,6 +15,11 @@ from tqdm import tqdm
 from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
+import numpy as np
+import soundfile as sf
+import webrtcvad
+import scipy.signal
+
 
 # --- GLOBALS ---
 manager = multiprocessing.Manager()
@@ -215,6 +220,148 @@ def run_parallel(folders, worker_fn, num_workers, timeout, verbose, **kwargs):
     return results
 
 
+# --- VAD: VOICE ACTIVATION DETECTION
+def adjust_peak_dbfs(audio, target_peak_dbfs):
+
+    # Current peak amplitude
+    peak = np.max(np.abs(audio))
+
+    if peak <= 0:
+        return audio
+
+    # Current peak dBFS
+    current_peak_dbfs = 20.0 * np.log10(peak)
+
+    # Gain needed
+    gain_db = target_peak_dbfs - current_peak_dbfs
+
+    # Linear gain
+    gain = 10.0 ** (gain_db / 20.0)
+
+    audio_out = audio * gain
+
+    # Prevent clipping
+    audio_out = np.clip(audio_out, -1.0, 1.0)
+
+    return audio_out
+
+
+def resample_if_needed(audio, sr, target_sr=16000):
+
+    if sr == target_sr:
+        return audio, sr
+
+    n_samples = int(len(audio) * target_sr / sr)
+
+    audio_rs = scipy.signal.resample(audio, n_samples)
+
+    return audio_rs, target_sr
+
+
+def float_to_pcm16(audio):
+
+    audio = np.clip(audio, -1.0, 1.0)
+
+    return (audio * 32767).astype(np.int16)
+
+
+def generate_vad_mask(
+    wav_path,
+    output_txt,
+    target_peak_dbfs=-3.0,
+    vad_mode=2,
+    vad_frame_ms=30,
+    tolerance_ms=100
+):
+
+    # Load audio : WAV only
+    audio, sr = sf.read(wav_path)
+
+    if audio.ndim != 1:
+        raise ValueError("Input WAV must be mono")
+
+    # Normalize peak for more robust detection
+    audio = adjust_peak_dbfs(
+        audio,
+        target_peak_dbfs
+    )
+
+    # Resample for WebRTC VAD: only 16Khz/PCM16 is supported
+    audio, sr = resample_if_needed(
+        audio,
+        sr,
+        target_sr=16000
+    )
+
+    # Convert to PCM16
+    pcm16 = float_to_pcm16(audio)
+
+    # Create VAD
+    vad = webrtcvad.Vad(vad_mode)
+
+    # mode:
+    # 0 = least aggressive
+    # 3 = most aggressive
+
+    # Frame parameters
+
+    frame_samples = int(sr * vad_frame_ms / 1000)
+
+    frame_bytes = frame_samples * 2
+
+    # Sample-level mask as a uint8_t array
+    vad_mask = np.zeros(len(pcm16), dtype=np.uint8)
+
+    # Process frames
+    for start in range(0, len(pcm16) - frame_samples, frame_samples):
+
+        stop = start + frame_samples
+
+        frame = pcm16[start:stop]
+
+        frame_bytes_data = frame.tobytes()
+
+        is_speech = vad.is_speech(
+            frame_bytes_data,
+            sr
+        )
+
+        if is_speech:
+
+            vad_mask[start:stop] = 1
+
+    # Apply tolerance expansion: avoid "dead spots / false positive"
+
+    tolerance_samples = int(
+        tolerance_ms * sr / 1000
+    )
+
+    if tolerance_samples > 0:
+
+        kernel = np.ones(
+            2 * tolerance_samples + 1,
+            dtype=np.uint8
+        )
+
+        vad_mask = np.convolve(
+            vad_mask,
+            kernel,
+            mode="same"
+        )
+
+        vad_mask = (vad_mask > 0).astype(np.uint8)
+
+    # Save text file
+
+    with open(output_txt, "w") as f:
+
+        for i, flag in enumerate(vad_mask):
+
+            f.write(f"{i} {flag}\n")
+
+    return vad_mask, sr
+
+
 # --- PIPELINE STEPS ---
 
 def _run_ffprobe(cmd):
@@ -281,52 +428,75 @@ def get_audio_info(mkv_path):
     return sample_rate, duration, total_samples, codec_name
 
 
-def generate_required_time_file(mkv_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008):
+def generate_timestamps_file(mkv_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008, vad=False):
     try:
         Fs, duration, total_samples, codec_name = get_audio_info(mkv_path)
     except:
         logger.error(f"Invalid audio file: {mkv_path}")
         return 0
     
-    # --- ALIGNMENT on 8ms boundaries for locata 8ms (120Hz) ---
-    target_step_sec = target_time_step_seconds
-    samples_per_step = round(Fs * target_step_sec)
-    step_duration = samples_per_step / Fs
+    if(target_time_step_seconds < 0):
+        logger.error(f"Invalid time_step for: {mkv_path}")
+        return 0
+
+    # note: if target_time_step is zero we want ALL samples
+    if(target_time_step_seconds > 0):
+        # --- ALIGNMENT on 8ms boundaries for locata 8ms (120Hz) ---
+        target_step_sec = target_time_step_seconds
+        samples_per_step = round(Fs * target_step_sec)
+        step_duration = samples_per_step / Fs
+        
+        logger.debug(f"Sample rate: {Fs} Hz")
+        logger.debug(f"Samples per step: {samples_per_step}")
+        logger.debug(f"Actual step duration: {step_duration:.9f} s")
+    else:
+        samples_per_step = 1
     
-    logger.debug(f"Sample rate: {Fs} Hz")
-    logger.debug(f"Samples per step: {samples_per_step}")
-    logger.debug(f"Actual step duration: {step_duration:.9f} s")
-    
+
     current_sample = 0
 
     data_file = os.path.join(output_path, output_file)
     
     with open(data_file, "w") as f:
-        f.write("year \tmonth \tday \thour \tminute \tsecond \tvalid_flag\n")
-        
+
+        if(target_time_step_seconds > 0):
+            f.write("year \tmonth \tday \thour \tminute \tsecond \tvalid_flag\n")
+        else:
+            f.write("year \tmonth \tday \thour \tminute \tsecond\n")
+
         while current_sample < total_samples:
             current_time = current_sample / Fs
             dt = start_datetime + timedelta(seconds=current_time)
             
             seconds = dt.second + dt.microsecond / 1e6
-            
-            row = [
-                dt.year,
-                dt.month,
-                dt.day,
-                dt.hour,
-                dt.minute,
-                f"{seconds:.3f}",
-                1
-            ]
-            
+
+            if(target_time_step_seconds > 0):
+                row = [
+                    dt.year,
+                    dt.month,
+                    dt.day,
+                    dt.hour,
+                    dt.minute,
+                    f"{seconds:.3f}",
+                    1
+                ]
+            else:
+                row = [
+                    dt.year,
+                    dt.month,
+                    dt.day,
+                    dt.hour,
+                    dt.minute,
+                    f"{seconds:.13f}",
+                ]
+
             f.write("\t".join(map(str, row)) + "\n")
             
             current_sample += samples_per_step
     
     return total_samples
 
-def generate_source_audio_files(mkv_path, output_path="/tmp/", output_prefix="audio_source_", output_postfix="loudspeaker_", audio_samples=0):
+def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_source_", output_postfix="loudspeaker_", audio_samples=0):
     err = 0
 
     # check for mkv presence
@@ -347,6 +517,10 @@ def generate_source_audio_files(mkv_path, output_path="/tmp/", output_prefix="au
         return err
 
     for source_number, source_info in yaml_data["sources"].items():
+
+        if stop_event.is_set():
+            return -1
+
         channels = source_info.get("channels")
         track_id = source_info.get("track_id")
 
@@ -382,10 +556,26 @@ def generate_source_audio_files(mkv_path, output_path="/tmp/", output_prefix="au
             err = -1
             return err
 
+
+        # generate timestamps for source audio file
+        if stop_event.is_set():
+            return -1
+
+        filename = f"{output_prefix}_timestamps_{output_postfix}{str(track_id)}.txt"
+        audio_samples = generate_timestamps_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
+        if(audio_samples != total_samples):
+            logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file timestamps: {output_filename}")
+            err=-1
+
+        # generate VAD timestamps for source audio file
+        if stop_event.is_set():
+            return -1
+
+
     return err
 
 
-def generate_array_audio_files(mkv_path, output_path="/tmp/", output_prefix="audio_array_", output_postfix="loudspeaker_",audio_samples=0):
+def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_array_", output_postfix="loudspeaker_",audio_samples=0):
     err = 0
 
     # check for mkv presence
@@ -621,21 +811,21 @@ def verse_to_locata(idx, path, **kwargs):
         return None
 
     start_dt = datetime.now()
-    total_audio_samples = generate_required_time_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_file="required_time.txt", target_time_step_seconds=0.008)
+    total_audio_samples = generate_timestamps_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_file="required_time.txt", target_time_step_seconds=0.008)
 
     # STEP-2: create audio source and mic-array files
 
     if stop_event.is_set():
         return None
 
-    err = generate_source_audio_files(mkv_yaml["file"], output_path=output_locata_path, audio_samples=total_audio_samples)
+    err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples)
     if ( err != 0):
         return None
 
     if stop_event.is_set():
         return None
 
-    err = generate_array_audio_files(mkv_yaml["file"], output_path=output_locata_path, output_postfix=mic_array_name, audio_samples=total_audio_samples)
+    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, audio_samples=total_audio_samples)
     if ( err != 0):
         return None
 
