@@ -339,28 +339,25 @@ def float_to_pcm16(audio):
 #     return out_mask
 
 def remap_vad_mask_to_original_sr(
-    vad_mask_16k,
+    vad_mask,
     original_num_samples,
     original_sr,
     vad_sr=16000
 ):
 
-    # if VAD is computed at sr different from the one we need, apply a simple expansion.
-    # this is sub-optimal, but I have no other methods for now.
+    scale = vad_sr / original_sr
 
     indices = (
-        np.arange(original_num_samples)
-        * vad_sr
-        / original_sr
+        np.arange(original_num_samples) * scale
     ).astype(np.int64)
 
     indices = np.clip(
         indices,
         0,
-        len(vad_mask_16k) - 1
+        len(vad_mask) - 1
     )
 
-    return vad_mask_16k[indices]
+    return vad_mask[indices]
 
 def generate_vad_mask(
     wav_path,
@@ -462,7 +459,7 @@ def generate_vad_mask(
     final_vad_mask = vad_mask
 
     if (input_sr!=vad_target_sr):
-        remap_vad_mask_to_original_sr( vad_mask, input_samples, input_sr, vad_sr = sr)
+        final_vad_mask = remap_vad_mask_to_original_sr( vad_mask, original_num_samples=input_samples, original_sr=input_sr, vad_sr = sr)
 
     return final_vad_mask, input_sr
 
