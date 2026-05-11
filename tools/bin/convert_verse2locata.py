@@ -8,6 +8,7 @@ import json
 import time
 import re
 import logging
+import tempfile
 import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, as_completed, TimeoutError
 from tqdm import tqdm
@@ -36,6 +37,9 @@ _RESOURCES_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../",
 _DATASET_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../", "datasets")
 
 _FFPROBE_EXE = "/usr/bin/ffprobe"
+_FFMPEG_EXE = "/usr/bin/ffmpeg"
+_MKVEXTRACT_EXE = "/usr/bin/mkvextract"
+_MKVMERGE_EXE = "/usr/bin/mkvmerge"
 
 _LOCATA_TASK_TYPES={'task1':"task1",'task2':"task2",'task3':"task3",'task4':"task4",'task5':"task5",'task6':"task6"}
 
@@ -269,13 +273,13 @@ def get_audio_info(mkv_path):
 
     sample_rate = best_sr
 
-    # 4. Compute total samples (robust)
+    # 4. Compute total samples 
     total_samples = int(round(sample_rate * duration))
 
     return sample_rate, duration, total_samples
 
 
-def generate_required_time_file(mkv_path, start_datetime, output_path="/tmp/", output_file="required_time.txt"):
+def generate_required_time_file(mkv_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008):
     try:
         Fs, duration, total_samples = get_audio_info(mkv_path)
     except:
@@ -283,7 +287,7 @@ def generate_required_time_file(mkv_path, start_datetime, output_path="/tmp/", o
         return 0
     
     # --- ALIGNMENT on 8ms boundaries for locata 8ms (120Hz) ---
-    target_step_sec = 0.008
+    target_step_sec = target_time_step_seconds
     samples_per_step = round(Fs * target_step_sec)
     step_duration = samples_per_step / Fs
     
@@ -319,6 +323,204 @@ def generate_required_time_file(mkv_path, start_datetime, output_path="/tmp/", o
             current_sample += samples_per_step
     
     return total_samples
+
+def generate_source_audio_files(mkv_path, output_path="/tmp/", output_prefix="audio_source_", output_postfix="loudspeaker_", audio_samples=0):
+    err = 0
+
+    # check for mkv presence
+    try:
+        Fs, duration, total_samples = get_audio_info(mkv_path)
+    except:
+        logger.error(f"Invalid audio file: {mkv_path}")
+        err = -1
+        return err
+
+    # check for mkv descriptor presence
+    tmp_path = Path(mkv_path)
+    yaml_path = tmp_path.with_name(f"{tmp_path.stem}_{tmp_path.suffix.lstrip('.')}.yaml")
+    yaml_data = safe_load_yaml(yaml_path)
+    if yaml_data is None:
+        logger.error(f"Invalid mkv_descriptor file: {yaml_path}")
+        err = -1
+        return err
+
+    for source_number, source_info in yaml_data["sources"].items():
+        channels = source_info.get("channels")
+        track_id = source_info.get("track_id")
+
+        filename = f"{output_prefix}{output_postfix}{str(track_id)}.wav"
+        output_filename = os.path.join(output_path, filename)
+
+        # demux the audio source file
+        cmd = [
+            _FFMPEG_EXE,
+            "-v", "error",
+            "-y",                      # overwrite output
+            "-i", mkv_path,            # input mkv
+            "-map", f"0:{track_id}",   # select track
+            "-c", "copy",            # no re-encoding
+            output_filename
+        ]
+
+        try:
+            subprocess.run(cmd, check=True, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            try:
+                Fs, duration, total_samples = get_audio_info(output_filename)
+            except:
+                logger.error(f"Invalid audio file: {output_filename}")
+                err = -1
+
+            if(audio_samples != total_samples):
+                logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
+                err=-1
+
+        except:
+            logger.error(f"Cannot extrace track #{track_id} from {mkv_path}")
+            err = -1
+            return err
+
+    return err
+
+
+def generate_array_audio_files(mkv_path, output_path="/tmp/", output_prefix="audio_array_", output_postfix="loudspeaker_",audio_samples=0):
+    err = 0
+
+    # check for mkv presence
+    try:
+        Fs, duration, total_samples = get_audio_info(mkv_path)
+    except:
+        logger.error(f"Invalid audio file: {mkv_path}")
+        err = -1
+        return err
+
+    # check for mkv descriptor presence
+    tmp_path = Path(mkv_path)
+
+    yaml_path = tmp_path.with_name(f"{tmp_path.stem}_{tmp_path.suffix.lstrip('.')}.yaml")
+    
+    yaml_data = safe_load_yaml(yaml_path)
+    
+    if yaml_data is None:
+        logger.error(f"Invalid mkv_descriptor file: {yaml_path}")
+        err = -1
+        return err
+
+    # output filename for merged wav
+    filename = f"{output_prefix}{output_postfix}.wav"
+    
+    output_filename = os.path.join(output_path, filename)        
+
+    # print(mkv_path)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+
+        extracted_wavs = []
+
+        for receiver_number, receiver_info in yaml_data["receivers"].items():
+            channels = receiver_info.get("channels")
+            track_id = receiver_info.get("track_id")
+
+            # print(f"receiver #{receiver_number}: channels {channels} track_id {track_id}")
+
+            # extract audio tracks into mono files (ordered list)
+
+            track_wav = os.path.join(tmpdir, f"receiver_{receiver_number}.wav")
+
+            cmd = [
+                _MKVEXTRACT_EXE,
+                "-q",
+                str(mkv_path),
+                "tracks",
+                f"{track_id}:{track_wav}"
+            ]
+
+            try:
+                subprocess.run(
+                    cmd,
+                    check=True,
+                    stdin=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except:
+                err = err+1
+
+            # add to the list if no errors
+            if err==0:
+
+                if channels == 1:
+                    extracted_wavs.append(track_wav)
+                
+                else:
+
+                    for channel_number in range(channels):
+
+                        tmp_wav = os.path.join(tmpdir, f"receiver_{receiver_number}_{channel_number}.wav")
+
+                        pan_filter = f"pan=mono|c0=c{channel_number}"
+            
+                        cmd = [
+                            _FFMPEG_EXE,
+                            "-v", "error",
+                            "-y",
+                            "-i", str(track_wav),
+                            "-filter:a", pan_filter,                    
+                            "-c:a", "pcm_s16le",
+                            str(tmp_wav)
+                        ]
+
+                        try:
+                            subprocess.run(
+                                cmd,
+                                check=True,
+                                stdin=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL
+                            )
+                            extracted_wavs.append(tmp_wav)
+                        except:
+                            err = err+1
+
+        # now mux all track in one single .wav file as per locata sintax
+        if(err == 0):
+            n_inputs = len(extracted_wavs)
+            filter_complex = f"amerge=inputs={n_inputs}"
+
+            cmd = [
+                _FFMPEG_EXE,
+                "-v", "error",
+                "-y",
+            ]
+
+            # add all inputs
+            for wav in extracted_wavs:
+                cmd += ["-i", str(wav)]
+
+            cmd += [
+                "-filter_complex", filter_complex,
+                "-c:a", "pcm_s16le",
+                str(output_filename)
+            ]
+
+            logger.debug(f"Extracting array audio file: {output_filename}")
+            
+            subprocess.run(
+                cmd,
+                check=True,
+                stdin=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+
+            try:
+                Fs, duration, total_samples = get_audio_info(output_filename)
+            except:
+                logger.error(f"Invalid audio file: {output_filename}")
+                err = -1
+
+            if(audio_samples != total_samples):
+                logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
+                err=-1
+
+    return err
 
 
 def find_verse_dataset(path, output_path, num_workers, timeout, verbose ):
@@ -408,22 +610,35 @@ def verse_to_locata(idx, path, **kwargs):
     # additional locata data structure
     output_locata_path = os.path.join(output_locata_path, data_type, task_type, "recording"+str(idx), mic_array_name)
 
-    # create output folder as per Locata syntax
+    # STEP-1: create output folder as per Locata syntax
+
+    if stop_event.is_set():
+        return None
+
     if not ( check_folder_exists(output_locata_path) ):
         return None
 
-    # print("===")
-    # print(idx)
-    # print(output_locata_path)
-    # print(len(scene_yaml["setup"]["sources"]))
-    # print(task_type)
-    # # print(scene_yaml)
-
     start_dt = datetime.now()
+    total_audio_samples = generate_required_time_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_file="required_time.txt", target_time_step_seconds=0.008)
 
-    total_audio_samples = generate_required_time_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_file="required_time.txt")
+    # STEP-2: create audio source and mic-array files
 
-    time.sleep(1)  # simulate work
+    if stop_event.is_set():
+        return None
+
+    err = generate_source_audio_files(mkv_yaml["file"], output_path=output_locata_path, audio_samples=total_audio_samples)
+    if ( err != 0):
+        return None
+
+    if stop_event.is_set():
+        return None
+
+    err = generate_array_audio_files(mkv_yaml["file"], output_path=output_locata_path, output_postfix=mic_array_name, audio_samples=total_audio_samples)
+    if ( err != 0):
+        return None
+
+
+    # time.sleep(1)  # simulate work
 
     return (path, mkv_descriptor, source)
 
