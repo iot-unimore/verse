@@ -649,13 +649,15 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
 
     logger.debug(f"Generating VAD file for: {file_path}")
     
-    with open(data_file, "w") as f:
-        if stop_event.is_set():
-            return -1
-        f.write("VAD\n")
-        for i, flag in enumerate(vad_mask):
-            f.write(f"{flag}\n")
+    # with open(data_file, "w") as f:
+    #     if stop_event.is_set():
+    #         return -1
+    #     f.write("VAD\n")
+    #     for i, flag in enumerate(vad_mask):
+    #         f.write(f"{flag}\n")
 
+    np.savetxt(data_file, vad_mask.reshape(-1, 1), fmt="%d",header="VAD", comments="")
+    
     return len(vad_mask)
 
 
