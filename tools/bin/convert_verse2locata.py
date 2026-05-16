@@ -307,37 +307,6 @@ def float_to_pcm16(audio):
     return (audio * 32767).astype(np.int16)
 
 
-# def remap_vad_mask_to_original_sr(
-#     vad_mask_16k,
-#     original_num_samples,
-#     original_sr,
-#     vad_sr=16000
-# ):
-#     # if VAD is computed at sr different from the one we need, apply a simple expansion.
-#     # this is sub-optimal, but I have no other methods for now.
-
-#     out_mask = np.zeros(
-#         original_num_samples,
-#         dtype=np.uint8
-#     )
-
-#     # Time mapping
-
-#     scale = vad_sr / original_sr
-
-#     # Map each original sample -> corresponding VAD sample
-
-#     for i in range(original_num_samples):
-
-#         vad_index = int(i * scale)
-
-#         if vad_index >= len(vad_mask_16k):
-#             vad_index = len(vad_mask_16k) - 1
-
-#         out_mask[i] = vad_mask_16k[vad_index]
-
-#     return out_mask
-
 def remap_vad_mask_to_original_sr(
     vad_mask,
     original_num_samples,
@@ -660,6 +629,54 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
     
     return len(vad_mask)
 
+def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output_prefix="", output_postfix="loudspeaker_", scene=""):
+    log_header = ["year","month","day","hour","minute","second","x","y","z","ref_vec_x","ref_vec_y","ref_vec_z","rotation_11","rotation_12","rotation_13","rotation_21","rotation_22","rotation_23","rotation_31","rotation_32","rotation_33"]
+
+    err = 0
+
+    if(scene==""):
+        return -1
+
+    yaml_scene = scene
+
+    # check for mkv presence
+    try:
+        Fs, duration, total_samples, codec_name = get_audio_info(mkv_path)
+    except:
+        logger.error(f"Invalid audio file: {mkv_path}")
+        err = -1
+        return err
+
+    # check for mkv descriptor presence
+    tmp_path = Path(mkv_path)
+    yaml_path = tmp_path.with_name(f"{tmp_path.stem}_{tmp_path.suffix.lstrip('.')}.yaml")
+    yaml_data = safe_load_yaml(yaml_path)
+    if yaml_data is None:
+        logger.error(f"Invalid mkv_descriptor file: {yaml_path}")
+        err = -1
+        return err
+
+    if stop_event.is_set():
+        return -1
+
+    for source_number, source_info in yaml_scene["setup"]["sources"].items():
+        filename = f"position_source_{output_postfix}{str(source_number)}.txt"
+        output_filename = os.path.join(output_path, filename)
+
+        with open(output_filename, 'w') as f:
+            f.write("\t".join(log_header))
+
+    for listener_number, listener_info in yaml_scene["setup"]["listeners"].items():
+        if(listener_number > 0):
+            err=-1
+            logger.error(f"Invalid scene (listener count is > 1) for file: {mkv_path}")
+        else:
+            filename = f"position_array_{output_prefix}.txt"
+            output_filename = os.path.join(output_path, filename)
+            with open(output_filename, 'w') as f:
+                f.write("\t".join(log_header))
+ 
+    return err
 
 
 def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_source_", output_postfix="loudspeaker_", audio_samples=0):
@@ -1061,19 +1078,25 @@ def verse_to_locata(idx, path, **kwargs):
     if(task_type==_LOCATA_TASK_TYPES["task3"] or task_type==_LOCATA_TASK_TYPES["task4"]):
         output_postfix = "talker"
 
+    err = generate_position_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_prefix=mic_array_name, output_postfix=output_postfix, scene=scene_yaml)
+    if ( err != 0):
+        return None
+
+    # check for early exit
+    if stop_event.is_set():
+        return None
+
     err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
     if ( err != 0):
         return None
 
+    # check for early exit
     if stop_event.is_set():
         return None
 
     err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
     if ( err != 0):
         return None
-
-
-    # time.sleep(1)  # simulate work
 
     return (path, mkv_descriptor, source)
 
