@@ -554,55 +554,55 @@ def generate_timestamps_file(file_path, start_datetime, output_path="/tmp/", out
     else:
         samples_per_step = 1
     
-
     current_sample = 0
 
     data_file = os.path.join(output_path, output_file)
 
     logger.debug(f"Generating timestamp file for: {file_path}")
-    
-    with open(data_file, "w") as f:
+
+    timestamps=[]
+
+    while current_sample < total_samples:
+
+        current_time = current_sample / Fs
+        dt = start_datetime + timedelta(seconds=current_time)
+        
+        seconds = dt.second + dt.microsecond / 1e6
 
         if(target_time_step_seconds > 0):
-            f.write("year \tmonth \tday \thour \tminute \tsecond \tvalid_flag\n")
+            row = [
+                dt.year,
+                dt.month,
+                dt.day,
+                dt.hour,
+                dt.minute,
+                seconds,
+                1
+            ]
         else:
-            f.write("year \tmonth \tday \thour \tminute \tsecond\n")
+            row = [
+                dt.year,
+                dt.month,
+                dt.day,
+                dt.hour,
+                dt.minute,
+                seconds
+            ]
 
-        while current_sample < total_samples:
+        timestamps.append(row) 
 
-            if stop_event.is_set():
-                return -1
+        current_sample += samples_per_step
 
-            current_time = current_sample / Fs
-            dt = start_datetime + timedelta(seconds=current_time)
-            
-            seconds = dt.second + dt.microsecond / 1e6
+    # check for early exit
+    if stop_event.is_set():
+        return -1
 
-            if(target_time_step_seconds > 0):
-                row = [
-                    dt.year,
-                    dt.month,
-                    dt.day,
-                    dt.hour,
-                    dt.minute,
-                    f"{seconds:.3f}",
-                    1
-                ]
-            else:
-                row = [
-                    dt.year,
-                    dt.month,
-                    dt.day,
-                    dt.hour,
-                    dt.minute,
-                    f"{seconds:.13f}",
-                ]
+    # save to file
+    if(target_time_step_seconds > 0):
+        np.savetxt(data_file, timestamps, fmt=["%d", "%d", "%d", "%d", "%d", "%.3f", "%d"], delimiter="\t", header="year \tmonth \tday \thour \tminute \tsecond \tvalid_flag", comments="")
+    else:
+        np.savetxt(data_file, timestamps, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f"], delimiter="\t", header="year \tmonth \tday \thour \tminute \tsecond", comments="")
 
-            f.write("\t".join(map(str, row)) + "\n")
-            
-            current_sample += samples_per_step
-
-    
     return total_samples
 
 
@@ -749,7 +749,7 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
     return err
 
 
-def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_array_", output_postfix="loudspeaker_",audio_samples=0):
+def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_array_", output_postfix="loudspeaker_",audio_samples=0, source_postfix="loudspeaker_"):
     err = 0
 
     # check for mkv presence
@@ -882,6 +882,74 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                 logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
                 err=-1
 
+
+
+        # generate array timestamps for array audio file
+        if stop_event.is_set():
+            return -1
+
+        if(err == 0):
+            filename = f"{output_prefix}timestamps_{output_postfix}.txt"
+            audio_samples = generate_timestamps_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
+            if(audio_samples != total_samples):
+                logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file timestamps: {output_filename}")
+                err=-1
+
+        #
+        # now generate array timestamps and VAD for each received array-source pair
+        #
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+
+            # ToDo: IMPORTANT we need to extract source audio AND compensate for the source-destination distance (free air)
+            for source_number, source_info in yaml_data["sources"].items():
+
+                if stop_event.is_set():
+                    return -1
+
+                channels = source_info.get("channels")
+                track_id = source_info.get("track_id")
+
+                filename = f"{output_prefix}{output_postfix}{str(track_id)}.wav"
+                output_filename = os.path.join(tmpdir, filename)
+
+                # demux the audio source file
+                cmd = [
+                    _FFMPEG_EXE,
+                    "-v", "error",
+                    "-y",                      # overwrite output
+                    "-i", mkv_path,            # input mkv
+                    "-map", f"0:{track_id}",   # select track
+                    "-c", "copy",            # no re-encoding
+                    output_filename
+                ]
+
+                try:
+                    subprocess.run(cmd, check=True, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+                    try:
+                        Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
+                    except:
+                        logger.error(f"Invalid audio file: {output_filename}")
+                        err = -1
+
+                    if(audio_samples != total_samples):
+                        logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
+                        err=-1
+
+                except:
+                    logger.error(f"Cannot extrace track #{track_id} from {mkv_path}")
+                    err = -1
+                    return err
+
+                if(err == 0):
+
+                    filename = f"VAD_{output_postfix}_{source_postfix}{str(track_id)}.txt"
+                    audio_samples = generate_vad_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
+                    if(audio_samples != total_samples):
+                        logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file VAD: {output_filename}")
+                        err=-1
+
     return err
 
 
@@ -988,14 +1056,19 @@ def verse_to_locata(idx, path, **kwargs):
     if stop_event.is_set():
         return None
 
-    err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples)
+    # setting output_postfix as per LOCATA naming convention, but for VERSE this is always a loudspeaker since we have no "real life" speaker person in the room.
+    output_postfix = "loudspeaker"
+    if(task_type==_LOCATA_TASK_TYPES["task3"] or task_type==_LOCATA_TASK_TYPES["task4"]):
+        output_postfix = "talker"
+
+    err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
     if ( err != 0):
         return None
 
     if stop_event.is_set():
         return None
 
-    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, audio_samples=total_audio_samples)
+    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
     if ( err != 0):
         return None
 
