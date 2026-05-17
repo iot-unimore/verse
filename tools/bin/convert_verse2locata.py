@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 from functools import partial
 from pathlib import Path
 import numpy as np
+import pandas as pd
 import soundfile as sf
 import webrtcvad
 import scipy.signal
@@ -38,8 +39,8 @@ REQUIRED_SYNTAX_NAMES = {
 ####################################################################################################
 
 _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
-_RESOURCES_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../", "resources")
-_DATASET_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../", "datasets")
+_RESOURCES_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../", "resources")
+_DATASET_DIR = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../../", "datasets")
 
 _FFPROBE_EXE = "/usr/bin/ffprobe"
 _FFMPEG_EXE = "/usr/bin/ffmpeg"
@@ -629,8 +630,250 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
     
     return len(vad_mask)
 
+# ============================================================
+# 2. SPHERICAL -> CARTESIAN
+# LOCATA-like convention:
+#
+# azimuth:
+#   0 deg  -> +x
+#   +90    -> +y
+#
+# elevation:
+#   0 deg  -> xy plane
+#   +90    -> +z
+#
+# ============================================================
+
+def spherical_to_cartesian(az_deg, el_deg, r):
+
+    az = np.deg2rad(az_deg)
+    el = np.deg2rad(el_deg)
+
+    x = r * np.cos(el) * np.cos(az)
+    y = r * np.cos(el) * np.sin(az)
+    z = r * np.sin(el)
+
+    return x, y, z
+
+def compute_position_static(yaml_info="", start_datetime=0, duration=0, samplerate=48000, total_samples=0, offset_xyz=[0,0,0]):
+    position=[]
+    err=0
+
+    if( duration==0 ):
+        err=-1
+
+    try:
+        if( yaml_info["position"]["type"].lower() != "static" ):
+            err=-1
+    except:
+        err=-1
+
+    if(err==0):
+        print("ciao static")
+
+    return err, position
+
+def read_path_csv(filename=""):
+    err=0
+    data=[]
+
+    dtype = [
+        ('time', 'f8'),
+        ('volume', 'f8'),
+        ('azimuth', 'f8'),
+        ('elevation', 'f8'),
+        ('distance', 'f8'),
+        ('coord_type', 'U1')
+    ]
+
+    try:
+        data = np.genfromtxt(
+            filename,
+            delimiter=',',
+            comments='#',
+            dtype=dtype,
+            autostrip=True
+        )
+    except:
+        err=-1
+
+    return err, data
+
+def read_trajectory_csv(filename):
+    err=0
+    cols = [
+        'time_percent',
+        'volume',
+        'azimuth_deg',
+        'elevation_deg',
+        'distance',
+        'coord_type'
+    ]
+
+    try:
+        df = pd.read_csv(
+            filename,
+            comment='#',
+            header=None,
+            names=cols,
+            skipinitialspace=True
+        )
+    except:
+        err=-1
+
+    return err, df
+
+
+def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0]):
+    position=[]
+    err=0
+
+    if( duration_seconds==0 ):
+        err=-1
+
+    if(total_samples<1):
+        err=-1
+
+    try:
+        if( yaml_info["position"]["type"].lower() != "dynamic" ):
+            err=-1
+    except:
+        err=-1
+
+    yaml_data=[]
+
+    if(err==0):
+
+        path_file=os.path.join(_RESOURCES_DIR,yaml_info["position"]["value"]["type"],yaml_info["position"]["value"]["subtype"],"info",yaml_info["position"]["value"]["info"])
+
+        try:
+            yaml_data = safe_load_yaml(path_file)
+            if yaml_data is None:
+                logger.error(f"Cannot open dynamic path file: {path_file}")
+                err = -1
+            else:
+                if (yaml_data["syntax"]["name"]!="path_map"):
+                    logger.error(f"Invalid dynamic path file: {path_file}")
+                    err = -1
+
+                if (yaml_data["path_count"]!=1):
+                    logger.error(f"Invalid dynamic path file: {path_file}")
+                    err = -1
+        except:
+            err = -1
+
+    if(err==0):
+        path_csv = os.path.join(_RESOURCES_DIR,yaml_info["position"]["value"]["type"],yaml_info["position"]["value"]["subtype"],yaml_data["path"][0]["file"])
+
+        #err, data = read_path_csv(path_csv)
+
+        # --------------------------------------------------------
+        # Read CSV
+        # --------------------------------------------------------
+
+        err , df = read_trajectory_csv(path_csv)
+
+        # --------------------------------------------------------
+        # Convert anchor points to Cartesian
+        # --------------------------------------------------------
+
+        coord_type = df['coord_type'].iloc[0].strip().lower()
+
+        if coord_type == 's':
+
+            x, y, z = spherical_to_cartesian(
+                df['azimuth_deg'].to_numpy(),
+                df['elevation_deg'].to_numpy(),
+                df['distance'].to_numpy()
+            )
+
+        elif coord_type == 'c':
+
+            # assuming:
+            # azimuth_deg -> x
+            # elevation_deg -> y
+            # distance -> z
+
+            x = df['azimuth_deg'].to_numpy()
+            y = df['elevation_deg'].to_numpy()
+            z = df['distance'].to_numpy()
+
+        else:
+            raise ValueError("Unknown coordinate type")
+
+        # --------------------------------------------------------
+        # Anchor timestamps (seconds)
+        # --------------------------------------------------------
+
+        anchor_times = (
+            df['time_percent'].to_numpy() / 100.0
+        ) * duration_seconds
+
+        # --------------------------------------------------------
+        # Uniform sample timeline
+        # --------------------------------------------------------
+
+        dt = 1.0 / sample_rate
+
+        sample_times = np.arange(
+            0,
+            duration_seconds,
+            dt
+        )
+
+        # --------------------------------------------------------
+        # Linear interpolation
+        # --------------------------------------------------------
+
+        x_interp = np.interp(sample_times, anchor_times, x)
+        y_interp = np.interp(sample_times, anchor_times, y)
+        z_interp = np.interp(sample_times, anchor_times, z)
+
+        # --------------------------------------------------------
+        # Datetime generation
+        # --------------------------------------------------------
+
+        timestamps = [
+            start_datetime + timedelta(seconds=float(t))
+            for t in sample_times
+        ]
+
+        # --------------------------------------------------------
+        # Build final dataframe
+        # --------------------------------------------------------
+
+        position = pd.DataFrame({
+            'year':   [t.year for t in timestamps],
+            'month':  [t.month for t in timestamps],
+            'day':    [t.day for t in timestamps],
+            'hour':   [t.hour for t in timestamps],
+            'minute': [t.minute for t in timestamps],
+
+            # fractional seconds
+            'second': [
+                t.second + t.microsecond / 1e6
+                for t in timestamps
+            ],
+
+            'x': x_interp,
+            'y': y_interp,
+            'z': z_interp
+        })
+
+    return err, position
+
+
 def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output_prefix="", output_postfix="loudspeaker_", scene=""):
-    log_header = ["year","month","day","hour","minute","second","x","y","z","ref_vec_x","ref_vec_y","ref_vec_z","rotation_11","rotation_12","rotation_13","rotation_21","rotation_22","rotation_23","rotation_31","rotation_32","rotation_33"]
+    
+    # log_header = ["year","month","day","hour","minute","second",
+    #               "x","y","z",
+    #               "ref_vec_x","ref_vec_y","ref_vec_z",
+    #               "rotation_11","rotation_12","rotation_13",
+    #               "rotation_21","rotation_22","rotation_23",
+    #               "rotation_31","rotation_32","rotation_33"]
+
+    log_header = "\t".join(["year","month","day","hour","minute","second",
+                  "x","y","z"])
 
     err = 0
 
@@ -663,8 +906,23 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
         filename = f"position_source_{output_postfix}{str(source_number)}.txt"
         output_filename = os.path.join(output_path, filename)
 
-        with open(output_filename, 'w') as f:
-            f.write("\t".join(log_header))
+        if( source_info["position"]["type"].lower() not in ["static", "dynamic"] ):
+            err=-1
+            logger.error(f"Invalid source position type in file: {yaml_path}")
+        else:
+            if(source_info["position"]["type"]=="dynamic"):
+                err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples)
+
+                print(position)
+                if(err==0):
+                    np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header, comments="")
+
+            else:
+                err,position = compute_position_static(source_info, start_datetime, duration, Fs, total_samples)
+
+
+            # with open(output_filename, 'w') as f:
+            #     f.write("\t".join(log_header))
 
     for listener_number, listener_info in yaml_scene["setup"]["listeners"].items():
         if(listener_number > 0):
@@ -673,8 +931,18 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
         else:
             filename = f"position_array_{output_prefix}.txt"
             output_filename = os.path.join(output_path, filename)
-            with open(output_filename, 'w') as f:
-                f.write("\t".join(log_header))
+
+            if( listener_info["position"]["type"].lower() not in ["static", "dynamic"] ):
+                err=-1
+                logger.error(f"Invalid listener position type in file: {yaml_path}")
+            else:
+                if(listener_info["position"]["type"]=="dynamic"):
+                    err,position = compute_position_dynamic(listener_info, start_datetime, duration, Fs, total_samples)
+                else:
+                    err,position = compute_position_static(listener_info, start_datetime, duration, Fs, total_samples)
+
+                with open(output_filename, 'w') as f:
+                    f.write("\t".join(log_header))
  
     return err
 
