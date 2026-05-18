@@ -32,6 +32,22 @@ def apply_minimum_bounds(ax, x, y, z, min_limit=2.0):
 
     ax.set_box_aspect([xmax - xmin, ymax - ymin, zmax - zmin])
 
+def symmetric_min_bounds(ax, x, y, z, min_limit=2.0):
+
+    def sym_range(data):
+        m = max(abs(data.min()), abs(data.max()), min_limit)
+        return -m, m
+
+    xmin, xmax = sym_range(x)
+    ymin, ymax = sym_range(y)
+    zmin, zmax = sym_range(z)
+
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_zlim(zmin, zmax)
+
+    ax.set_box_aspect([1, 1, 1])    
+
 def plot_reference_frames(ax, df, scale=1.0):
     """
     Plot local reference frames using rotation matrix columns.
@@ -252,6 +268,8 @@ def main():
     )
 
     apply_minimum_bounds(ax, x, y, z, min_limit=1.0)
+
+    symmetric_min_bounds(ax, x, y, z, min_limit=1.0)
     
     plt.tight_layout()
     plt.show()
