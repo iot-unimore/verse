@@ -644,14 +644,34 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
 #
 # ============================================================
 
-def spherical_to_cartesian(az_deg, el_deg, r):
+def spherical_to_cartesian(az_deg, el_deg, r, convention="locata"):
 
-    az = np.deg2rad(az_deg)
-    el = np.deg2rad(el_deg)
+    conventions=["locata","verse"]
 
-    x = r * np.cos(el) * np.cos(az)
-    y = r * np.cos(el) * np.sin(az)
-    z = r * np.sin(el)
+    x=0
+    y=0
+    z=0
+
+    if(str(convention).lower() == "locata"):
+        az = np.deg2rad(az_deg)
+        el = np.deg2rad(el_deg)
+
+        x = r * np.cos(el) * np.cos(az)
+        y = r * np.cos(el) * np.sin(az)
+        z = r * np.sin(el)
+
+    elif(str(convention).lower() == "verse"):
+        az = np.deg2rad(az_deg)
+        el = np.deg2rad(el_deg)
+
+        x = r * np.cos(el) * np.sin(az) * -1.0
+        y = r * np.cos(el) * np.cos(az)
+        z = r * np.sin(el)
+    else:
+        logger.error(f"Invalid convention type for spherical_to_cartesian: {convention}")
+        x=-99
+        y=-99
+        z=-99
 
     return x, y, z
 
@@ -784,7 +804,8 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
             x, y, z = spherical_to_cartesian(
                 df['azimuth_deg'].to_numpy(),
                 df['elevation_deg'].to_numpy(),
-                df['distance'].to_numpy()
+                df['distance'].to_numpy(),
+                convention="verse"
             )
 
         elif coord_type == 'c':
@@ -841,7 +862,6 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
         # --------------------------------------------------------
         # Build final dataframe
         # --------------------------------------------------------
-
         position = pd.DataFrame({
             'year':   [t.year for t in timestamps],
             'month':  [t.month for t in timestamps],
@@ -913,16 +933,11 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
             if(source_info["position"]["type"]=="dynamic"):
                 err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples)
 
-                print(position)
                 if(err==0):
                     np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header, comments="")
 
             else:
                 err,position = compute_position_static(source_info, start_datetime, duration, Fs, total_samples)
-
-
-            # with open(output_filename, 'w') as f:
-            #     f.write("\t".join(log_header))
 
     for listener_number, listener_info in yaml_scene["setup"]["listeners"].items():
         if(listener_number > 0):
