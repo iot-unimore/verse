@@ -630,7 +630,7 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
     
     return len(vad_mask)
 
-# ============================================================
+# -----------------------------------------------------=======
 # 2. SPHERICAL -> CARTESIAN
 # LOCATA-like convention:
 #
@@ -642,7 +642,7 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
 #   0 deg  -> xy plane
 #   +90    -> +z
 #
-# ============================================================
+# -----------------------------------------------------=======
 
 def spherical_to_cartesian(az_deg, el_deg, r, convention="locata"):
 
@@ -675,49 +675,6 @@ def spherical_to_cartesian(az_deg, el_deg, r, convention="locata"):
 
     return x, y, z
 
-def compute_position_static(yaml_info="", start_datetime=0, duration=0, samplerate=48000, total_samples=0, offset_xyz=[0,0,0]):
-    position=[]
-    err=0
-
-    if( duration==0 ):
-        err=-1
-
-    try:
-        if( yaml_info["position"]["type"].lower() != "static" ):
-            err=-1
-    except:
-        err=-1
-
-    if(err==0):
-        print("ciao static")
-
-    return err, position
-
-def read_path_csv(filename=""):
-    err=0
-    data=[]
-
-    dtype = [
-        ('time', 'f8'),
-        ('volume', 'f8'),
-        ('azimuth', 'f8'),
-        ('elevation', 'f8'),
-        ('distance', 'f8'),
-        ('coord_type', 'U1')
-    ]
-
-    try:
-        data = np.genfromtxt(
-            filename,
-            delimiter=',',
-            comments='#',
-            dtype=dtype,
-            autostrip=True
-        )
-    except:
-        err=-1
-
-    return err, data
 
 def read_trajectory_csv(filename):
     err=0
@@ -743,8 +700,156 @@ def read_trajectory_csv(filename):
 
     return err, df
 
+import numpy as np
+import pandas as pd
 
-def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0]):
+
+def compute_reference_frame(
+    trajectory_df,
+    target_xyz,
+    world_up=(0.0, 0.0, 1.0),
+    singularity_threshold=0.9999,
+):
+    """
+    Computation of reference vectors and rotation matrices.
+
+    Coordinate convention
+    ---------------------
+    +Y : look / forward
+    +Z : up
+    +X : right
+
+    Rotation matrix columns:
+        col1 = right   (+X local axis)
+        col2 = forward (+Y local axis)
+        col3 = up      (+Z local axis)
+
+    Parameters
+    ----------
+    trajectory_df : pandas.DataFrame
+        Must contain columns:
+            x, y, z
+
+    target_xyz : iterable
+        Target world coordinates:
+            (tx, ty, tz)
+
+    world_up : iterable
+        Global up vector
+
+    singularity_threshold : float
+        Threshold for detecting parallelism between
+        forward vector and world_up
+
+    Returns
+    -------
+    pandas.DataFrame
+        Original dataframe plus:
+
+        ref_vec_x
+        ref_vec_y
+        ref_vec_z
+
+        rotation_11 ... rotation_33
+    """
+
+    df = trajectory_df.copy()
+
+    # -----------------------------------------------------
+    # POSITIONS
+    # -----------------------------------------------------
+
+    positions = df[["x", "y", "z"]].to_numpy(dtype=np.float64)
+
+    target = np.asarray(target_xyz, dtype=np.float64)
+
+    world_up = np.asarray(world_up, dtype=np.float64)
+
+    # -----------------------------------------------------
+    # FORWARD / LOOK VECTOR
+    # -----------------------------------------------------
+
+    forward = target - positions
+
+    norms = np.linalg.norm(forward, axis=1, keepdims=True)
+
+    # avoid division by zero
+    norms = np.where(norms < 1e-12, 1.0, norms)
+
+    forward = forward / norms
+
+    # -----------------------------------------------------
+    # HANDLE SINGULARITIES
+    #
+    # if forward almost parallel to world_up
+    # use temporary up = X axis
+    # -----------------------------------------------------
+
+    dot_fw_up = np.abs(forward @ world_up)
+
+    tmp_up = np.tile(world_up, (len(df), 1))
+
+    singular_mask = dot_fw_up > singularity_threshold
+
+    tmp_up[singular_mask] = np.array([1.0, 0.0, 0.0])
+
+    # -----------------------------------------------------
+    # RIGHT VECTOR
+    #
+    # right = forward x up
+    # -----------------------------------------------------
+
+    right = np.cross(forward, tmp_up)
+
+    right_norms = np.linalg.norm(right, axis=1, keepdims=True)
+
+    right_norms = np.where(right_norms < 1e-12, 1.0, right_norms)
+
+    right = right / right_norms
+
+    # -----------------------------------------------------
+    # TRUE UP VECTOR
+    #
+    # up = right x forward
+    # -----------------------------------------------------
+
+    up = np.cross(right, forward)
+
+    up_norms = np.linalg.norm(up, axis=1, keepdims=True)
+
+    up_norms = np.where(up_norms < 1e-12, 1.0, up_norms)
+
+    up = up / up_norms
+
+    # -----------------------------------------------------
+    # ROTATION MATRICES
+    #
+    # columns = [right, forward, up]
+    # -----------------------------------------------------
+
+    R = np.stack((right, forward, up), axis=2)
+
+    # -----------------------------------------------------
+    # OUTPUT REFERENCE VECTOR
+    #
+    # forward direction
+    # -----------------------------------------------------
+
+    df["ref_vec_x"] = forward[:, 0]
+    df["ref_vec_y"] = forward[:, 1]
+    df["ref_vec_z"] = forward[:, 2]
+
+    # -----------------------------------------------------
+    # OUTPUT ROTATION MATRIX
+    # -----------------------------------------------------
+
+    for i in range(3):
+        for j in range(3):
+            df[f"rotation_{i+1}{j+1}"] = R[:, i, j]
+
+    return df
+
+def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0], target_xyz=(0,0,0)):
     position=[]
     err=0
 
@@ -784,8 +889,6 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
 
     if(err==0):
         path_csv = os.path.join(_RESOURCES_DIR,yaml_info["position"]["value"]["type"],yaml_info["position"]["value"]["subtype"],yaml_data["path"][0]["file"])
-
-        #err, data = read_path_csv(path_csv)
 
         # --------------------------------------------------------
         # Read CSV
@@ -880,20 +983,47 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
             'z': z_interp
         })
 
-    return err, position
 
+        # --------------------------------------------------------
+        # in VERSE each speaker is pointing to the listener HEAD position
+        # --------------------------------------------------------
+        position_with_refvec = compute_reference_frame(
+            position,
+            target_xyz=(0,0,0)
+        )
+
+    return err, position_with_refvec
+
+def compute_position_static(yaml_info="", start_datetime=0, duration=0, samplerate=48000, total_samples=0, offset_xyz=[0,0,0]):
+    position=[]
+    err=0
+
+    if( duration==0 ):
+        err=-1
+
+    try:
+        if( yaml_info["position"]["type"].lower() != "static" ):
+            err=-1
+    except:
+        err=-1
+
+    if(err==0):
+        print("ciao static")
+
+    return err, position
 
 def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output_prefix="", output_postfix="loudspeaker_", scene=""):
     
-    # log_header = ["year","month","day","hour","minute","second",
-    #               "x","y","z",
-    #               "ref_vec_x","ref_vec_y","ref_vec_z",
-    #               "rotation_11","rotation_12","rotation_13",
-    #               "rotation_21","rotation_22","rotation_23",
-    #               "rotation_31","rotation_32","rotation_33"]
-
     log_header = "\t".join(["year","month","day","hour","minute","second",
                   "x","y","z"])
+
+    log_header_locata = "\t".join(["year","month","day","hour","minute","second",
+                  "x","y","z",
+                  "ref_vec_x","ref_vec_y","ref_vec_z",
+                  "rotation_11","rotation_12","rotation_13",
+                  "rotation_21","rotation_22","rotation_23",
+                  "rotation_31","rotation_32","rotation_33"])
+
 
     err = 0
 
@@ -934,7 +1064,16 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                 err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples)
 
                 if(err==0):
-                    np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header, comments="")
+                    print(len(position.columns))
+                    if(len(position.columns)==9):
+                        np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header, comments="")
+                    elif(len(position.columns)==21):
+                        np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", # datetime
+                                                                   "%.4f", "%.4f", "%.4f",                # x,y,z
+                                                                   "%.4f", "%.4f", "%.4f",                # ref_vec
+                                                                   "%.4f", "%.4f", "%.4f", 
+                                                                   "%.4f", "%.4f", "%.4f", 
+                                                                   "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header_locata, comments="")
 
             else:
                 err,position = compute_position_static(source_info, start_datetime, duration, Fs, total_samples)
