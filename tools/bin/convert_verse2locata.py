@@ -630,7 +630,7 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
     
     return len(vad_mask)
 
-# -----------------------------------------------------=======
+# ----------------------------------------------------
 # 2. SPHERICAL -> CARTESIAN
 # LOCATA-like convention:
 #
@@ -642,7 +642,7 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
 #   0 deg  -> xy plane
 #   +90    -> +z
 #
-# -----------------------------------------------------=======
+# ----------------------------------------------------
 
 def spherical_to_cartesian(az_deg, el_deg, r, convention="locata"):
 
@@ -849,7 +849,7 @@ def compute_reference_frame(
 
     return df
 
-def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0], target_xyz=(0,0,0)):
+def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0], target_xyz=(0,0,0), rotation_matrix=[]):
     position=[]
     err=0
 
@@ -994,13 +994,12 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
 
     return err, position_with_refvec
 
-def compute_position_static(yaml_info="", start_datetime=0, duration=0, samplerate=48000, total_samples=0, offset_xyz=[0,0,0]):
+def compute_position_static(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0], target_xyz=(0,0,0), rotation_matrix=[]):
     position=[]
     err=0
 
-    if( duration==0 ):
+    if( duration_seconds==0 ):
         err=-1
-
     try:
         if( yaml_info["position"]["type"].lower() != "static" ):
             err=-1
@@ -1008,12 +1007,98 @@ def compute_position_static(yaml_info="", start_datetime=0, duration=0, samplera
         err=-1
 
     if(err==0):
-        print("ciao static")
+        # print(yaml_info["position"]["coord"]["value"])
+        # print(yaml_info["position"]["coord"]["type"])
 
-    return err, position
 
-def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output_prefix="", output_postfix="loudspeaker_", scene=""):
-    
+        # --------------------------------------------------------
+        # Convert anchor points to Cartesian
+        # --------------------------------------------------------
+
+        coord_type = yaml_info["position"]["coord"]["type"].strip().lower()
+
+        if coord_type == 'spherical':
+
+            x, y, z = spherical_to_cartesian(
+                yaml_info["position"]["coord"]["value"][0],
+                yaml_info["position"]["coord"]["value"][1],
+                yaml_info["position"]["coord"]["value"][2],
+                convention="verse"
+            )
+
+        elif coord_type == 'cartesian':
+
+            # assuming:
+            # azimuth_deg -> x
+            # elevation_deg -> y
+            # distance -> z
+
+            x = yaml_info["position"]["coord"]["value"][0]
+            y = yaml_info["position"]["coord"]["value"][1]
+            z = yaml_info["position"]["coord"]["value"][2]
+
+        else:
+            raise ValueError("Unknown coordinate type")
+
+        # --------------------------------------------------------
+        # Uniform sample timeline
+        # --------------------------------------------------------
+
+        dt = 1.0 / sample_rate
+
+        sample_times = np.arange(
+            0,
+            duration_seconds,
+            dt
+        )
+
+        # fixed position -> repeat anchor times
+        anchor_times = sample_times
+
+        # --------------------------------------------------------
+        # Datetime generation
+        # --------------------------------------------------------
+
+        timestamps = [
+            start_datetime + timedelta(seconds=float(t))
+            for t in sample_times
+        ]
+
+        # --------------------------------------------------------
+        # Build final dataframe
+        # --------------------------------------------------------
+        position = pd.DataFrame({
+            'year':   [t.year for t in timestamps],
+            'month':  [t.month for t in timestamps],
+            'day':    [t.day for t in timestamps],
+            'hour':   [t.hour for t in timestamps],
+            'minute': [t.minute for t in timestamps],
+
+            # fractional seconds
+            'second': [
+                t.second + t.microsecond / 1e6
+                for t in timestamps
+            ],
+
+            # copy position (fixed)
+            'x': x,
+            'y': y,
+            'z': z,
+        })
+
+
+        # --------------------------------------------------------
+        # in VERSE each speaker is pointing to the listener HEAD position
+        # --------------------------------------------------------
+        position_with_refvec = compute_reference_frame(
+            position,
+            target_xyz=(0,0,0)
+        )
+
+
+    return err, position_with_refvec
+
+def save_locata_position(position, output_filename):
     log_header = "\t".join(["year","month","day","hour","minute","second",
                   "x","y","z"])
 
@@ -1024,6 +1109,21 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                   "rotation_21","rotation_22","rotation_23",
                   "rotation_31","rotation_32","rotation_33"])
 
+    try:
+        if(len(position.columns)==9):
+            np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header, comments="")
+        elif(len(position.columns)==21):
+            np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", # datetime
+                                                       "%.4f", "%.4f", "%.4f",                # x,y,z
+                                                       "%.4f", "%.4f", "%.4f",                # ref_vec
+                                                       "%.4f", "%.4f", "%.4f",                # rotation matrix
+                                                       "%.4f", "%.4f", "%.4f", 
+                                                       "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header_locata, comments="")
+    except:
+        logger.error(f"Error while saving position file: {output_filename}")
+
+
+def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output_prefix="", output_postfix="loudspeaker_", scene=""):
 
     err = 0
 
@@ -1062,21 +1162,13 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
         else:
             if(source_info["position"]["type"]=="dynamic"):
                 err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples)
-
-                if(err==0):
-                    print(len(position.columns))
-                    if(len(position.columns)==9):
-                        np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header, comments="")
-                    elif(len(position.columns)==21):
-                        np.savetxt(output_filename, position, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f", # datetime
-                                                                   "%.4f", "%.4f", "%.4f",                # x,y,z
-                                                                   "%.4f", "%.4f", "%.4f",                # ref_vec
-                                                                   "%.4f", "%.4f", "%.4f", 
-                                                                   "%.4f", "%.4f", "%.4f", 
-                                                                   "%.4f", "%.4f", "%.4f"], delimiter="\t", header=log_header_locata, comments="")
-
             else:
                 err,position = compute_position_static(source_info, start_datetime, duration, Fs, total_samples)
+
+            if(err==0):
+                save_locata_position(position, output_filename)
+            else:
+                logger.error(f"Error while computing dynamic position in file: {yaml_path}")                
 
     for listener_number, listener_info in yaml_scene["setup"]["listeners"].items():
         if(listener_number > 0):
@@ -1094,10 +1186,11 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                     err,position = compute_position_dynamic(listener_info, start_datetime, duration, Fs, total_samples)
                 else:
                     err,position = compute_position_static(listener_info, start_datetime, duration, Fs, total_samples)
-
-                with open(output_filename, 'w') as f:
-                    f.write("\t".join(log_header))
  
+                if(err==0):
+                    save_locata_position(position, output_filename)
+                else:
+                    logger.error(f"Error while computing dynamic position in file: {yaml_path}")
     return err
 
 
