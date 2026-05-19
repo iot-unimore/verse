@@ -105,7 +105,7 @@ def plot_reference_frames(ax, df, scale=1.0):
             [px, px + scale * x_axis[0]],
             [py, py + scale * x_axis[1]],
             [pz, pz + scale * x_axis[2]],
-            color="green",
+            color="red",
             linewidth=1.5
         )
 
@@ -114,7 +114,7 @@ def plot_reference_frames(ax, df, scale=1.0):
             [px, px + scale * y_axis[0]],
             [py, py + scale * y_axis[1]],
             [pz, pz + scale * y_axis[2]],
-            color="blue",
+            color="green",
             linewidth=1.5
         )
 
@@ -123,7 +123,7 @@ def plot_reference_frames(ax, df, scale=1.0):
             [px, px + scale * z_axis[0]],
             [py, py + scale * z_axis[1]],
             [pz, pz + scale * z_axis[2]],
-            color="red",
+            color="blue",
             linewidth=1.5
         )
 
