@@ -259,7 +259,7 @@ def main():
         z.max() - z.min()
     )
 
-    frame_scale = 0.03 * xyz_range
+    frame_scale = 0.06 * xyz_range
 
     plot_reference_frames(
         ax,
@@ -269,7 +269,7 @@ def main():
 
     apply_minimum_bounds(ax, x, y, z, min_limit=1.0)
 
-    symmetric_min_bounds(ax, x, y, z, min_limit=1.0)
+    # symmetric_min_bounds(ax, x, y, z, min_limit=1.0)
     
     plt.tight_layout()
     plt.show()
