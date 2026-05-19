@@ -58,147 +58,42 @@ def decimate_dataframe(df, max_points):
 
     return df.iloc[indices]
 
-def plot_reference_frames(
-    ax,
-    df,
-    scale=0.1,
-    step=20
-):
+def plot_reference_frames(ax, df, scale=0.1, step=20):
 
-    """
-    Plot local reference frames from rotation matrices.
-
-    RGB convention:
-        X -> red
-        Y -> green
-        Z -> blue
-    """
-
-    required_cols = [
-        "rotation_11", "rotation_12", "rotation_13",
-        "rotation_21", "rotation_22", "rotation_23",
-        "rotation_31", "rotation_32", "rotation_33",
+    cols = [
+        "rotation_11","rotation_12","rotation_13",
+        "rotation_21","rotation_22","rotation_23",
+        "rotation_31","rotation_32","rotation_33",
     ]
 
-    if not all(col in df.columns for col in required_cols):
+    if not all(c in df.columns for c in cols):
         return
 
-    n = len(df)
+    for i in range(0, len(df), step):
 
-    if n == 0:
-        return
+        r = df.iloc[i]
 
-    step = max(1, step)
-
-    for idx in range(0, n, step):
-
-        row = df.iloc[idx]
-
-        px = row["x"]
-        py = row["y"]
-        pz = row["z"]
-
-        # ----------------------------------------------------
-        # Rotation matrix
-        # ----------------------------------------------------
+        p = np.array([r["x"], r["y"], r["z"]])
 
         R = np.array([
-            [row["rotation_11"], row["rotation_12"], row["rotation_13"]],
-            [row["rotation_21"], row["rotation_22"], row["rotation_23"]],
-            [row["rotation_31"], row["rotation_32"], row["rotation_33"]],
+            [r["rotation_11"], r["rotation_12"], r["rotation_13"]],
+            [r["rotation_21"], r["rotation_22"], r["rotation_23"]],
+            [r["rotation_31"], r["rotation_32"], r["rotation_33"]],
         ])
-
-        # ----------------------------------------------------
-        # Local axes in world coordinates
-        # ----------------------------------------------------
 
         x_axis = R[:, 0]
         y_axis = R[:, 1]
         z_axis = R[:, 2]
 
-        # ----------------------------------------------------
-        # X axis -> RED
-        # ----------------------------------------------------
+        # X (red)
+        ax.plot(*zip(p, p + scale * x_axis), color="red")
 
-        ax.plot(
-            [px, px + scale * x_axis[0]],
-            [py, py + scale * x_axis[1]],
-            [pz, pz + scale * x_axis[2]],
-            color="red",
-            linewidth=1.5
-        )
+        # Y (green)
+        ax.plot(*zip(p, p + scale * y_axis), color="green")
 
-        # ----------------------------------------------------
-        # Y axis -> GREEN
-        # ----------------------------------------------------
+        # Z (blue)
+        ax.plot(*zip(p, p + scale * z_axis), color="blue")
 
-        ax.plot(
-            [px, px + scale * y_axis[0]],
-            [py, py + scale * y_axis[1]],
-            [pz, pz + scale * y_axis[2]],
-            color="green",
-            linewidth=1.5
-        )
-
-        # ----------------------------------------------------
-        # Z axis -> BLUE
-        # ----------------------------------------------------
-
-        ax.plot(
-            [px, px + scale * z_axis[0]],
-            [py, py + scale * y_axis[1]],
-            [pz, pz + z_axis[2] * scale],
-            color="blue",
-            linewidth=1.5
-        )
-
-def plot_reference_frames_OLD(ax, df, scale=0.1):
-
-    required_cols = [
-        "rotation_11", "rotation_12", "rotation_13",
-        "rotation_21", "rotation_22", "rotation_23",
-        "rotation_31", "rotation_32", "rotation_33",
-    ]
-
-    if not all(col in df.columns for col in required_cols):
-        return
-
-    n = len(df)
-
-    if n == 0:
-        return
-
-    step = max(1, n // 20)
-
-    for idx in range(0, n, step):
-
-        row = df.iloc[idx]
-
-        px = row["x"]
-        py = row["y"]
-        pz = row["z"]
-
-        R = np.array([
-            [row["rotation_11"], row["rotation_12"], row["rotation_13"]],
-            [row["rotation_21"], row["rotation_22"], row["rotation_23"]],
-            [row["rotation_31"], row["rotation_32"], row["rotation_33"]],
-        ])
-
-        axes = [
-            ("red",   R[:, 0]),
-            ("green", R[:, 1]),
-            ("blue",  R[:, 2]),
-        ]
-
-        for color, axis in axes:
-
-            ax.plot(
-                [px, px + scale * axis[0]],
-                [py, py + scale * axis[1]],
-                [pz, pz + scale * axis[2]],
-                color=color,
-                linewidth=1.0
-            )
 
 
 # ============================================================
@@ -501,22 +396,6 @@ examples:
                 step=args.frames_step
             )
 
-        # if args.frames:
-
-        #     xyz_range = max(
-        #         x.max() - x.min(),
-        #         y.max() - y.min(),
-        #         z.max() - z.min()
-        #     )
-
-        #     frame_scale = 0.05 * xyz_range
-
-        #     plot_reference_frames(
-        #         ax,
-        #         df,
-        #         scale=frame_scale
-        #     )
-
     # --------------------------------------------------------
     # Bounds
     # --------------------------------------------------------
@@ -550,7 +429,7 @@ examples:
 
 
 # ============================================================
-# Entry point
+# MAIN
 # ============================================================
 
 if __name__ == "__main__":
