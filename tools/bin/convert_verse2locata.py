@@ -911,6 +911,10 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
                 convention="verse"
             )
 
+            x = x + offset_xyz[0]
+            y = y + offset_xyz[1]
+            z = z + offset_xyz[2]
+
         elif coord_type == 'c':
 
             # assuming:
@@ -922,6 +926,9 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
             y = df['elevation_deg'].to_numpy()
             z = df['distance'].to_numpy()
 
+            x = x + offset_xyz[0]
+            y = y + offset_xyz[1]
+            z = z + offset_xyz[2]
         else:
             raise ValueError("Unknown coordinate type")
 
@@ -989,7 +996,7 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
         # --------------------------------------------------------
         position_with_refvec = compute_reference_frame(
             position,
-            target_xyz=(0,0,0)
+            target_xyz=target_xyz
         )
 
     return err, position_with_refvec
@@ -1026,6 +1033,10 @@ def compute_position_static(yaml_info="", start_datetime=0, duration_seconds=0, 
                 convention="verse"
             )
 
+            x = x + offset_xyz[0]
+            y = y + offset_xyz[1]
+            z = z + offset_xyz[2]
+
         elif coord_type == 'cartesian':
 
             # assuming:
@@ -1033,9 +1044,13 @@ def compute_position_static(yaml_info="", start_datetime=0, duration_seconds=0, 
             # elevation_deg -> y
             # distance -> z
 
-            x = yaml_info["position"]["coord"]["value"][0]
-            y = yaml_info["position"]["coord"]["value"][1]
-            z = yaml_info["position"]["coord"]["value"][2]
+            x = yaml_info["position"]["coord"]["value"][0] + offset_xyz.x
+            y = yaml_info["position"]["coord"]["value"][1] + offset_xyz.y
+            z = yaml_info["position"]["coord"]["value"][2] + offset_xyz.z
+
+            x = x + offset_xyz[0]
+            y = y + offset_xyz[1]
+            z = z + offset_xyz[2]
 
         else:
             raise ValueError("Unknown coordinate type")
@@ -1092,7 +1107,7 @@ def compute_position_static(yaml_info="", start_datetime=0, duration_seconds=0, 
         # --------------------------------------------------------
         position_with_refvec = compute_reference_frame(
             position,
-            target_xyz=(0,0,0)
+            target_xyz=target_xyz
         )
 
 
@@ -1123,7 +1138,7 @@ def save_locata_position(position, output_filename):
         logger.error(f"Error while saving position file: {output_filename}")
 
 
-def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output_prefix="", output_postfix="loudspeaker_", scene=""):
+def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output_prefix="", output_postfix="loudspeaker_", scene="", offset_xyz=(0,0,0), target_xyz=(0,0,0)):
 
     err = 0
 
@@ -1161,9 +1176,9 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
             logger.error(f"Invalid source position type in file: {yaml_path}")
         else:
             if(source_info["position"]["type"]=="dynamic"):
-                err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples)
+                err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
             else:
-                err,position = compute_position_static(source_info, start_datetime, duration, Fs, total_samples)
+                err,position = compute_position_static(source_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
 
             if(err==0):
                 save_locata_position(position, output_filename)
@@ -1183,9 +1198,9 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                 logger.error(f"Invalid listener position type in file: {yaml_path}")
             else:
                 if(listener_info["position"]["type"]=="dynamic"):
-                    err,position = compute_position_dynamic(listener_info, start_datetime, duration, Fs, total_samples)
+                    err,position = compute_position_dynamic(listener_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
                 else:
-                    err,position = compute_position_static(listener_info, start_datetime, duration, Fs, total_samples)
+                    err,position = compute_position_static(listener_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
  
                 if(err==0):
                     save_locata_position(position, output_filename)
@@ -1503,18 +1518,17 @@ def verse_to_locata(idx, path, **kwargs):
 
     logger.debug(f"Processing folder: {path}")
 
+    # retrieve the listener target position from command line
+
+    array_pos_x, array_pos_y, array_pos_z = kwargs["position"]
+
+    array_pos = (array_pos_x, array_pos_y, array_pos_z)
+
     # search mkv_descriptor
 
     mkv_descriptor, mkv_yaml = find_yaml_by_syntax(path, "verse_audio_mkv")
     if not mkv_descriptor or mkv_yaml is None:
         return None
-
-    # try:
-    #     source = mkv_yaml["sources"][0]
-    # except (KeyError, IndexError, TypeError):
-    #     logger.warning(f"Invalid YAML structure in {path}")
-    #     return None
-
 
     # search scene descriptor
 
@@ -1593,7 +1607,7 @@ def verse_to_locata(idx, path, **kwargs):
     if(task_type==_LOCATA_TASK_TYPES["task3"] or task_type==_LOCATA_TASK_TYPES["task4"]):
         output_postfix = "talker"
 
-    err = generate_position_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_prefix=mic_array_name, output_postfix=output_postfix, scene=scene_yaml)
+    err = generate_position_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_prefix=mic_array_name, output_postfix=output_postfix, scene=scene_yaml, offset_xyz=array_pos, target_xyz=array_pos)
     if ( err != 0):
         return None
 
@@ -1616,18 +1630,19 @@ def verse_to_locata(idx, path, **kwargs):
     return (path, mkv_descriptor, source)
 
 
-def export_to_locata(folders, output_path, num_workers, timeout, verbose):
-    return run_parallel(folders, verse_to_locata, num_workers, timeout, verbose, output_path=output_path)
+def export_to_locata(folders, output_path, num_workers, timeout, verbose, position):
+    return run_parallel(folders, verse_to_locata, num_workers, timeout, verbose, position=position, output_path=output_path)
 
 
 # --- MAIN ---
 def main():
     parser = argparse.ArgumentParser(description="Dataset pipeline")
-    parser.add_argument("-p", "--input_path", required=True)
+    parser.add_argument("-i", "--input_path", required=True)
     parser.add_argument("-o", "--output_path", required=True)
     parser.add_argument("-m", "--max-workers", type=int, default=os.cpu_count())
     parser.add_argument("-t", "--timeout", type=int, default=10, help="Timeout per task (seconds)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging (disables progress bar)")
+    parser.add_argument("-p", "--position", nargs=3, type=float, metavar=("X", "Y", "Z"), default=(0,0,1), required=False, help="mic array coord (x,y,z) static" )
 
     args = parser.parse_args()
 
@@ -1644,7 +1659,7 @@ def main():
     results = find_verse_dataset(args.input_path, args.output_path, args.max_workers, args.timeout, args.verbose)
     logger.info(f"Valid folders: {len(results)}")
 
-    results = export_to_locata(results, args.output_path, args.max_workers, args.timeout, args.verbose)
+    results = export_to_locata(results, args.output_path, args.max_workers, args.timeout, args.verbose, args.position)
     logger.info(f"Processed results: {len(results)}")
 
 
