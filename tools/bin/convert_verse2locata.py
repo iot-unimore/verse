@@ -262,8 +262,20 @@ def run_parallel(folders, worker_fn, num_workers, timeout, verbose, **kwargs):
 
     return results
 
-
+#
 # --- VAD: VOICE ACTIVATION DETECTION
+#
+
+def speed_of_sound_mps(
+    temperature_celsius
+):
+
+    #
+    # c(T) = 331.3 + 0.606*T
+    #
+
+    return 331.3 + 0.606 * temperature_celsius
+
 def adjust_peak_dbfs(audio, target_peak_dbfs):
 
     # Current peak amplitude
@@ -329,6 +341,34 @@ def remap_vad_mask_to_original_sr(
 
     return vad_mask[indices]
 
+def remap_sample_index(index, src_sr, dst_sr):
+    """
+    Map a sample index from src_sr timeline to dst_sr timeline
+    using time-domain conversion (robust + drift-free).
+    """
+
+    return (index * dst_sr + src_sr // 2) // src_sr
+
+# def remap_sample_index(
+#     index,
+#     src_sr,
+#     dst_sr
+# ):
+#     """
+#     Map a sample index from src_sr timeline to dst_sr timeline
+#     using time-domain conversion (robust + drift-free).
+#     """
+
+#     if src_sr <= 0 or dst_sr <= 0:
+#         raise ValueError("Sample rates must be positive")
+
+#     # convert index → time (seconds)
+#     t = index / src_sr
+
+#     # convert time → destination samples
+#     dst_index = int(round(t * dst_sr))
+
+#     return dst_index
 
 def generate_vad_mask(
     wav_path,
@@ -352,6 +392,8 @@ def generate_vad_mask(
 
     if audio.ndim != 1:
         raise ValueError("Input WAV must be mono")
+
+    logger.debug(f"Generate vad_mask for: {wav_path}")
 
     # Normalize. NOTE: could increase noise and false voice detection
 
@@ -491,6 +533,620 @@ def generate_vad_mask(
 
     return (
         final_vad_mask,
+        input_sr,
+        frame_events
+    )
+
+
+
+#
+# --- VAD: VOICE ACTIVATION DETECTION with DISTANCE DELAY COMPENSATION
+#
+
+
+def compute_average_distance_vad_frame(
+    source_positions_df,
+    receiver_positions_df,
+    start_sample,
+    stop_sample
+):
+
+    src_xyz = source_positions_df[
+        start_sample:stop_sample
+    ][["x", "y", "z"]].values
+
+    rx_xyz = receiver_positions_df[
+        start_sample:stop_sample
+    ][["x", "y", "z"]].values
+
+    distances = np.linalg.norm(
+        src_xyz - rx_xyz,
+        axis=1
+    )
+
+    return np.mean(distances)
+
+
+
+def generate_propagation_aware_vad_mask(
+    wav_path,
+    source_position_file,
+    receiver_position_file,
+    air_temperature_celsius=20.0,
+    target_peak_dbfs=-3.0,
+    vad_mode=2,
+    vad_frame_ms=10,
+    hop_ms=5,
+    tolerance_ms=50
+):
+
+    import numpy as np
+    import pandas as pd
+    import soundfile as sf
+    import webrtcvad
+
+    # ========================================================
+    # LOAD AUDIO
+    # ========================================================
+
+    audio, input_sr = sf.read(wav_path)
+
+    if audio.ndim != 1:
+        raise ValueError("Input WAV must be mono")
+
+    input_num_samples = len(audio)
+
+    # ========================================================
+    # LOAD POSITION FILES
+    # ========================================================
+
+    source_positions_df = pd.read_csv(source_position_file, sep="\t")
+    receiver_positions_df = pd.read_csv(receiver_position_file, sep="\t")
+
+    required_cols = {"x", "y", "z"}
+
+    if not required_cols.issubset(source_positions_df.columns):
+        raise ValueError(f"Source file missing columns: {required_cols}")
+
+    if not required_cols.issubset(receiver_positions_df.columns):
+        raise ValueError(f"Receiver file missing columns: {required_cols}")
+
+    # ========================================================
+    # VALIDATE TRAJECTORIES
+    # ========================================================
+
+    if len(source_positions_df) != input_num_samples:
+        raise ValueError("source_positions_df length must match WAV samples")
+
+    if len(receiver_positions_df) != input_num_samples:
+        raise ValueError("receiver_positions_df length must match WAV samples")
+
+    logger.debug(f"Generate propagation_aware_vad_mask for: {wav_path}")        
+
+    # ========================================================
+    # NORMALIZATION
+    # ========================================================
+
+    audio = adjust_peak_dbfs(audio, target_peak_dbfs)
+
+    # ========================================================
+    # RESAMPLE FOR VAD
+    # ========================================================
+
+    vad_sr = 16000
+
+    audio_vad, vad_sr = resample_if_needed(
+        audio, input_sr, target_sr=vad_sr
+    )
+
+    pcm16 = float_to_pcm16(audio_vad)
+
+    # ========================================================
+    # WEBRTC VAD
+    # ========================================================
+
+    if vad_frame_ms not in (10, 20, 30):
+        raise ValueError("WebRTC VAD supports only 10/20/30 ms frames")
+
+    vad = webrtcvad.Vad(vad_mode)
+
+    frame_samples_vad = int(vad_sr * vad_frame_ms / 1000)
+    hop_samples_vad = int(vad_sr * hop_ms / 1000)
+
+    # ========================================================
+    # ACCUMULATOR
+    # ========================================================
+
+    accumulator = np.zeros(input_num_samples, dtype=np.float32)
+
+    frame_events = []
+
+    # ========================================================
+    # SPEED OF SOUND
+    # ========================================================
+
+    c = speed_of_sound_mps(air_temperature_celsius)
+
+    # ========================================================
+    # PROCESS FRAMES
+    # ========================================================
+
+    for start_vad in range(0, len(pcm16) - frame_samples_vad, hop_samples_vad):
+
+        stop_vad = start_vad + frame_samples_vad
+
+        frame = pcm16[start_vad:stop_vad]
+
+        is_speech = vad.is_speech(frame.tobytes(), vad_sr)
+
+        # ====================================================
+        # TIME-BASED MAPPING (FIXED)
+        # ====================================================
+
+        t_start = start_vad / vad_sr
+        t_stop = stop_vad / vad_sr
+
+        start_orig = int(round(t_start * input_sr))
+        stop_orig = int(round(t_stop * input_sr))
+
+        start_orig = max(0, min(start_orig, input_num_samples))
+        stop_orig = max(0, min(stop_orig, input_num_samples))
+
+        if stop_orig <= start_orig:
+            continue
+
+        center_orig = (start_orig + stop_orig) // 2
+
+        # defaults
+        avg_distance = 0.0
+        delay_samples = 0
+        delay_samples_f = 0.0
+
+        arrival_start = start_orig
+        arrival_stop = stop_orig
+        arrival_center = center_orig
+
+        # ====================================================
+        # PROPAGATION
+        # ====================================================
+
+        if is_speech:
+
+            avg_distance = compute_average_distance_vad_frame(
+                source_positions_df,
+                receiver_positions_df,
+                start_orig,
+                stop_orig
+            )
+
+            delay_seconds = avg_distance / c
+
+            delay_samples_f = delay_seconds * input_sr
+            delay_samples = int(round(delay_samples_f))
+
+            arrival_start = start_orig + delay_samples
+            arrival_stop = stop_orig + delay_samples
+            arrival_center = center_orig + delay_samples
+
+            # ====================================================
+            # SAFE CLIPPING
+            # ====================================================
+
+            arrival_start = max(0, min(arrival_start, input_num_samples))
+            arrival_stop = max(0, min(arrival_stop, input_num_samples))
+
+            if arrival_stop > arrival_start:
+                accumulator[arrival_start:arrival_stop] += 1.0
+
+        # ====================================================
+        # FRAME EVENT
+        # ====================================================
+
+        frame_events.append({
+            "emit_start": start_orig,
+            "emit_stop": stop_orig,
+            "emit_center": center_orig,
+
+            "delay_samples": delay_samples,
+            "delay_samples_float": delay_samples_f,
+
+            "arrival_start": arrival_start,
+            "arrival_stop": arrival_stop,
+            "arrival_center": arrival_center,
+
+            "avg_distance_m": avg_distance,
+            "is_speech": bool(is_speech)
+        })
+
+    # ========================================================
+    # FINAL MASK
+    # ========================================================
+
+    vad_mask = (accumulator > 0).astype(np.uint8)
+
+    # ========================================================
+    # CAUSAL HANGOVER (FIXED SMOOTHING)
+    # ========================================================
+
+    tolerance_samples = int(tolerance_ms * input_sr / 1000)
+
+    if tolerance_samples > 0:
+
+        expanded = np.zeros_like(vad_mask)
+
+        for i in range(len(vad_mask)):
+            if vad_mask[i]:
+                start = max(0, i - tolerance_samples)
+                expanded[start:i + 1] = 1
+
+        vad_mask = expanded
+
+    # ========================================================
+    # RETURN
+    # ========================================================
+
+    return vad_mask, input_sr, frame_events
+
+
+def generate_propagation_aware_vad_mask_OLD(
+    wav_path,
+    source_position_file,
+    receiver_position_file,
+    air_temperature_celsius=20.0,
+    target_peak_dbfs=-3.0,
+    vad_mode=2,
+    vad_frame_ms=10,
+    hop_ms=5,
+    tolerance_ms=50
+):
+
+    # ========================================================
+    # LOAD AUDIO
+    # ========================================================
+
+    audio, input_sr = sf.read(wav_path)
+
+    if audio.ndim != 1:
+        raise ValueError(
+            "Input WAV must be mono"
+        )
+
+    input_num_samples = len(audio)
+
+    # ========================================================
+    # LOAD POSITION FILES
+    # ========================================================
+    source_positions_df = pd.read_csv(source_position_file, sep="\t")
+    receiver_positions_df = pd.read_csv(receiver_position_file, sep="\t")
+
+    # Optional: basic validation (customize based on your schema)
+    if source_positions_df.empty or receiver_positions_df.empty:
+        raise ValueError("Position files are empty")
+        return 0
+
+    # Example: ensure required columns exist (edit as needed)
+
+    required_cols = {"x", "y", "z"}
+
+    err = 0
+    if not required_cols.issubset(source_positions_df.columns):
+        err = err +1
+        # raise ValueError(f"Source file missing columns: {required_cols}")
+
+    if not required_cols.issubset(receiver_positions_df.columns):
+        err = err +1
+        # raise ValueError(f"Receiver file missing columns: {required_cols}")
+
+    if(err>0):
+        err = 0
+        source_positions_df = pd.read_csv(source_position_file, sep=r"\s+")
+        receiver_positions_df = pd.read_csv(receiver_position_file, sep=r"\s+")
+
+        if not required_cols.issubset(source_positions_df.columns):
+            raise ValueError(f"Source file missing columns: {required_cols}")
+            return 0
+        if not required_cols.issubset(receiver_positions_df.columns):
+            raise ValueError(f"Receiver file missing columns: {required_cols}")
+            return 0
+
+    # ========================================================
+    # VALIDATE TRAJECTORIES
+    # ========================================================
+
+    if len(source_positions_df) != input_num_samples:
+
+        raise ValueError(
+            "source_positions_df length "
+            "must match WAV samples"
+        )
+
+    if len(receiver_positions_df) != input_num_samples:
+
+        raise ValueError(
+            "receiver_positions_df length "
+            "must match WAV samples"
+        )
+
+
+    logger.debug(f"Generate propagation_aware_vad_mask for: {wav_path}")
+
+    # ========================================================
+    # OPTIONAL NORMALIZATION
+    # ========================================================
+
+    audio = adjust_peak_dbfs(
+        audio,
+        target_peak_dbfs
+    )
+
+    # ========================================================
+    # RESAMPLE FOR WEBRTC VAD
+    # ========================================================
+
+    vad_sr = 16000
+
+    audio_vad, vad_sr = resample_if_needed(
+        audio,
+        input_sr,
+        target_sr=vad_sr
+    )
+
+    pcm16 = float_to_pcm16(audio_vad)
+
+    # ========================================================
+    # CREATE WEBRTC VAD
+    # ========================================================
+
+    vad = webrtcvad.Vad(vad_mode)
+
+    # ========================================================
+    # FRAME PARAMETERS
+    # ========================================================
+
+    frame_samples_vad = int(
+        vad_sr * vad_frame_ms / 1000
+    )
+
+    hop_samples_vad = int(
+        vad_sr * hop_ms / 1000
+    )
+
+    # ========================================================
+    # OUTPUT ACCUMULATOR
+    # ========================================================
+
+    accumulator = np.zeros(
+        input_num_samples,
+        dtype=np.float32
+    )
+
+    # ========================================================
+    # FRAME EVENTS
+    # ========================================================
+
+    #
+    # Each event contains:
+    #
+    # {
+    #     "emit_start"
+    #     "emit_stop"
+    #     "emit_center"
+    #     "delay_samples"
+    #     "arrival_start"
+    #     "arrival_stop"
+    #     "arrival_center"
+    #     "avg_distance_m"
+    #     "is_speech"
+    # }
+    #
+
+    frame_events = []
+
+    # ========================================================
+    # SPEED OF SOUND
+    # ========================================================
+
+    c = speed_of_sound_mps(
+        air_temperature_celsius
+    )
+
+    # ========================================================
+    # PROCESS OVERLAPPING FRAMES
+    # ========================================================
+
+    for start_vad in range(
+        0,
+        len(pcm16) - frame_samples_vad,
+        hop_samples_vad
+    ):
+
+        stop_vad = (
+            start_vad + frame_samples_vad
+        )
+
+        frame = pcm16[
+            start_vad:stop_vad
+        ]
+
+        is_speech = vad.is_speech(
+            frame.tobytes(),
+            vad_sr
+        )
+
+        # ====================================================
+        # MAP FRAME TO ORIGINAL SAMPLE RATE
+        # ====================================================
+
+        start_orig = remap_sample_index(
+            start_vad,
+            vad_sr,
+            input_sr
+        )
+
+        stop_orig = remap_sample_index(
+            stop_vad,
+            vad_sr,
+            input_sr
+        )
+
+        start_orig = max(
+            0,
+            min(start_orig, input_num_samples)
+        )
+
+        stop_orig = max(
+            0,
+            min(stop_orig, input_num_samples)
+        )
+
+        if stop_orig <= start_orig:
+            continue
+
+        center_orig = (
+            start_orig + stop_orig
+        ) // 2
+
+        # ====================================================
+        # DEFAULT EVENT VALUES
+        # ====================================================
+
+        avg_distance = 0.0
+
+        delay_samples = 0
+
+        arrival_start = start_orig
+
+        arrival_stop = stop_orig
+
+        arrival_center = center_orig
+
+        # ====================================================
+        # PROPAGATION ONLY FOR SPEECH FRAMES
+        # ====================================================
+
+        if is_speech:
+
+            avg_distance = (
+                compute_average_distance_vad_frame(
+                    source_positions_df,
+                    receiver_positions_df,
+                    start_orig,
+                    stop_orig
+                )
+            )
+
+            delay_seconds = avg_distance / c
+
+            delay_samples = int(
+                round(
+                    delay_seconds * input_sr
+                )
+            )
+
+            arrival_start = (
+                start_orig + delay_samples
+            )
+
+            arrival_stop = (
+                stop_orig + delay_samples
+            )
+
+            arrival_center = (
+                center_orig + delay_samples
+            )
+
+            # ================================================
+            # CLIP TO SIGNAL DURATION
+            # ================================================
+
+            if arrival_start < input_num_samples:
+
+                arrival_stop = min(
+                    arrival_stop,
+                    input_num_samples
+                )
+
+                accumulator[
+                    arrival_start:arrival_stop
+                ] += 1.0
+
+        # ====================================================
+        # STORE FRAME EVENT
+        # ====================================================
+
+        frame_events.append({
+
+            "emit_start":
+                start_orig,
+
+            "emit_stop":
+                stop_orig,
+
+            "emit_center":
+                center_orig,
+
+            "delay_samples":
+                delay_samples,
+
+            "arrival_start":
+                arrival_start,
+
+            "arrival_stop":
+                arrival_stop,
+
+            "arrival_center":
+                arrival_center,
+
+            "avg_distance_m":
+                avg_distance,
+
+            "is_speech":
+                bool(is_speech)
+        })
+
+    # ========================================================
+    # FINAL BINARY MASK
+    # ========================================================
+
+    vad_mask = (
+        accumulator > 0
+    ).astype(np.uint8)
+
+    # ========================================================
+    # OPTIONAL CAUSAL HANGOVER
+    # ========================================================
+
+    tolerance_samples = int(
+        tolerance_ms * input_sr / 1000
+    )
+
+    if tolerance_samples > 0:
+
+        kernel = np.ones(
+            tolerance_samples + 1,
+            dtype=np.uint8
+        )
+
+        expanded = np.convolve(
+            vad_mask,
+            kernel,
+            mode="full"
+        )
+
+        expanded = expanded[
+            :input_num_samples
+        ]
+
+        vad_mask = (
+            expanded > 0
+        ).astype(np.uint8)
+
+    # ========================================================
+    # RETURN COMPATIBLE FORMAT
+    # ========================================================
+
+    return (
+        vad_mask,
         input_sr,
         frame_events
     )
@@ -639,7 +1295,7 @@ def generate_timestamps_file(file_path, start_datetime, output_path="/tmp/", out
 
 
 
-def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008):
+def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008, source_position_file="", array_position_file=""):
     try:
         Fs, duration, total_samples, codec_name = get_audio_info(file_path)
     except:
@@ -666,14 +1322,28 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
     if stop_event.is_set():
         return -1
 
-    vad_mask, sr, frame_events = generate_vad_mask(
-        wav_path = file_path,
-        target_peak_dbfs = -6.0,
-        vad_mode = 2,
-        vad_frame_ms = 10,
-        hop_ms=5,
-        tolerance_ms = 30
-    )
+    # run VAD with position aware computation if we have info
+    if ( (source_position_file!="") and (array_position_file!="") ):
+        vad_mask, sr, frame_events = generate_propagation_aware_vad_mask(
+            wav_path = file_path,
+            source_position_file = source_position_file,
+            receiver_position_file = array_position_file,
+            air_temperature_celsius=23.0,
+            target_peak_dbfs=-6.0,
+            vad_mode=2,
+            vad_frame_ms=10,
+            hop_ms=5,
+            tolerance_ms=40
+        )
+    else:
+        vad_mask, sr, frame_events = generate_vad_mask(
+            wav_path = file_path,
+            target_peak_dbfs = -6.0,
+            vad_mode = 2,
+            vad_frame_ms = 10,
+            hop_ms=5,
+            tolerance_ms = 40
+        )
 
     if stop_event.is_set():
         return -1
@@ -1234,6 +1904,8 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
         filename = f"position_source_{output_postfix}{str(source_number)}.txt"
         output_filename = os.path.join(output_path, filename)
 
+        logger.debug(f"Compute position file for source: {output_filename}")
+
         if( source_info["position"]["type"].lower() not in ["static", "dynamic"] ):
             err=-1
             logger.error(f"Invalid source position type in file: {yaml_path}")
@@ -1256,6 +1928,8 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
             filename = f"position_array_{output_prefix}.txt"
             output_filename = os.path.join(output_path, filename)
 
+            logger.debug(f"Compute position file for array: {output_filename}")
+
             if( listener_info["position"]["type"].lower() not in ["static", "dynamic"] ):
                 err=-1
                 logger.error(f"Invalid listener position type in file: {yaml_path}")
@@ -1270,6 +1944,95 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                 else:
                     logger.error(f"Error while computing dynamic position in file: {yaml_path}")
     return err
+
+
+def find_locata_position_files(
+    audio_wav_path
+):
+    """
+    Given a LOCATA audio source path, find:
+
+    - matching source position file
+    - matching array position file
+
+    """
+
+    err=0
+
+    audio_path = Path(audio_wav_path)
+
+    # Parent directory
+
+    base_dir = audio_path.parent
+
+    #
+    # Example:
+    # audio_source_talker0.wav
+
+    audio_name = audio_path.stem
+
+    # SOURCE POSITION FILE
+
+    if not audio_name.startswith( "audio_source_" ):
+        logger.error(
+            f"Unexpected source audio filename: "
+            f"{audio_name}"
+            )
+        return -1
+
+    source_suffix = audio_name.replace(
+        "audio_source_",
+        "",
+        1
+    )
+
+    source_position_filename = (
+        f"position_source_{source_suffix}.txt"
+    )
+
+    source_position_path = (
+        base_dir / source_position_filename
+    )
+
+    # MIC ARRAY POSITION FILE
+
+    array_name = base_dir.name
+
+    array_position_filename = (
+        f"position_array_{array_name}.txt"
+    )
+
+    array_position_path = (
+        base_dir / array_position_filename
+    )
+
+    # ========================================================
+    # OPTIONAL EXISTENCE CHECKS
+    # ========================================================
+
+    if not source_position_path.exists():
+        logger.error(
+            f"Missing source position file:\n"
+            f"{source_position_path}"
+            )
+        return -1
+
+    if not array_position_path.exists():
+        logger.error(
+            f"Missing array position file:\n"
+            f"{array_position_path}"
+            )
+        return -1
+
+    return err, str(source_position_path), str(array_position_path)
+
+    # return {
+    #     "source_position_file":
+    #         str(source_position_path),
+
+    #     "array_position_file":
+    #         str(array_position_path)
+    # }
 
 
 def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_source_", output_postfix="loudspeaker_", audio_samples=0):
@@ -1554,8 +2317,17 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
 
                 if(err == 0):
 
+                    source_filename = "audio_source_"+str(source_postfix)+str(track_id)+".wav"
+                    source_filename = os.path.join(output_path, source_filename)
+
+                    # search if we have position information for source and array
+                    source_position_file="" 
+                    array_position_file=""
+                    position_err, source_position_file, array_position_file= find_locata_position_files( audio_wav_path=source_filename )
+
                     filename = f"VAD_{output_postfix}_{source_postfix}{str(track_id)}.txt"
-                    audio_samples = generate_vad_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
+                    audio_samples = generate_vad_file(  output_filename, start_datetime, output_path, output_file=filename, 
+                                                        target_time_step_seconds=0, source_position_file=source_position_file, array_position_file=array_position_file)
                     if(audio_samples != total_samples):
                         logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file VAD: {output_filename}")
                         err=-1
