@@ -329,17 +329,22 @@ def remap_vad_mask_to_original_sr(
 
     return vad_mask[indices]
 
+
 def generate_vad_mask(
     wav_path,
     target_peak_dbfs=-3.0,
     vad_mode=2,
-    vad_frame_ms=30,
+    vad_frame_ms=10,
+    hop_ms=5,
     tolerance_ms=100
 ):
-    # this is mandator for webrtc-wad
+
+    # WebRTC only support 16k
+
     vad_target_sr = 16000
 
-    # Load audio : WAV only
+    # Load audio
+
     audio, sr = sf.read(wav_path)
 
     input_samples = len(audio)
@@ -348,59 +353,100 @@ def generate_vad_mask(
     if audio.ndim != 1:
         raise ValueError("Input WAV must be mono")
 
-    logger.debug(f"Generating VAD mask for file:{wav_path}")
+    # Normalize. NOTE: could increase noise and false voice detection
 
-    # Normalize peak for more robust detection
     audio = adjust_peak_dbfs(
         audio,
         target_peak_dbfs
     )
 
-    # Resample for WebRTC VAD: only 16Khz/PCM16 is supported
+    # Resample for WebRTC Fs
     audio, sr = resample_if_needed(
         audio,
         sr,
         target_sr=vad_target_sr
     )
 
-    # Convert to PCM16
+    # PCM16 conversion
     pcm16 = float_to_pcm16(audio)
 
     # Create VAD
     vad = webrtcvad.Vad(vad_mode)
 
-    # mode:
-    # 0 = least aggressive
-    # 3 = most aggressive
+    # Audio Frame configuration (overlapped)
 
-    # Frame parameters
+    frame_samples = int(
+        sr * vad_frame_ms / 1000
+    )
 
-    frame_samples = int(sr * vad_frame_ms / 1000)
+    hop_samples = int(
+        sr * hop_ms / 1000
+    )
 
-    frame_bytes = frame_samples * 2
+    # Accumulator for overlap voting
+    accumulator = np.zeros(
+        len(pcm16),
+        dtype=np.float32
+    )
 
-    # Sample-level mask as a uint8_t array
-    vad_mask = np.zeros(len(pcm16), dtype=np.uint8)
+    # Optional: keep frame events
+    frame_events = []
 
-    # Process frames
-    for start in range(0, len(pcm16) - frame_samples, frame_samples):
+    # Process overlapping frames
+    for start in range(
+        0,
+        len(pcm16) - frame_samples,
+        hop_samples
+    ):
 
         stop = start + frame_samples
 
         frame = pcm16[start:stop]
 
-        frame_bytes_data = frame.tobytes()
-
         is_speech = vad.is_speech(
-            frame_bytes_data,
+            frame.tobytes(),
             sr
         )
 
+        # Frame center timestamp
+        center = start + frame_samples // 2
+
+        frame_events.append(
+            (
+                center,
+                is_speech
+            )
+        )
+
+        # Accumulate votes
         if is_speech:
 
-            vad_mask[start:stop] = 1
+            accumulator[start:stop] += 1.0
 
-    # Apply tolerance expansion: avoid "dead spots / false positive"
+    # --------------------------------------------------------
+    # Convert accumulated votes to binary mask
+    # --------------------------------------------------------
+
+    #
+    # IMPORTANT:
+    #
+    # With overlap:
+    #
+    # accumulator values represent
+    # how many overlapping speech frames
+    # voted for that sample.
+    #
+    # Example:
+    #
+    # >0   -> any speech support
+    # >=2  -> more conservative
+    #
+
+    vad_mask = (
+        accumulator > 0
+    ).astype(np.uint8)
+
+    # Causal tolerance (from given parameter in function call) expansion
 
     tolerance_samples = int(
         tolerance_ms * sr / 1000
@@ -408,30 +454,46 @@ def generate_vad_mask(
 
     if tolerance_samples > 0:
 
+        #
+        # Causal kernel:
+        # expands ONLY forward in time
+        #
+
         kernel = np.ones(
-            2 * tolerance_samples + 1,
+            tolerance_samples + 1,
             dtype=np.uint8
         )
 
-        vad_mask = np.convolve(
+        expanded = np.convolve(
             vad_mask,
             kernel,
-            mode="same"
+            mode="full"
         )
 
-        vad_mask = (vad_mask > 0).astype(np.uint8)
+        expanded = expanded[:len(vad_mask)]
 
-    # Save text file
-    # with open(output_file, "w") as f:
-    #     for i, flag in enumerate(vad_mask):
-    #         f.write(f"{i} {flag}\n")
+        vad_mask = (
+            expanded > 0
+        ).astype(np.uint8)
+
+    # Remap to original sample rate
 
     final_vad_mask = vad_mask
 
-    if (input_sr!=vad_target_sr):
-        final_vad_mask = remap_vad_mask_to_original_sr( vad_mask, original_num_samples=input_samples, original_sr=input_sr, vad_sr = sr)
+    if input_sr != vad_target_sr:
 
-    return final_vad_mask, input_sr
+        final_vad_mask = remap_vad_mask_to_original_sr(
+            vad_mask,
+            original_num_samples=input_samples,
+            original_sr=input_sr,
+            vad_sr=sr
+        )
+
+    return (
+        final_vad_mask,
+        input_sr,
+        frame_events
+    )
 
 
 # --- PIPELINE STEPS ---
@@ -604,12 +666,13 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
     if stop_event.is_set():
         return -1
 
-    vad_mask, sr = generate_vad_mask(
+    vad_mask, sr, frame_events = generate_vad_mask(
         wav_path = file_path,
-        target_peak_dbfs = -3.0,
+        target_peak_dbfs = -6.0,
         vad_mode = 2,
         vad_frame_ms = 10,
-        tolerance_ms = 12
+        hop_ms=5,
+        tolerance_ms = 30
     )
 
     if stop_event.is_set():
