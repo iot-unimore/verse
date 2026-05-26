@@ -1,0 +1,557 @@
+---
+# Dataset Recipe:
+# each recipe is a set of rules to select voices/heads/rooms to be used to 
+# render a selection of audio scenes.
+syntax:
+  name: ds_recipe
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+#
+# recipe
+#
+name: unimore_locata_small_pcm_s16le_48000
+
+output:
+  path: datasets/unimore_locata_small
+  store_info: True
+  audio:
+    format:
+      type: wav
+      subtype: pcm_s16le
+      samplerate: 48000
+
+#
+# set is a collection of scenes that will be grouped in a subfolder (same name)
+#
+sets:
+
+  # ###############################################################################################
+  # T R A I N 
+  # ###############################################################################################
+
+  train:
+    # each task is a separate selection
+    # of voices/heads/rooms needed to render a scene.
+    # if you want to render each scene with default values
+    # leave the voices/heads/rooms empty and the one
+    # specified in the recipe will be used.
+
+    # for voice/heads/rooms specification do not add the ".yaml"
+    # use only filename without extention
+
+    tasks:
+      # note: if multiple voices are listed they will be used 
+      #       according to the scene requirements, matching is done "in sorting order". 
+      #       listing more voices than what is required by the scene will not have effects (skipped)
+
+      # static, 1->1
+      # TRAIN/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      0:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000001_voice","000003_voice","000004_voice", 
+                   "f1_script1_clean_cut","f2_script1_clean_cut","f3_script1_clean_cut","f4_script1_clean_cut","f5_script1_clean_cut",
+                   "m1_script1_clean_cut","m2_script1_clean_cut","m3_script1_clean_cut","m4_script1_clean_cut","m5_script1_clean_cut",]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_001"]          
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # static, 1->M
+      # TRAIN/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      1:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000001_voice","000003_voice","000004_voice", 
+                   "f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut",
+                   "m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_001"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # dynamic, 1->1
+      # TRAIN/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      2:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000001_voice","000003_voice","000004_voice", 
+                   "f1_script3_clean_cut","f2_script3_clean_cut","f3_script3_clean_cut","f4_script3_clean_cut","f5_script3_clean_cut",
+                   "m1_script3_clean_cut","m2_script3_clean_cut","m3_script3_clean_cut","m4_script3_clean_cut","m5_script3_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_002"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # dynamic, 1->M
+      # TRAIN/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      3:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000001_voice","000003_voice","000004_voice", 
+                   "f1_script4_clean_cut","f2_script4_clean_cut","f3_script4_clean_cut","f4_script4_clean_cut","f5_script4_clean_cut",
+                   "m1_script4_clean_cut","m2_script4_clean_cut","m3_script4_clean_cut","m4_script4_clean_cut","m5_script4_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_002"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      #
+      # dynamic/static, 1->M
+      # TRAIN/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      4:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000001_voice","000003_voice","000004_voice", 
+                   "f1_script5_clean_cut","f2_script5_clean_cut","f3_script5_clean_cut","f4_script5_clean_cut","f5_script5_clean_cut",
+                   "m1_script5_clean_cut","m2_script5_clean_cut","m3_script5_clean_cut","m4_script5_clean_cut","m5_script5_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+  # ###############################################################################################
+  # T E S T
+  # ###############################################################################################
+
+  test:
+
+    tasks:
+
+      # static, 1->1
+      # TRAIN/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      0:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000005_voice", 
+                   "f6_script1_clean_cut","f7_script1_clean_cut",
+                   "m6_script1_clean_cut","m7_script1_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_001"]          
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # static, 1->M
+      # TRAIN/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      1:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000005_voice", 
+                   "f6_script2_clean_cut","f7_script2_clean_cut",
+                   "m6_script2_clean_cut","m7_script2_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_001"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # dynamic, 1->1
+      # TRAIN/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      2:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000005_voice", 
+                   "f6_script3_clean_cut","f7_script3_clean_cut",
+                   "m6_script3_clean_cut","m7_script3_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_002"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # dynamic, 1->M
+      # TRAIN/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      3:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000005_voice", 
+                   "f6_script4_clean_cut","f7_script4_clean_cut",
+                   "m6_script4_clean_cut","m7_script4_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_002"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      #
+      # dynamic/static, 1->M
+      # TRAIN/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      4:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000005_voice", 
+                   "f6_script5_clean_cut","f7_script5_clean_cut",
+                   "m6_script5_clean_cut","m7_script5_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+
+  # ###############################################################################################
+  # V A L I D A T E
+  # ###############################################################################################
+
+  validate:
+
+    tasks:
+
+      # static, 1->1
+      # TRAIN/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      0:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000006_voice","000007_voice", 
+                   "f8_script1_clean_cut","f9_script1_clean_cut","f10_script1_clean_cut",
+                   "m8_script1_clean_cut","m9_script1_clean_cut","m10_script1_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_001"]          
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # static, 1->M
+      # TRAIN/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      1:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000006_voice","000007_voice", 
+                   "f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut",
+                   "m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_001"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # dynamic, 1->1
+      # TRAIN/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      2:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000006_voice","000007_voice", 
+                   "f8_script3_clean_cut","f9_script3_clean_cut","f10_script3_clean_cut",
+                   "m8_script3_clean_cut","m9_script3_clean_cut","m10_script3_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)          
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_002"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      # dynamic, 1->M
+      # TRAIN/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      3:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000006_voice","000007_voice", 
+                   "f8_script4_clean_cut","f9_script4_clean_cut","f10_script4_clean_cut",
+                   "m8_script4_clean_cut","m9_script4_clean_cut","m10_script4_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+          # 0:
+          #   subtype: unimore
+          #   info: ["room_brir_002"]
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      #
+      # dynamic/static, 1->M
+      # TRAIN/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      4:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000006_voice","000007_voice", 
+                   "f8_script5_clean_cut","f9_script5_clean_cut","f10_script5_clean_cut",
+                   "m8_script5_clean_cut","m9_script5_clean_cut","m10_script5_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+#EOF
+...

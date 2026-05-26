@@ -1,0 +1,33 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: unimore_locata
+
+type: dataset
+
+content: dataset_recipe
+
+description: a recipe to mix some default paths and advanced locata paths for scene rendering. both static and dynamic sources.
+
+size_bytes:
+
+source:
+
+source_original:
+
+fetch_script:
+
+copyright:
+
+license:
+
+details:
+
+#EOF
+...
