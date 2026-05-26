@@ -1,0 +1,35 @@
+---
+# human voice audio file
+# this is the descriptor file for a human voice recording
+# this should be a "dry" recording without echo or reverberation
+# if the recording is done in stereo mode it will be converted
+# to mono. Audio format will be also converted to WAV (mono) before
+# being used by the render_3dti script
+
+syntax:
+  name: voice_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+description: daps_database
+copyright: daps
+source: daps
+
+file: files/m9_script5_clean_cut.wav
+
+speaker:
+  count: 1
+
+format:
+  type: wav
+  samplerate: 44100 Hz
+  channels: 1
+  duration: 60
+
+playback:
+  begin: 00:00:00.00
+  end: 00:01:00.00
+#EOF
+...
