@@ -121,8 +121,8 @@ def process(array_file, source_file, output_file, n_samples=None):
     # Read files
     # --------------------------------------------------------
 
-    array_df = pd.read_csv(array_file, delim_whitespace=True)
-    source_df = pd.read_csv(source_file, delim_whitespace=True)
+    array_df = pd.read_csv(array_file, sep='\s+')
+    source_df = pd.read_csv(source_file, sep='\s+')
 
     # --------------------------------------------------------
     # Extract timestamps
