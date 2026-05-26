@@ -13,7 +13,7 @@ syntax:
     minor: 1
     revision: 0
 
-name: dev-task3-recording3-source1-flip2
+name: dev-task3-recording3-source1-flip22
 
 description:
 
@@ -37,7 +37,7 @@ path_count: 1
 path_main_idx: 0
 path:
   0:
-    file: files/path_dev-task3-recording3-source1-flip2.csv
+    file: files/path_dev-task3-recording3-source1-flip22.csv
 
 #EOF
 ...
