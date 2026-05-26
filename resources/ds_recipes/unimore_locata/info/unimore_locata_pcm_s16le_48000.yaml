@@ -141,7 +141,9 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["dynamic_onevoice_000000","dynamic_onevoice_000030","dynamic_onevoice_000060","dynamic_onevoice_000090",
+                   "dynamic_onevoice_000001","dynamic_onevoice_000031","dynamic_onevoice_000061","dynamic_onevoice_000091",
+                   "dynamic_onevoice_000002","dynamic_onevoice_000032","dynamic_onevoice_000062","dynamic_onevoice_000092"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -174,7 +176,10 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["dynamic_twovoice_000000","dynamic_twovoice_000030","dynamic_twovoice_000060","dynamic_twovoice_000090",
+                   "dynamic_twovoice_000001","dynamic_twovoice_000031","dynamic_twovoice_000061","dynamic_twovoice_000091",
+                   "dynamic_threevoice_000000","dynamic_threevoice_000030","dynamic_threevoice_000060","dynamic_threevoice_000090",
+                   "dynamic_threevoice_000001","dynamic_threevoice_000031","dynamic_threevoice_000061","dynamic_threevoice_000091"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -205,7 +210,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["mix_twovoice_000020","mix_twovoice_000050","mix_twovoice_00080",
+                   "mix_threevoice_000020","mix_threevoice_000050","mix_threevoice_00080"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
