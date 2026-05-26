@@ -69,7 +69,12 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["000008_static_singlevoice","000068_static_singlevoice","000132_static_singlevoice",
+                   "000009_static_singlevoice","000069_static_singlevoice","000133_static_singlevoice",
+                   "000040_static_singlevoice","000104_static_singlevoice",
+                   "000044_static_singlevoice","000108_static_singlevoice",
+                   "000049_static_singlevoice","000113_static_singlevoice"]
+
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -102,7 +107,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["static_twovoice_000000","static_twovoice_000030","static_twovoice_000060","static_twovoice_000090","static_twovoice_000120","static_twovoice_000150",
+                   "static_threevoice_000000","static_threevoice_000030","static_threevoice_000060","static_threevoice_000090","static_threevoice_000120","static_threevoice_000150"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -180,7 +186,7 @@ sets:
             info: ["noise_8mics"]
 
       #
-      # dynamic/static, 1->M
+      # mixed dynamic/static, 1->M
       # TRAIN/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
@@ -219,7 +225,7 @@ sets:
     tasks:
 
       # static, 1->1
-      # TRAIN/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
         voices:
@@ -240,7 +246,10 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["000164_static_singlevoice","000169_static_singlevoice","000174_static_singlevoice",
+                   "000192_static_singlevoice","000196_static_singlevoice","000200_static_singlevoice",
+                   "000165_static_singlevoice","000170_static_singlevoice","000175_static_singlevoice",
+                   "000193_static_singlevoice","000197_static_singlevoice","000201_static_singlevoice"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -252,7 +261,7 @@ sets:
             info: ["noise_8mics"]
 
       # static, 1->M
-      # TRAIN/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
         voices:
@@ -273,7 +282,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["static_twovoice_000010","static_twovoice_000040","static_twovoice_000070","static_twovoice_000100","static_twovoice_000130","static_twovoice_000160",
+                   "static_threevoice_000010","static_threevoice_000040","static_threevoice_000070","static_threevoice_000100","static_threevoice_000130","static_threevoice_000160"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -285,7 +295,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->1
-      # TRAIN/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
         voices:
@@ -318,7 +328,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->M
-      # TRAIN/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
         voices:
@@ -351,8 +361,8 @@ sets:
             info: ["noise_8mics"]
 
       #
-      # dynamic/static, 1->M
-      # TRAIN/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # mixed dynamic/static, 1->M
+      # TEST/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
         voices:
@@ -391,7 +401,7 @@ sets:
     tasks:
 
       # static, 1->1
-      # TRAIN/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
         voices:
@@ -412,7 +422,11 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["000228_static_singlevoice","000230_static_singlevoice",
+                   "000232_static_singlevoice","000234_static_singlevoice",
+                   "000236_static_singlevoice","000238_static_singlevoice",
+                   "000240_static_singlevoice","000242_static_singlevoice",
+                   "000244_static_singlevoice","000246_static_singlevoice"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -424,7 +438,7 @@ sets:
             info: ["noise_8mics"]
 
       # static, 1->M
-      # TRAIN/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
         voices:
@@ -445,7 +459,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["static_twovoice_000021","static_twovoice_000051","static_twovoice_000061","static_twovoice_000111","static_twovoice_000141","static_twovoice_000171",
+                   "static_threevoice_000021","static_threevoice_000051","static_threevoice_000061","static_threevoice_000111","static_threevoice_000141","static_threevoice_000171"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -457,7 +472,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->1
-      # TRAIN/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
         voices:
@@ -490,7 +505,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->M
-      # TRAIN/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
         voices:
@@ -523,8 +538,8 @@ sets:
             info: ["noise_8mics"]
 
       #
-      # dynamic/static, 1->M
-      # TRAIN/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # mixed dynamic/static, 1->M
+      # VALIDATE/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
         voices:
