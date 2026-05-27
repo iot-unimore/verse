@@ -141,9 +141,9 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["dynamic_onevoice_000000","dynamic_onevoice_000030","dynamic_onevoice_000060","dynamic_onevoice_000090",
-                   "dynamic_onevoice_000001","dynamic_onevoice_000031","dynamic_onevoice_000061","dynamic_onevoice_000091",
-                   "dynamic_onevoice_000002","dynamic_onevoice_000032","dynamic_onevoice_000062","dynamic_onevoice_000092"]
+            info: ["dynamic_onevoice_000000","dynamic_onevoice_000010","dynamic_onevoice_000030","dynamic_onevoice_000037",
+                   "dynamic_onevoice_000047","dynamic_onevoice_000049","dynamic_onevoice_000070","dynamic_onevoice_000071",
+                   "dynamic_onevoice_000072","dynamic_onevoice_000090","dynamic_onevoice_000091","dynamic_onevoice_000102"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -322,7 +322,9 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["dynamic_onevoice_000005","dynamic_onevoice_000015","dynamic_onevoice_000032","dynamic_onevoice_000033",
+                   "dynamic_onevoice_000047","dynamic_onevoice_000048","dynamic_onevoice_000053","dynamic_onevoice_000054",
+                   "dynamic_onevoice_000094","dynamic_onevoice_000096","dynamic_onevoice_000097","dynamic_onevoice_000100","dynamic_onevoice_000101"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -499,7 +501,9 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000004_static_singlevoice","000012_static_singlevoice"]
+            info: ["dynamic_onevoice_000007","dynamic_onevoice_000017","dynamic_onevoice_000034","dynamic_onevoice_000035",
+                   "dynamic_onevoice_000045","dynamic_onevoice_000046","dynamic_onevoice_000050","dynamic_onevoice_000051",
+                   "dynamic_onevoice_000092","dynamic_onevoice_000093"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
