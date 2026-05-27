@@ -15,7 +15,7 @@ syntax:
 name: unimore_locata_small_pcm_s16le_48000
 
 output:
-  path: datasets/unimore_locata_small
+  path: datasets/unimore_locata
   store_info: True
   audio:
     format:
