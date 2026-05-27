@@ -221,6 +221,37 @@ sets:
             type: noise
             subtype: unimore
             info: ["noise_8mics"]
+      #
+      # LOCATA dynamic, 1->M
+      # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      5:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000001_voice","000003_voice","000004_voice", 
+                   "f1_script5_clean_cut","f2_script5_clean_cut","f3_script5_clean_cut","f4_script5_clean_cut","f5_script5_clean_cut",
+                   "m1_script5_clean_cut","m2_script5_clean_cut","m3_script5_clean_cut","m4_script5_clean_cut","m5_script5_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["mix_twovoice_000110","mix_twovoice_000111","mix_twovoice_000112","mix_twovoice_000113","mix_twovoice_000114","mix_twovoice_000115","mix_twovoice_000116",
+                   "mix_threevoice_000110","mix_threevoice_000111","mix_threevoice_000112","mix_threevoice_000113","mix_threevoice_000114","mix_threevoice_000115","mix_threevoice_000116"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
 
   # ###############################################################################################
   # T E S T
@@ -404,6 +435,38 @@ sets:
             subtype: unimore
             info: ["noise_8mics"]
 
+      #
+      # LOCATA dynamic, 1->M
+      # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      5:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000005_voice", 
+                   "f6_script5_clean_cut","f7_script5_clean_cut",
+                   "m6_script5_clean_cut","m7_script5_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["mix_twovoice_000117","mix_twovoice_000118","mix_twovoice_000119","mix_twovoice_000120","mix_twovoice_000121",
+                   "mix_threevoice_000117","mix_threevoice_000118","mix_threevoice_000119","mix_threevoice_000120","mix_threevoice_000121"]
+
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
 
   # ###############################################################################################
   # V A L I D A T E
@@ -577,6 +640,38 @@ sets:
             subtype: unimore
             info: ["mix_twovoice_000073","mix_twovoice_000092","mix_twovoice_000093","mix_twovoice_000094",
                    "mix_threevoice_000073","mix_threevoice_000091","mix_threevoice_000095","mix_threevoice_000096","mix_threevoice_000097","mix_threevoice_000100"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+      #
+      # LOCATA dynamic, 1->M
+      # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #
+      5:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000006_voice","000007_voice", 
+                   "f8_script5_clean_cut","f9_script5_clean_cut","f10_script5_clean_cut",
+                   "m8_script5_clean_cut","m9_script5_clean_cut","m10_script5_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["mix_twovoice_000122","mix_twovoice_000123","mix_twovoice_000124","mix_twovoice_000125",
+                   "mix_threevoice_000122","mix_threevoice_000123","mix_threevoice_000124","mix_threevoice_000125"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
