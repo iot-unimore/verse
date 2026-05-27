@@ -314,9 +314,9 @@ if __name__ == "__main__":
     ax.set_zlim(min(-1, min(zz)), max(1, max(zz)))
 
     # Draw positive part of X-axis (from 0 to max)
-    ax.plot([0, ax.get_xlim()[1]], [0, 0], [0, 0], color="blue", linewidth=1)
-    ax.plot([0, 0], [0, ax.get_ylim()[1]], [0, 0], color="red", linewidth=1)
-    ax.plot([0, 0], [0, 0], [0, ax.get_zlim()[1]], color="green", linewidth=1)
+    ax.plot([0, ax.get_xlim()[1]], [0, 0], [0, 0], color="red", linewidth=1)
+    ax.plot([0, 0], [0, ax.get_ylim()[1]], [0, 0], color="green", linewidth=1)
+    ax.plot([0, 0], [0, 0], [0, ax.get_zlim()[1]], color="blue", linewidth=1)
 
     ax.set_aspect("equal", adjustable="box")
 
