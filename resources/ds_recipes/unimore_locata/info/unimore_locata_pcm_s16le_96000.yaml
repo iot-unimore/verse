@@ -21,7 +21,7 @@ output:
     format:
       type: wav
       subtype: pcm_s16le
-      samplerate: 48000
+      samplerate: 96000
 
 #
 # set is a collection of scenes that will be grouped in a subfolder (same name)
