@@ -88,7 +88,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_logging(verbose: bool):
-    level = logging.DEBUG if verbose else logging.INFO
+    level = logging.DEBUG if verbose else logging.INFOconvert_dataset_verse2locata.py
 
     handler = logging.StreamHandler()
 
@@ -1055,6 +1055,18 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
 
     yaml_data=[]
 
+    # --------------------------------------------------------
+    # read the original .wav file and compute source duration from incoming sample_rate, extend position file if needed
+    # --------------------------------------------------------
+
+    source_yaml = os.path.join(_RESOURCES_DIR, yaml_info["type"], yaml_info["subtype"], "info", yaml_info["info"]+".yaml" )
+    
+    source_yaml_data = safe_load_yaml(source_yaml)
+
+    source_wav = os.path.join(_RESOURCES_DIR, yaml_info["type"], yaml_info["subtype"], source_yaml_data["file"])
+
+    s_Fs, s_duration, s_total_samples, s_codec_name = get_audio_info(source_wav)
+
     if(err==0):
 
         path_file=os.path.join(_RESOURCES_DIR,yaml_info["position"]["value"]["type"],yaml_info["position"]["value"]["subtype"],"info",yaml_info["position"]["value"]["info"])
@@ -1126,7 +1138,7 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
 
         anchor_times = (
             df['time_percent'].to_numpy() / 100.0
-        ) * duration_seconds
+        ) * s_duration #duration_seconds
 
         # --------------------------------------------------------
         # Uniform sample timeline
@@ -1136,7 +1148,7 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
 
         sample_times = np.arange(
             0,
-            duration_seconds,
+            s_duration, #duration_seconds,
             dt
         )
 
@@ -1178,6 +1190,46 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
             'z': z_interp
         })
 
+        # --------------------------------------------------------
+        # extend the position file if the duration is shorter than required
+        # --------------------------------------------------------
+        if ( (s_duration * sample_rate) > total_samples):
+            err = -1
+        elif ( (s_duration * sample_rate) < total_samples ):
+
+            e_sample_times = np.arange(
+                s_duration,
+                duration_seconds,
+                dt
+            )
+
+            e_timestamps = [
+                start_datetime + timedelta(seconds=float(t))
+                for t in e_sample_times
+            ]
+
+
+            e_position = pd.DataFrame({
+                'year':   [t.year for t in e_timestamps],
+                'month':  [t.month for t in e_timestamps],
+                'day':    [t.day for t in e_timestamps],
+                'hour':   [t.hour for t in e_timestamps],
+                'minute': [t.minute for t in e_timestamps],
+
+                # fractional seconds
+                'second': [
+                    t.second + t.microsecond / 1e6
+                    for t in e_timestamps
+                ],
+
+                'x': np.repeat(x_interp[-1], len(e_timestamps)),
+                'y': np.repeat(y_interp[-1], len(e_timestamps)),
+                'z': np.repeat(z_interp[-1], len(e_timestamps))
+            })
+
+
+            position = pd.concat([position, e_position], ignore_index=True)
+
 
         # --------------------------------------------------------
         # in VERSE each speaker is pointing to the listener HEAD position
@@ -1186,6 +1238,7 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
             position,
             target_xyz=target_xyz
         )
+
 
     return err, position_with_refvec
 
@@ -1905,17 +1958,17 @@ def verse_to_locata(idx, path, **kwargs):
     if stop_event.is_set():
         return None
 
-    err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
-    if ( err != 0):
-        return None
+    # err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
+    # if ( err != 0):
+    #     return None
 
-    # check for early exit
-    if stop_event.is_set():
-        return None
+    # # check for early exit
+    # if stop_event.is_set():
+    #     return None
 
-    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
-    if ( err != 0):
-        return None
+    # err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
+    # if ( err != 0):
+    #     return None
 
     return (path, mkv_descriptor, source)
 
