@@ -5,6 +5,7 @@ import argparse
 import yaml
 import subprocess
 import json
+import shutil
 import time
 import re
 import logging
@@ -88,7 +89,7 @@ logger = logging.getLogger(__name__)
 
 
 def setup_logging(verbose: bool):
-    level = logging.DEBUG if verbose else logging.INFOconvert_dataset_verse2locata.py
+    level = logging.DEBUG if verbose else logging.INFO
 
     handler = logging.StreamHandler()
 
@@ -520,6 +521,11 @@ def compute_propagation_aware_vad_mask(
     rx_df = pd.read_csv(receiver_position_file, sep="\t")
 
     if (len(src_df) != len(rx_df)) or (len(src_df)!=input_samples) or (len(rx_df)!=input_samples):
+        print(source_position_file)
+        print(receiver_position_file)
+        print(len(src_df))
+        print(len(rx_df))
+        print(input_samples)
         raise ValueError("compute_propagation_aware_vad_mask: input files invalid length")
 
 
@@ -1595,8 +1601,54 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
                 err = -1
 
             if(audio_samples != total_samples):
-                logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
-                err=-1
+                if(audio_samples > total_samples):
+
+                    logger.warning(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+
+                    p = Path(output_filename)
+                    output_filename_orig = str(p.with_name(f"{p.stem}_orig{p.suffix}"))
+                    shutil.copy2(p, output_filename_orig)
+
+                    logger.warning(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+                    cmd = [
+                        _FFMPEG_EXE,
+                        "-v", "error",
+                        "-y",
+                        "-i", output_filename_orig,
+                        "-af",
+                        f"apad=whole_len={audio_samples}", 
+                        "-c", f"{codec_name}",
+                        output_filename
+                    ]
+
+                    try:
+                        subprocess.run(
+                            cmd,
+                            check=True,
+                            stdin=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL
+                        )
+                    except:
+                        logger.error(f"Error while executing: {cmd}")
+                        err = -1
+                                        
+                    #check successfull padding
+
+                    try:
+                        Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
+
+                        if(total_samples != audio_samples):
+                            logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
+                            err=-1
+                        else:
+                            os.remove(output_filename_orig)
+                    except:
+                        logger.error(f"Invalid audio file: {output_filename}")
+                        err = -1
+
+                else:
+                    logger.error(f"1 Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+                    err=-1
 
         except:
             logger.error(f"Cannot extrace track #{track_id} from {mkv_path}")
@@ -1611,7 +1663,7 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
         filename = f"{output_prefix}timestamps_{output_postfix}{str(track_id)}.txt"
         audio_samples = generate_timestamps_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
         if(audio_samples != total_samples):
-            logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file timestamps: {output_filename}")
+            logger.error(f"2 Invalid audio_samples count {audio_samples}!={total_samples} on audio file timestamps: {output_filename} [{mkv_path}]")
             err=-1
 
         # generate VAD timestamps for source audio file
@@ -1621,7 +1673,7 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
         filename = f"VAD_source_{output_postfix}{str(track_id)}.txt"
         audio_samples = generate_vad_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
         if(audio_samples != total_samples):
-            logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file VAD: {output_filename}")
+            logger.error(f"3 Invalid audio_samples count {audio_samples}!={total_samples} on audio file VAD: {output_filename} [{mkv_path}]")
             err=-1
 
         if stop_event.is_set():
@@ -1686,7 +1738,7 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                     stderr=subprocess.DEVNULL
                 )
             except:
-                err = err+1
+                err = -1
 
             # add to the list if no errors
             if err==0:
@@ -1719,9 +1771,59 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                                 stdin=subprocess.DEVNULL,
                                 stderr=subprocess.DEVNULL
                             )
-                            extracted_wavs.append(tmp_wav)
+
+                            # check if we need to do zero padding on the wav file
+                            tmp_Fs, tmp_duration, tmp_total_samples, tmp_codec_name = get_audio_info(tmp_wav)
+
+
+                            if(total_samples != tmp_total_samples):
+                                logger.warning(f"Different audio track length for {total_samples}!={tmp_total_samples} on audio file: {tmp_wav} [{mkv_path}]")
+
+                                if(total_samples > tmp_total_samples):
+                                    logger.warning(f"Padding audio track for {total_samples}!={tmp_total_samples} on audio file: {tmp_wav} [{mkv_path}]")
+
+                                    p = Path(tmp_wav)
+                                    tmp_wav_orig = str(p.with_name(f"{p.stem}_orig{p.suffix}"))
+                                    shutil.copy2(p, tmp_wav_orig)
+
+                                    logger.warning(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+                                    cmd = [
+                                        _FFMPEG_EXE,
+                                        "-v", "error",
+                                        "-y",
+                                        "-i", tmp_wav_orig,
+                                        "-af",
+                                        f"apad=whole_len={audio_samples}", 
+                                        #"-c", f"{codec_name}",
+                                        tmp_wav
+                                    ]
+
+                                    try:
+                                        subprocess.run(
+                                            cmd,
+                                            check=True,
+                                            stdin=subprocess.DEVNULL,
+                                            stderr=subprocess.DEVNULL
+                                        )
+                                    except:
+                                        logger.error(f"Error while executing: {cmd}")
+                                        err = -1
+
+                                    try:
+                                        tmp_Fs, tmp_duration, tmp_total_samples, tmp_codec_name = get_audio_info(tmp_wav)
+
+                                        if(tmp_total_samples != audio_samples):
+                                            logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
+                                            err = -1
+                                        else:
+                                            extracted_wavs.append(tmp_wav)
+                                            os.remove(tmp_wav_orig)
+
+                                    except:
+                                        logger.error(f"Invalid audio file: {output_filename}")
+                                        err = -1
                         except:
-                            err = err+1
+                            err = -1
 
         # now mux all track in one single .wav file as per locata sintax
         if(err == 0):
@@ -1760,7 +1862,7 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                 err = -1
 
             if(audio_samples != total_samples):
-                logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
+                logger.error(f"4 Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
                 err=-1
 
 
@@ -1773,7 +1875,7 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
             filename = f"{output_prefix}timestamps_{output_postfix}.txt"
             audio_samples = generate_timestamps_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
             if(audio_samples != total_samples):
-                logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file timestamps: {output_filename}")
+                logger.error(f"5 Invalid audio_samples count {audio_samples}!={total_samples} on audio file timestamps: {output_filename}")
                 err=-1
 
         #
@@ -1815,8 +1917,52 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                         err = -1
 
                     if(audio_samples != total_samples):
-                        logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
-                        err=-1
+                        if(audio_samples > total_samples):
+
+                            p = Path(output_filename)
+                            output_filename_orig = str(p.with_name(f"{p.stem}_orig{p.suffix}"))
+                            shutil.copy2(p, output_filename_orig)
+
+                            logger.warning(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+                            cmd = [
+                                _FFMPEG_EXE,
+                                "-v", "error",
+                                "-y",
+                                "-i", output_filename_orig,
+                                "-af",
+                                f"apad=whole_len={audio_samples}", 
+                                "-c", f"{codec_name}",
+                                output_filename
+                            ]
+
+                            try:
+                                subprocess.run(
+                                    cmd,
+                                    check=True,
+                                    stdin=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL
+                                )
+                            except:
+                                logger.error(f"Error while executing: {cmd}")
+                                err = -1
+
+                            #check successfull padding
+
+                            try:
+                                Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
+
+                                if(total_samples != audio_samples):
+                                    logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
+                                    err=-1
+                                else:
+                                    os.remove(output_filename_orig)
+                            except:
+                                logger.error(f"Invalid audio file: {output_filename}")
+                                err = -1
+
+                        else:                        
+                            logger.error(f"6 Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+                            err=-1
 
                 except:
                     logger.error(f"Cannot extrace track #{track_id} from {mkv_path}")
@@ -1831,13 +1977,13 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                     # search if we have position information for source and array
                     source_position_file="" 
                     array_position_file=""
-                    position_err, source_position_file, array_position_file= find_locata_position_files( audio_wav_path=source_filename )
+                    position_err, source_position_file, array_position_file = find_locata_position_files( audio_wav_path=source_filename )
 
                     filename = f"VAD_{output_postfix}_{source_postfix}{str(track_id)}.txt"
                     audio_samples = generate_vad_file(  output_filename, start_datetime, output_path, output_file=filename, 
                                                         target_time_step_seconds=0, source_position_file=source_position_file, array_position_file=array_position_file)
                     if(audio_samples != total_samples):
-                        logger.error(f"Invalid audio_samples count {audio_samples}!={total_samples} on audio file VAD: {output_filename}")
+                        logger.error(f"7 Invalid audio_samples count {audio_samples}!={total_samples} on audio file VAD: {output_filename} [{mkv_path}]")
                         err=-1
 
     return err
@@ -1958,17 +2104,17 @@ def verse_to_locata(idx, path, **kwargs):
     if stop_event.is_set():
         return None
 
-    # err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
-    # if ( err != 0):
-    #     return None
+    err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
+    if ( err != 0):
+        return None
 
-    # # check for early exit
-    # if stop_event.is_set():
-    #     return None
+    # check for early exit
+    if stop_event.is_set():
+        return None
 
-    # err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
-    # if ( err != 0):
-    #     return None
+    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
+    if ( err != 0):
+        return None
 
     return (path, mkv_descriptor, source)
 
