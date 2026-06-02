@@ -2087,21 +2087,21 @@ def verse_to_locata(idx, path, **kwargs):
     if ( err != 0):
         return None
 
-    # # check for early exit
-    # if stop_event.is_set():
-    #     return None
+    # check for early exit
+    if stop_event.is_set():
+        return None
 
-    # err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
-    # if ( err != 0):
-    #     return None
+    err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
+    if ( err != 0):
+        return None
 
-    # # check for early exit
-    # if stop_event.is_set():
-    #     return None
+    # check for early exit
+    if stop_event.is_set():
+        return None
 
-    # err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
-    # if ( err != 0):
-    #     return None
+    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
+    if ( err != 0):
+        return None
 
     return (path, mkv_descriptor, source)
 
