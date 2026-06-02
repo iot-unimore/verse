@@ -1038,7 +1038,7 @@ def compute_reference_frame(
 
     return df
 
-def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0], target_xyz=(0,0,0), rotation_matrix=[]):
+def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0], target_xyz=(0,0,0), rotation_matrix=[], source_wav=None):
     position=[]
     err=0
 
@@ -1060,13 +1060,17 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
     # read the original .wav file and compute source duration from incoming sample_rate, extend position file if needed
     # --------------------------------------------------------
 
-    source_yaml = os.path.join(_RESOURCES_DIR, yaml_info["type"], yaml_info["subtype"], "info", yaml_info["info"]+".yaml" )
-    
-    source_yaml_data = safe_load_yaml(source_yaml)
+    # source_yaml = os.path.join(_RESOURCES_DIR, yaml_info["type"], yaml_info["subtype"], "info", yaml_info["info"]+".yaml" )
+    # source_yaml_data = safe_load_yaml(source_yaml)
+    # source_wav = os.path.join(_RESOURCES_DIR, yaml_info["type"], yaml_info["subtype"], source_yaml_data["file"])
 
-    source_wav = os.path.join(_RESOURCES_DIR, yaml_info["type"], yaml_info["subtype"], source_yaml_data["file"])
+    if source_wav is None:
+        s_duration = duration_seconds
+        s_Fs = sample_rate
+        s_total_samples = total_samples    
+    else:
+        s_Fs, s_duration, s_total_samples, s_codec_name = get_audio_info(source_wav)
 
-    s_Fs, s_duration, s_total_samples, s_codec_name = get_audio_info(source_wav)
 
     if(err==0):
 
@@ -1412,7 +1416,31 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
             logger.error(f"Invalid source position type in file: {yaml_path}")
         else:
             if(source_info["position"]["type"]=="dynamic"):
-                err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
+
+                with tempfile.TemporaryDirectory() as tmpdir:            
+
+                    # demux the audio source file
+                    source_wav = "source_"+str(source_number)+"*.wav"
+                    source_wav = os.path.join(tmpdir, source_wav)
+
+                    try:
+                        cmd = [
+                            _FFMPEG_EXE,
+                            "-v", "error",
+                            "-y",                           # overwrite output
+                            "-i", mkv_path,                 # input mkv
+                            "-map", f"0:{source_number}",   # select track
+                            "-c", "copy",            # no re-encoding
+                            source_wav
+                        ]
+    
+                        subprocess.run(cmd, check=True, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+                        err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz, source_wav)
+
+                    except:
+                       logger.error(f"compute_position_dynamic, cannot extract source wav: track {source_number} {mkv_path}")
+                       err = -1                        
             else:
                 err,position = compute_position_static(source_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
 
@@ -1436,6 +1464,7 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                 logger.error(f"Invalid listener position type in file: {yaml_path}")
             else:
                 if(listener_info["position"]["type"]=="dynamic"):
+                    # ToDo: dynamic listener to be verified, verse has static listener for now.
                     err,position = compute_position_dynamic(listener_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
                 else:
                     err,position = compute_position_static(listener_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
