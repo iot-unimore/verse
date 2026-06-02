@@ -482,7 +482,7 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
                 cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationReverb"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableFarDistanceEffect"] = "yes"
-            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "yes"
+            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "no" #"yes" removing since we do not have ILD map
             cfg["setup"]["sources"][sidx]["3dti"]["enablePropagationDelay"] = "yes"
 
         #
