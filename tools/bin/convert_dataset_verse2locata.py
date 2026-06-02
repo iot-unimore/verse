@@ -1145,7 +1145,7 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
         # Uniform sample timeline
         # --------------------------------------------------------
 
-        n_samples = (s_total_samples / s_Fs) * sample_rate
+        n_samples = int((s_total_samples / s_Fs) * sample_rate)
 
         sample_times = np.arange(n_samples) / sample_rate
 
@@ -1190,9 +1190,10 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
         # --------------------------------------------------------
         # extend the position file if the duration is shorter than required
         # --------------------------------------------------------
-        if ( (s_duration * sample_rate) > total_samples):
+        if ( n_samples > total_samples):
             err = -1
-        elif ( (int(s_duration * sample_rate)) < total_samples ):
+            logger.error(f"compute_position_dynamic: source file duration {n_samples} is bigger than the requested {total_samples}")
+        elif ( n_samples < total_samples ):
             
             e_sample_times = np.arange(
                 n_samples,
@@ -1233,7 +1234,6 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
             position,
             target_xyz=target_xyz
         )
-
 
     return err, position_with_refvec
 
@@ -1419,7 +1419,7 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
             if(err==0):
                 save_locata_position(position, output_filename)
             else:
-                logger.error(f"Error while computing dynamic position in file: {yaml_path}")                
+                logger.error(f"Error while computing source position in file: {yaml_path}{output_filename}")                
 
     for listener_number, listener_info in yaml_scene["setup"]["listeners"].items():
         if(listener_number > 0):
@@ -1443,7 +1443,7 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                 if(err==0):
                     save_locata_position(position, output_filename)
                 else:
-                    logger.error(f"Error while computing dynamic position in file: {yaml_path}")
+                    logger.error(f"Error while computing listener position in file: {yaml_path}")
     return err
 
 
