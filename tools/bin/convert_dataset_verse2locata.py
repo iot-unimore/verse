@@ -1590,13 +1590,11 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
             if(audio_samples != total_samples):
                 if(audio_samples > total_samples):
 
-                    logger.warning(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
-
                     p = Path(output_filename)
                     output_filename_orig = str(p.with_name(f"{p.stem}_orig{p.suffix}"))
                     shutil.copy2(p, output_filename_orig)
 
-                    logger.warning(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+                    logger.debug(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
                     cmd = [
                         _FFMPEG_EXE,
                         "-v", "error",
@@ -1767,13 +1765,12 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                                 logger.warning(f"Different audio track length for {total_samples}!={tmp_total_samples} on audio file: {tmp_wav} [{mkv_path}]")
 
                                 if(total_samples > tmp_total_samples):
-                                    logger.warning(f"Padding audio track for {total_samples}!={tmp_total_samples} on audio file: {tmp_wav} [{mkv_path}]")
 
                                     p = Path(tmp_wav)
                                     tmp_wav_orig = str(p.with_name(f"{p.stem}_orig{p.suffix}"))
                                     shutil.copy2(p, tmp_wav_orig)
 
-                                    logger.warning(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+                                    logger.debug(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
                                     cmd = [
                                         _FFMPEG_EXE,
                                         "-v", "error",
@@ -1910,7 +1907,7 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                             output_filename_orig = str(p.with_name(f"{p.stem}_orig{p.suffix}"))
                             shutil.copy2(p, output_filename_orig)
 
-                            logger.warning(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
+                            logger.debug(f"Padding audio track for {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
                             cmd = [
                                 _FFMPEG_EXE,
                                 "-v", "error",
