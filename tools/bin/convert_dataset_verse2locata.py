@@ -1613,27 +1613,23 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
                             stdin=subprocess.DEVNULL,
                             stderr=subprocess.DEVNULL
                         )
+                        os.remove(output_filename_orig)
                     except:
                         logger.error(f"Error while executing: {cmd}")
                         err = -1
-                                        
-                    #check successfull padding
-
-                    try:
-                        Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
-
-                        if(total_samples != audio_samples):
-                            logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
-                            err=-1
-                        else:
-                            os.remove(output_filename_orig)
-                    except:
-                        logger.error(f"Invalid audio file: {output_filename}")
-                        err = -1
-
                 else:
                     logger.error(f"1 Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
                     err=-1
+
+                try:
+                    Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
+
+                    if(total_samples != audio_samples):
+                        logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
+                        err=-1
+                except:
+                    logger.error(f"Invalid audio file: {output_filename}")
+                    err = -1                    
 
         except:
             logger.error(f"Cannot extrace track #{track_id} from {mkv_path}")
@@ -1730,9 +1726,7 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
 
                 if channels == 1:
                     extracted_wavs.append(track_wav)
-                
                 else:
-
                     for channel_number in range(channels):
 
                         tmp_wav = os.path.join(tmpdir, f"receiver_{receiver_number}_{channel_number}.wav")
@@ -1789,23 +1783,25 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                                             stdin=subprocess.DEVNULL,
                                             stderr=subprocess.DEVNULL
                                         )
+
+                                        os.remove(tmp_wav_orig)
+
                                     except:
                                         logger.error(f"Error while executing: {cmd}")
                                         err = -1
 
-                                    try:
-                                        tmp_Fs, tmp_duration, tmp_total_samples, tmp_codec_name = get_audio_info(tmp_wav)
+                            try:
+                                tmp_Fs, tmp_duration, tmp_total_samples, tmp_codec_name = get_audio_info(tmp_wav)
 
-                                        if(tmp_total_samples != audio_samples):
-                                            logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
-                                            err = -1
-                                        else:
-                                            extracted_wavs.append(tmp_wav)
-                                            os.remove(tmp_wav_orig)
+                                if(tmp_total_samples != audio_samples):
+                                    logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
+                                    err = -1
+                                else:
+                                    extracted_wavs.append(tmp_wav)
 
-                                    except:
-                                        logger.error(f"Invalid audio file: {output_filename}")
-                                        err = -1
+                            except:
+                                logger.error(f"Invalid audio file: {output_filename}")
+                                err = -1
                         except:
                             err = -1
 
@@ -1926,27 +1922,24 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                                     stdin=subprocess.DEVNULL,
                                     stderr=subprocess.DEVNULL
                                 )
+                                os.remove(output_filename_orig)
                             except:
                                 logger.error(f"Error while executing: {cmd}")
                                 err = -1
-
-                            #check successfull padding
-
-                            try:
-                                Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
-
-                                if(total_samples != audio_samples):
-                                    logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
-                                    err=-1
-                                else:
-                                    os.remove(output_filename_orig)
-                            except:
-                                logger.error(f"Invalid audio file: {output_filename}")
-                                err = -1
-
                         else:                        
                             logger.error(f"6 Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename} [{mkv_path}]")
                             err=-1
+
+                        try:
+                            Fs, duration, total_samples, codec_name = get_audio_info(output_filename)
+
+                            if(total_samples != audio_samples):
+                                logger.error(f"Invalid sample_count after padding audio file: {output_filename}")
+                                err=-1
+                        except:
+                            logger.error(f"Invalid audio file: {output_filename}")
+                            err = -1
+
 
                 except:
                     logger.error(f"Cannot extrace track #{track_id} from {mkv_path}")
