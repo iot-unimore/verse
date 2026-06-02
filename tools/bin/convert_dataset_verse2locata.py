@@ -521,11 +521,6 @@ def compute_propagation_aware_vad_mask(
     rx_df = pd.read_csv(receiver_position_file, sep="\t")
 
     if (len(src_df) != len(rx_df)) or (len(src_df)!=input_samples) or (len(rx_df)!=input_samples):
-        print(source_position_file)
-        print(receiver_position_file)
-        print(len(src_df))
-        print(len(rx_df))
-        print(input_samples)
         raise ValueError("compute_propagation_aware_vad_mask: input files invalid length")
 
 
@@ -1150,13 +1145,9 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
         # Uniform sample timeline
         # --------------------------------------------------------
 
-        dt = 1.0 / sample_rate
+        n_samples = (s_total_samples / s_Fs) * sample_rate
 
-        sample_times = np.arange(
-            0,
-            s_duration, #duration_seconds,
-            dt
-        )
+        sample_times = np.arange(n_samples) / sample_rate
 
         # --------------------------------------------------------
         # Linear interpolation
@@ -1201,19 +1192,17 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
         # --------------------------------------------------------
         if ( (s_duration * sample_rate) > total_samples):
             err = -1
-        elif ( (s_duration * sample_rate) < total_samples ):
-
+        elif ( (int(s_duration * sample_rate)) < total_samples ):
+            
             e_sample_times = np.arange(
-                s_duration,
-                duration_seconds,
-                dt
-            )
+                n_samples,
+                total_samples,
+            ) / sample_rate
 
             e_timestamps = [
                 start_datetime + timedelta(seconds=float(t))
                 for t in e_sample_times
             ]
-
 
             e_position = pd.DataFrame({
                 'year':   [t.year for t in e_timestamps],
@@ -1261,9 +1250,6 @@ def compute_position_static(yaml_info="", start_datetime=0, duration_seconds=0, 
         err=-1
 
     if(err==0):
-        # print(yaml_info["position"]["coord"]["value"])
-        # print(yaml_info["position"]["coord"]["type"])
-
 
         # --------------------------------------------------------
         # Convert anchor points to Cartesian
@@ -1306,13 +1292,15 @@ def compute_position_static(yaml_info="", start_datetime=0, duration_seconds=0, 
         # Uniform sample timeline
         # --------------------------------------------------------
 
-        dt = 1.0 / sample_rate
+        # dt = 1.0 / sample_rate
 
-        sample_times = np.arange(
-            0,
-            duration_seconds,
-            dt
-        )
+        # sample_times = np.arange(
+        #     0,
+        #     duration_seconds,
+        #     dt
+        # )
+
+        sample_times = np.arange(total_samples) / sample_rate
 
         # fixed position -> repeat anchor times
         anchor_times = sample_times
@@ -1347,7 +1335,6 @@ def compute_position_static(yaml_info="", start_datetime=0, duration_seconds=0, 
             'y': y,
             'z': z,
         })
-
 
         # --------------------------------------------------------
         # in VERSE each speaker is pointing to the listener HEAD position
@@ -2100,21 +2087,21 @@ def verse_to_locata(idx, path, **kwargs):
     if ( err != 0):
         return None
 
-    # check for early exit
-    if stop_event.is_set():
-        return None
+    # # check for early exit
+    # if stop_event.is_set():
+    #     return None
 
-    err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
-    if ( err != 0):
-        return None
+    # err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
+    # if ( err != 0):
+    #     return None
 
-    # check for early exit
-    if stop_event.is_set():
-        return None
+    # # check for early exit
+    # if stop_event.is_set():
+    #     return None
 
-    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
-    if ( err != 0):
-        return None
+    # err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
+    # if ( err != 0):
+    #     return None
 
     return (path, mkv_descriptor, source)
 
