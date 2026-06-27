@@ -750,9 +750,11 @@ def generate_timestamps_file(file_path, start_datetime, output_path="/tmp/", out
 
     # save to file
     if(target_time_step_seconds > 0):
-        np.savetxt(data_file, timestamps, fmt=["%d", "%d", "%d", "%d", "%d", "%.3f", "%d"], delimiter="\t", header="year \tmonth \tday \thour \tminute \tsecond \tvalid_flag", comments="")
+        log_header = "\t".join(["year","month","day","hour","minute","second","valid_flag"])
+        np.savetxt(data_file, timestamps, fmt=["%d", "%d", "%d", "%d", "%d", "%.3f", "%d"], delimiter="\t", header=log_header, comments="")
     else:
-        np.savetxt(data_file, timestamps, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f"], delimiter="\t", header="year \tmonth \tday \thour \tminute \tsecond", comments="")
+        log_header = "\t".join(["year","month","day","hour","minute","second"])
+        np.savetxt(data_file, timestamps, fmt=["%d", "%d", "%d", "%d", "%d", "%.13f"], delimiter="\t", header=log_header, comments="")
 
     return total_samples
 
