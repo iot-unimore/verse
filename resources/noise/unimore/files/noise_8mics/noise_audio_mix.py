@@ -159,7 +159,9 @@ def audioMixStereo(src_file=None, noise_file=None, tmp_folder=None, samplerate=0
     #
     # generate noise chunk
     #
-    noise_tmp_filename = os.path.join(tmp_folder, os.path.basename(noise_file))
+    directory, filename = os.path.split(noise_file)
+    name, ext = os.path.splitext(filename)
+    noise_tmp_filename = os.path.join(directory, f"{name}_cut{ext}")
 
     cmd = [
         _FFMPEG_EXE,
