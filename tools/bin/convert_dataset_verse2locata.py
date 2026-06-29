@@ -1378,6 +1378,147 @@ def save_locata_position(position, output_filename):
         logger.error(f"Error while saving position file: {output_filename}")
 
 
+import pandas as pd
+
+
+def make_datetime(df):
+    """
+    Convert LOCATA timestamp columns into a pandas datetime.
+
+    Expected columns:
+        year, month, day, hour, minute, second
+
+    The 'second' column may contain fractional seconds.
+    """
+    return (
+        pd.to_datetime(
+            dict(
+                year=df["year"],
+                month=df["month"],
+                day=df["day"],
+                hour=df["hour"],
+                minute=df["minute"],
+            )
+        )
+        + pd.to_timedelta(df["second"], unit="s")
+    )
+
+
+def prune_position(position, required_time_file="required_time.txt"):
+    """
+    Prune a computed position dataframe according to the timestamps
+    contained in required_time.txt.
+
+    Parameters
+    ----------
+    position : pandas.DataFrame
+        DataFrame containing the computed positions.
+        The first columns must be:
+            year month day hour minute second
+        Additional columns are preserved.
+
+    required_time_file : str, optional
+        Filename containing the desired timestamps.
+
+    Returns
+    -------
+    err : int
+        0 = success
+        1 = error
+
+    position_pruned : pandas.DataFrame or None
+        DataFrame with:
+            - same columns as 'position'
+            - same timestamps as required_time_file
+            - same number of rows as required_time_file
+    """
+
+    timestamp_cols = [
+        "year",
+        "month",
+        "day",
+        "hour",
+        "minute",
+        "second",
+    ]
+
+    # ---------------------------------------------------------
+    # Verify timestamp columns exist
+    # ---------------------------------------------------------
+    for c in timestamp_cols:
+        if c not in position.columns:
+            raise ValueError(f"Column '{c}' not found in position dataframe.")
+
+    # ---------------------------------------------------------
+    # Read required_time.txt
+    # ---------------------------------------------------------
+    required = pd.read_csv(
+        required_time_file,
+        # delim_whitespace=True,
+        sep="\s+",
+        comment="#"
+    )
+
+    for c in timestamp_cols:
+        if c not in required.columns:
+            raise ValueError(f"Column '{c}' not found in {required_time_file}")
+
+    # ---------------------------------------------------------
+    # Sanity check #1
+    # ---------------------------------------------------------
+    if len(required) > len(position):
+        print("Error: required_time contains more timestamps than position.")
+        return 1, None
+
+    # ---------------------------------------------------------
+    # Work on copies
+    # ---------------------------------------------------------
+    position = position.copy()
+    required = required.copy()
+
+    logger.debug(f"Pruning position to match: {required_time_file}")
+
+    # ---------------------------------------------------------
+    # Create datetime objects
+    # ---------------------------------------------------------
+    position["__time"] = make_datetime(position)
+    required["__time"] = make_datetime(required)
+
+    # ---------------------------------------------------------
+    # Sort (required by merge_asof)
+    # ---------------------------------------------------------
+    position = position.sort_values("__time").reset_index(drop=True)
+    required = required.sort_values("__time").reset_index(drop=True)
+
+    # ---------------------------------------------------------
+    # Merge using nearest timestamp
+    #
+    # Exact matches are automatically used.
+    # Otherwise the closest previous/next sample is selected.
+    # ---------------------------------------------------------
+    merged = pd.merge_asof(
+        required[["__time"]],
+        position,
+        on="__time",
+        direction="nearest"
+    )
+
+    # ---------------------------------------------------------
+    # Replace timestamps with the required timestamps
+    # ---------------------------------------------------------
+    for c in timestamp_cols:
+        merged[c] = required[c].values
+
+    # ---------------------------------------------------------
+    # Restore original column order
+    # ---------------------------------------------------------
+    position_pruned = merged[position.columns]
+
+    # Remove helper column
+    position_pruned = position_pruned.drop(columns="__time")
+
+    return 0, position_pruned
+
 def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output_prefix="", output_postfix="loudspeaker_", scene="", offset_xyz=(0,0,0), target_xyz=(0,0,0)):
 
     err = 0
@@ -1437,9 +1578,7 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                         ]
     
                         subprocess.run(cmd, check=True, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
                         err,position = compute_position_dynamic(source_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz, source_wav)
-
                     except:
                        logger.error(f"compute_position_dynamic, cannot extract source wav: track {source_number} {mkv_path}")
                        err = -1                        
@@ -1447,7 +1586,21 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                 err,position = compute_position_static(source_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
 
             if(err==0):
+
+                filename = f"position_full_source_{output_postfix}{str(source_number)}.txt"
+                output_filename = os.path.join(output_path, filename)
                 save_locata_position(position, output_filename)
+
+                # now prune to match the same length of the required_time file as per LOCATA requirements
+                position_pruned=[]
+                if(err==0):
+                    required_time_file = os.path.join(output_path, "required_time.txt")
+                    err,position_pruned = prune_position(position, required_time_file)
+
+                filename = f"position_source_{output_postfix}{str(source_number)}.txt"
+                output_filename = os.path.join(output_path, filename)
+                save_locata_position(position_pruned, output_filename)
+
             else:
                 logger.error(f"Error while computing source position in file: {yaml_path}{output_filename}")                
 
@@ -1468,18 +1621,33 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
                 if(listener_info["position"]["type"]=="dynamic"):
                     # ToDo: dynamic listener to be verified, verse has static listener for now.
                     err,position = compute_position_dynamic(listener_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
+
                 else:
                     err,position = compute_position_static(listener_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
  
                 if(err==0):
+                    filename = f"position_full_array_{output_prefix}.txt"
+                    output_filename = os.path.join(output_path, filename)                    
                     save_locata_position(position, output_filename)
+ 
+                    # now prune to match the same length of the required_time file as per LOCATA requirements
+                    position_pruned=[]
+                    if(err==0):
+                        required_time_file = os.path.join(output_path, "required_time.txt")
+                        err,position_pruned = prune_position(position, required_time_file)
+
+                    filename = f"position_array_{output_prefix}.txt"
+                    output_filename = os.path.join(output_path, filename)                    
+                    save_locata_position(position_pruned, output_filename)
+
                 else:
                     logger.error(f"Error while computing listener position in file: {yaml_path}")
     return err
 
 
 def find_locata_position_files(
-    audio_wav_path
+    audio_wav_path,
+    full_timing=True
 ):
     """
     Given a LOCATA audio source path, find:
@@ -1518,9 +1686,14 @@ def find_locata_position_files(
         1
     )
 
-    source_position_filename = (
-        f"position_source_{source_suffix}.txt"
-    )
+    if(full_timing):
+        source_position_filename = (
+            f"position_full_source_{source_suffix}.txt"
+        )
+    else:
+        source_position_filename = (
+            f"position_source_{source_suffix}.txt"
+        )
 
     source_position_path = (
         base_dir / source_position_filename
@@ -1530,9 +1703,14 @@ def find_locata_position_files(
 
     array_name = base_dir.name
 
-    array_position_filename = (
-        f"position_array_{array_name}.txt"
-    )
+    if(full_timing):
+        array_position_filename = (
+            f"position_full_array_{array_name}.txt"
+        )
+    else:
+        array_position_filename = (
+            f"position_array_{array_name}.txt"
+        )
 
     array_position_path = (
         base_dir / array_position_filename
@@ -1985,7 +2163,7 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                     # search if we have position information for source and array
                     source_position_file="" 
                     array_position_file=""
-                    position_err, source_position_file, array_position_file = find_locata_position_files( audio_wav_path=source_filename )
+                    position_err, source_position_file, array_position_file = find_locata_position_files( audio_wav_path=source_filename, full_timing=True)
 
                     filename = f"VAD_{output_postfix}_{source_postfix}{str(track_id)}.txt"
                     audio_samples = generate_vad_file(  output_filename, start_datetime, output_path, output_file=filename, 
