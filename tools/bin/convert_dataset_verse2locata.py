@@ -1034,6 +1034,11 @@ def compute_reference_frame(
     # OUTPUT ROTATION MATRIX
     # -----------------------------------------------------
 
+    # SANITY check on rotation matrix, override with identity matrix when zero
+    zero_mask = np.all(np.isclose(R, 0.0), axis=(1, 2))
+    R[zero_mask] = np.eye(3)
+
+    # write to the final dataset
     for i in range(3):
         for j in range(3):
             df[f"rotation_{i+1}{j+1}"] = R[:, i, j]
