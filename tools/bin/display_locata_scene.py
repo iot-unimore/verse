@@ -154,7 +154,7 @@ examples:
 
   %(prog)s data/session01 -n 100 --no-points
 
-  %(prog)s data/session01 -n 100 --frames --frame-step 10 --frame-scale 0.06
+  %(prog)s data/session01 -n 100 --frames --frames-step 10 --frames-scale 0.06
     """,
 
     formatter_class=argparse.RawDescriptionHelpFormatter
