@@ -223,7 +223,12 @@ examples:
     # Find all position files
     # --------------------------------------------------------
 
-    files = sorted(folder.rglob("position*.txt"))
+    #files = sorted(folder.rglob("position*.txt"))
+
+    files = sorted(
+        f for f in folder.rglob("position*.txt")
+        if not f.name.startswith("position_full_")
+    )
 
     if not files:
 
