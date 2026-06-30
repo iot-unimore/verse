@@ -273,7 +273,7 @@ sets:
     tasks:
 
       # static, 1->1
-      # TEST/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
         voices:
@@ -307,7 +307,7 @@ sets:
             info: ["noise_8mics"]
 
       # static, 1->M
-      # TEST/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
         voices:
@@ -345,7 +345,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->1
-      # TEST/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
         voices:
@@ -379,7 +379,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->M
-      # TEST/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
         voices:
@@ -418,7 +418,7 @@ sets:
 
       #
       # mixed dynamic/static, 1->M
-      # TEST/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
         voices:
@@ -499,7 +499,7 @@ sets:
     tasks:
 
       # static, 1->1
-      # VALIDATE/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
         voices:
@@ -533,7 +533,7 @@ sets:
             info: ["noise_8mics"]
 
       # static, 1->M
-      # VALIDATE/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
         voices:
@@ -571,7 +571,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->1
-      # VALIDATE/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
         voices:
@@ -605,7 +605,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->M
-      # VALIDATE/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
         voices:
@@ -644,7 +644,7 @@ sets:
 
       #
       # mixed dynamic/static, 1->M
-      # VALIDATE/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
         voices:
