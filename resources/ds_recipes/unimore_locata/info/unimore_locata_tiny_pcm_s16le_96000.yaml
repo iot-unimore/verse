@@ -455,7 +455,7 @@ sets:
 
       #
       # LOCATA dynamic, 1->M
-      # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       5:
         voices:
@@ -680,7 +680,7 @@ sets:
 
       #
       # LOCATA dynamic, 1->M
-      # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # TEST/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       5:
         voices:

@@ -12,10 +12,10 @@ syntax:
 #
 # recipe
 #
-name: unimore_locata_tiny_pcm_s16le_16000
+name: unimore_locata_pcm_s16le_16000
 
 output:
-  path: datasets/unimore_locata_tiny_16k
+  path: datasets/unimore_locata_16k
   store_info: True
   audio:
     format:
@@ -28,9 +28,9 @@ output:
 #
 sets:
 
-  ###############################################################################################
+  # ###############################################################################################
   # T R A I N 
-  ###############################################################################################
+  # ###############################################################################################
 
   train:
     # each task is a separate selection
@@ -54,9 +54,9 @@ sets:
         voices:
           0:
             subtype: unimore
-            info: ["000001_voice","000003_voice", 
-                   "f1_script1_clean_cut","f2_script1_clean_cut",
-                   "m1_script1_clean_cut","m2_script1_clean_cut"]
+            info: ["000001_voice","000003_voice","000004_voice", 
+                   "f1_script1_clean_cut","f2_script1_clean_cut","f3_script1_clean_cut","f4_script1_clean_cut","f5_script1_clean_cut",
+                   "m1_script1_clean_cut","m2_script1_clean_cut","m3_script1_clean_cut","m4_script1_clean_cut","m5_script1_clean_cut",]
         heads:
           0:
             subtype: unimore
@@ -69,8 +69,11 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["000008_static_singlevoice","000068_static_singlevoice",
-                   "000009_static_singlevoice","000069_static_singlevoice"]
+            info: ["000008_static_singlevoice","000068_static_singlevoice","000132_static_singlevoice",
+                   "000009_static_singlevoice","000069_static_singlevoice","000133_static_singlevoice",
+                   "000040_static_singlevoice","000104_static_singlevoice",
+                   "000044_static_singlevoice","000108_static_singlevoice",
+                   "000049_static_singlevoice","000113_static_singlevoice"]
 
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
@@ -89,13 +92,13 @@ sets:
         voices:
           0:
             subtype: unimore
-            info: ["000001_voice","000003_voice"]
+            info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut"]
+            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut"]
+            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]                   
         heads:
           0:
             subtype: unimore
@@ -108,8 +111,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["static_twovoice_000000","static_twovoice_000030","static_twovoice_000060",
-                   "static_threevoice_000000","static_threevoice_000030","static_threevoice_000060"]
+            info: ["static_twovoice_000000","static_twovoice_000030","static_twovoice_000060","static_twovoice_000090","static_twovoice_000120","static_twovoice_000150",
+                   "static_threevoice_000000","static_threevoice_000030","static_threevoice_000060","static_threevoice_000090","static_threevoice_000120","static_threevoice_000150"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -127,9 +130,9 @@ sets:
         voices:
           0:
             subtype: unimore
-            info: ["000001_voice","000003_voice", 
-                   "f1_script3_clean_cut","f2_script3_clean_cut",
-                   "m1_script3_clean_cut","m2_script3_clean_cut"]
+            info: ["000001_voice","000003_voice","000004_voice", 
+                   "f1_script3_clean_cut","f2_script3_clean_cut","f3_script3_clean_cut","f4_script3_clean_cut","f5_script3_clean_cut",
+                   "m1_script3_clean_cut","m2_script3_clean_cut","m3_script3_clean_cut","m4_script3_clean_cut","m5_script3_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -142,8 +145,9 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["dynamic_onevoice_000000","dynamic_onevoice_000010","dynamic_onevoice_000030",
-                   "dynamic_onevoice_000072","dynamic_onevoice_000090","dynamic_onevoice_000102"]
+            info: ["dynamic_onevoice_000000","dynamic_onevoice_000010","dynamic_onevoice_000030","dynamic_onevoice_000037",
+                   "dynamic_onevoice_000047","dynamic_onevoice_000049","dynamic_onevoice_000070","dynamic_onevoice_000071",
+                   "dynamic_onevoice_000072","dynamic_onevoice_000090","dynamic_onevoice_000091","dynamic_onevoice_000102"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -161,13 +165,13 @@ sets:
         voices:
           0:
             subtype: unimore
-            info: ["000001_voice","000003_voice"]
+            info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut"]
+            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut"]
+            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -180,9 +184,10 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["dynamic_twovoice_000001","dynamic_twovoice_000002","dynamic_twovoice_000003",
-                   "dynamic_threevoice_000001","dynamic_threevoice_000002","dynamic_threevoice_000003",
-                   "dynamic_threevoice_000030","dynamic_threevoice_000031","dynamic_threevoice_000061"]
+            info: ["dynamic_twovoice_000001","dynamic_twovoice_000002","dynamic_twovoice_000003","dynamic_twovoice_000004",
+                   "dynamic_twovoice_000030","dynamic_twovoice_000040","dynamic_twovoice_000070","dynamic_twovoice_000071",
+                   "dynamic_threevoice_000001","dynamic_threevoice_000002","dynamic_threevoice_000003","dynamic_threevoice_000004",
+                   "dynamic_threevoice_000030","dynamic_threevoice_000031","dynamic_threevoice_000061","dynamic_threevoice_000071"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -201,13 +206,13 @@ sets:
         voices:
           0:
             subtype: unimore
-            info: ["000001_voice","000003_voice"]
+            info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut"]
+            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut"]
+            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -217,8 +222,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["mix_twovoice_000003","mix_twovoice_000005","mix_twovoice_000020",
-                   "mix_threevoice_000003","mix_threevoice_000004","mix_threevoice_000005"]
+            info: ["mix_twovoice_000003","mix_twovoice_000005","mix_twovoice_000020","mix_twovoice_000022",
+                   "mix_threevoice_000003","mix_threevoice_000004","mix_threevoice_000005","mix_threevoice_000005","mix_threevoice_000006"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -236,13 +241,13 @@ sets:
         voices:
           0:
             subtype: unimore
-            info: ["000001_voice","000003_voice"]
+            info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut"]
+            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut"]
+            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -252,8 +257,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["mix_twovoice_000110","mix_twovoice_000111","mix_twovoice_000112",
-                   "mix_threevoice_000110","mix_threevoice_000111","mix_threevoice_000112"]
+            info: ["mix_twovoice_000110","mix_twovoice_000111","mix_twovoice_000112","mix_twovoice_000113","mix_twovoice_000114","mix_twovoice_000115","mix_twovoice_000116",
+                   "mix_threevoice_000110","mix_threevoice_000111","mix_threevoice_000112","mix_threevoice_000113","mix_threevoice_000114","mix_threevoice_000115","mix_threevoice_000116"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -273,7 +278,7 @@ sets:
     tasks:
 
       # static, 1->1
-      # VALIDATE/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK#0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
         voices:
@@ -295,7 +300,9 @@ sets:
           0:
             subtype: unimore
             info: ["000164_static_singlevoice","000169_static_singlevoice","000174_static_singlevoice",
-                   "000193_static_singlevoice","000197_static_singlevoice"]
+                   "000192_static_singlevoice","000196_static_singlevoice","000200_static_singlevoice",
+                   "000165_static_singlevoice","000170_static_singlevoice","000175_static_singlevoice",
+                   "000193_static_singlevoice","000197_static_singlevoice","000201_static_singlevoice"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -307,7 +314,7 @@ sets:
             info: ["noise_8mics"]
 
       # static, 1->M
-      # VALIDATE/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK#1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
         voices:
@@ -332,8 +339,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["static_twovoice_000010","static_twovoice_000040","static_twovoice_000070",
-                   "static_threevoice_000010","static_threevoice_000040","static_threevoice_000070"]
+            info: ["static_twovoice_000010","static_twovoice_000040","static_twovoice_000070","static_twovoice_000100","static_twovoice_000130","static_twovoice_000160",
+                   "static_threevoice_000010","static_threevoice_000040","static_threevoice_000070","static_threevoice_000100","static_threevoice_000130","static_threevoice_000160"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -345,7 +352,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->1
-      # VALIDATE/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK#2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
         voices:
@@ -366,8 +373,9 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["dynamic_onevoice_000005","dynamic_onevoice_000015","dynamic_onevoice_000032",
-                   "dynamic_onevoice_000094","dynamic_onevoice_000096","dynamic_onevoice_000097"]
+            info: ["dynamic_onevoice_000005","dynamic_onevoice_000015","dynamic_onevoice_000032","dynamic_onevoice_000033",
+                   "dynamic_onevoice_000047","dynamic_onevoice_000048","dynamic_onevoice_000053","dynamic_onevoice_000054",
+                   "dynamic_onevoice_000094","dynamic_onevoice_000096","dynamic_onevoice_000097","dynamic_onevoice_000100","dynamic_onevoice_000101"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -379,7 +387,7 @@ sets:
             info: ["noise_8mics"]
 
       # dynamic, 1->M
-      # VALIDATE/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK#3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
         voices:
@@ -404,8 +412,10 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["dynamic_twovoice_000005","dynamic_twovoice_000006","dynamic_twovoice_000007",
-                   "dynamic_threevoice_000033","dynamic_threevoice_000043","dynamic_threevoice_000072"]
+            info: ["dynamic_twovoice_000005","dynamic_twovoice_000006","dynamic_twovoice_000007","dynamic_twovoice_000008",
+                   "dynamic_twovoice_000033","dynamic_twovoice_000043","dynamic_twovoice_000072","dynamic_twovoice_000073",
+                   "dynamic_threevoice_000005","dynamic_threevoice_000006","dynamic_threevoice_000007","dynamic_threevoice_000008",
+                   "dynamic_threevoice_000033","dynamic_threevoice_000043","dynamic_threevoice_000072","dynamic_threevoice_000073"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -418,7 +428,7 @@ sets:
 
       #
       # mixed dynamic/static, 1->M
-      # VALIDATE/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      # VALIDATE/TASK#4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
         voices:
@@ -440,8 +450,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["mix_twovoice_000009","mix_twovoice_000010",
-                   "mix_threevoice_000010","mix_threevoice_000021","mix_threevoice_000023"]
+            info: ["mix_twovoice_000009","mix_twovoice_000010","mix_twovoice_000071","mix_twovoice_000063",
+                   "mix_threevoice_000010","mix_threevoice_000021","mix_threevoice_000023","mix_threevoice_000071","mix_threevoice_000072"]
 
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
@@ -477,8 +487,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["mix_twovoice_000117","mix_twovoice_000118","mix_twovoice_000119",
-                   "mix_threevoice_000117","mix_threevoice_000118"]
+            info: ["mix_twovoice_000117","mix_twovoice_000118","mix_twovoice_000119","mix_twovoice_000120","mix_twovoice_000121",
+                   "mix_threevoice_000117","mix_threevoice_000118","mix_threevoice_000119","mix_threevoice_000120","mix_threevoice_000121"]
 
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
@@ -506,8 +516,8 @@ sets:
           0:
             subtype: unimore
             info: ["000006_voice","000007_voice", 
-                   "f8_script1_clean_cut","f9_script1_clean_cut",
-                   "m8_script1_clean_cut","m9_script1_clean_cut"]
+                   "f8_script1_clean_cut","f9_script1_clean_cut","f10_script1_clean_cut",
+                   "m8_script1_clean_cut","m9_script1_clean_cut","m10_script1_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -521,6 +531,9 @@ sets:
           0:
             subtype: unimore
             info: ["000228_static_singlevoice","000230_static_singlevoice",
+                   "000232_static_singlevoice","000234_static_singlevoice",
+                   "000236_static_singlevoice","000238_static_singlevoice",
+                   "000240_static_singlevoice","000242_static_singlevoice",
                    "000244_static_singlevoice","000246_static_singlevoice"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
@@ -558,8 +571,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["static_twovoice_000021","static_twovoice_000051","static_twovoice_000061",
-                   "static_threevoice_000021","static_threevoice_000051","static_threevoice_000061"]
+            info: ["static_twovoice_000021","static_twovoice_000051","static_twovoice_000061","static_twovoice_000111","static_twovoice_000141","static_twovoice_000171",
+                   "static_threevoice_000021","static_threevoice_000051","static_threevoice_000061","static_threevoice_000111","static_threevoice_000141","static_threevoice_000171"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -592,7 +605,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["dynamic_onevoice_000007","dynamic_onevoice_000017","dynamic_onevoice_000034",
+            info: ["dynamic_onevoice_000007","dynamic_onevoice_000017","dynamic_onevoice_000034","dynamic_onevoice_000035",
+                   "dynamic_onevoice_000045","dynamic_onevoice_000046","dynamic_onevoice_000050","dynamic_onevoice_000051",
                    "dynamic_onevoice_000092","dynamic_onevoice_000093"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
@@ -630,8 +644,10 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["dynamic_twovoice_000010","dynamic_twovoice_000012","dynamic_twovoice_000021",
-                   "dynamic_threevoice_000036","dynamic_threevoice_000046","dynamic_threevoice_000092"]
+            info: ["dynamic_twovoice_000010","dynamic_twovoice_000012","dynamic_twovoice_000021","dynamic_twovoice_000023",
+                   "dynamic_twovoice_000035","dynamic_twovoice_000037","dynamic_twovoice_000092","dynamic_twovoice_000093",
+                   "dynamic_threevoice_000010","dynamic_threevoice_000014","dynamic_threevoice_000026","dynamic_threevoice_000027",
+                   "dynamic_threevoice_000036","dynamic_threevoice_000046","dynamic_threevoice_000092","dynamic_threevoice_000093"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -666,8 +682,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["mix_twovoice_000073","mix_twovoice_000092","mix_twovoice_000093",
-                   "mix_threevoice_000073","mix_threevoice_000091","mix_threevoice_000095"]
+            info: ["mix_twovoice_000073","mix_twovoice_000092","mix_twovoice_000093","mix_twovoice_000094",
+                   "mix_threevoice_000073","mix_threevoice_000091","mix_threevoice_000095","mix_threevoice_000096","mix_threevoice_000097","mix_threevoice_000100"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -689,10 +705,10 @@ sets:
             info: ["000006_voice","000007_voice"]
           1:
             subtype: unimore
-            info: ["f8_script2_clean_cut","f9_script2_clean_cut"]
+            info: ["f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut"]
           2:
             subtype: unimore
-            info: ["m8_script2_clean_cut","m9_script2_clean_cut"]
+            info: ["m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -702,8 +718,8 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["mix_twovoice_000122","mix_twovoice_000123","mix_twovoice_000124",
-                   "mix_threevoice_000122","mix_threevoice_000123","mix_threevoice_000124"]
+            info: ["mix_twovoice_000122","mix_twovoice_000123","mix_twovoice_000124","mix_twovoice_000125",
+                   "mix_threevoice_000122","mix_threevoice_000123","mix_threevoice_000124","mix_threevoice_000125"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
