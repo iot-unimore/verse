@@ -27,7 +27,7 @@ import scipy.signal
 manager = multiprocessing.Manager()
 stop_event = manager.Event()
 
-LOCATA_DATA_TYPES={"train":"dev","test":"eval","validate":"eval"}
+LOCATA_DATA_TYPES={"train":"dev","test":"eval","validate":"val"}
 
 REQUIRED_SYNTAX_NAMES = {
     "audio_rendering_scene",
