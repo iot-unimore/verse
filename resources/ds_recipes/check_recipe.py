@@ -149,7 +149,7 @@ def main():
     )
 
     parser.add_argument(
-        "--recipe",
+        "--i",
         type=Path,
         help="YAML recipe file",
     )
