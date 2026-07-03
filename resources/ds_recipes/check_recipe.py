@@ -78,15 +78,17 @@ def check_recipe(recipe_file: Path, resource_dir: Path):
                         / f"{resource}.yaml"
                     )
 
+                    filename_log = filename.relative_to(resource_dir)
+
                     global_total += 1
 
                     label = f"[task {task_id}]"
 
                     if filename.exists():
-                        print(f"{GREEN}[OK]{RESET}   {label} {filename}")
+                        print(f"{GREEN}[OK]{RESET}   {label} {filename_log}")
                     else:
                         global_missing += 1
-                        print(f"{RED}[MISS]{RESET} {label} {filename}")
+                        print(f"{RED}[MISS]{RESET} {label} {filename_log}")
 
             if not any_found:
                 print("none")
@@ -114,7 +116,7 @@ def main():
     parser.add_argument(
         "--resource_dir",
         type=Path,
-        default=os.path.join(_ROOT_DIR,"../resources/"),
+        default=os.path.join(_ROOT_DIR,"../"),
         help="Root resource directory",
     )
 
