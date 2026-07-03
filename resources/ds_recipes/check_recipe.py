@@ -13,16 +13,13 @@ RESET = "\033[0m"
 
 RESOURCE_TYPES = ("voices", "heads", "rooms", "scenes")
 
+_ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
 def iter_resources(task, resource_type):
-    """
-    Safely iterate resources.
-    Returns empty generator if section is missing or empty.
-    """
     resources = task.get(resource_type)
 
     if not resources:
-        return  # nothing to iterate
+        return
 
     for _, group in resources.items():
         if not isinstance(group, dict):
@@ -66,7 +63,6 @@ def check_recipe(recipe_file: Path, resource_dir: Path):
 
                 items = list(iter_resources(task, resource_type))
 
-                # 👉 CASE: empty or commented-out section
                 if not items:
                     continue
 
@@ -84,13 +80,14 @@ def check_recipe(recipe_file: Path, resource_dir: Path):
 
                     global_total += 1
 
+                    label = f"[task {task_id}]"
+
                     if filename.exists():
-                        print(f"{GREEN}[OK]{RESET}   {filename}")
+                        print(f"{GREEN}[OK]{RESET}   {label} {filename}")
                     else:
                         global_missing += 1
-                        print(f"{RED}[MISS]{RESET} {filename}")
+                        print(f"{RED}[MISS]{RESET} {label} {filename}")
 
-            # 👉 if nothing existed at all for this resource_type
             if not any_found:
                 print("none")
 
@@ -117,7 +114,7 @@ def main():
     parser.add_argument(
         "--resource_dir",
         type=Path,
-        default=Path("resources"),
+        default=os.path.join(_ROOT_DIR,"../resources/"),
         help="Root resource directory",
     )
 
