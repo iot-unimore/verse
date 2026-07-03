@@ -4,6 +4,7 @@ import argparse
 from pathlib import Path
 import yaml
 import os
+from collections import defaultdict
 
 GREEN = "\033[92m"
 RED = "\033[91m"
@@ -34,6 +35,14 @@ def iter_resources(task, resource_type):
         for item in info:
             yield subtype, item
 
+# def print_duplicates(counter, label, set_name):
+
+#     duplicates = {k: v for k, v in counter.items() if v > 1}
+
+#     if duplicates:
+#         print(f"\n{RED}DUPLICATES in {set_name} ({label}):{RESET}")
+#         for item, count in duplicates.items():
+#             print(f"{RED}  {item} -> {count} times{RESET}")
 
 def check_recipe(recipe_file: Path, resource_dir: Path):
 
@@ -44,6 +53,10 @@ def check_recipe(recipe_file: Path, resource_dir: Path):
     global_missing = 0
 
     sets = recipe.get("sets", {})
+
+    # CROSS-SET TRACKING
+    voice_to_sets = defaultdict(set)
+    scene_to_sets = defaultdict(set)    
 
     for set_name, set_data in sets.items():
 
@@ -70,6 +83,13 @@ def check_recipe(recipe_file: Path, resource_dir: Path):
 
                 for subtype, resource in items:
 
+                   # CROSS-SET REGISTRATION
+                    if resource_type == "voices":
+                        voice_to_sets[resource].add(set_name)
+
+                    if resource_type == "scenes":
+                        scene_to_sets[resource].add(set_name)
+
                     filename = (
                         resource_dir
                         / resource_type
@@ -92,6 +112,27 @@ def check_recipe(recipe_file: Path, resource_dir: Path):
 
             if not any_found:
                 print("none")
+
+    # ============================
+    # CROSS-SET VALIDATION REPORT
+    # ============================
+
+    def print_cross_duplicates(mapping, label):
+        print(f"\n{RED}CROSS-SET DUPLICATES ({label}):{RESET}")
+
+        found = False
+
+        for item, sets_used in mapping.items():
+            if len(sets_used) > 1:
+                found = True
+                sets_list = ", ".join(sorted(sets_used))
+                print(f"{RED}{item} -> {sets_list}{RESET}")
+
+        if not found:
+            print(f"{GREEN}none{RESET}")
+
+    print_cross_duplicates(voice_to_sets, "voices")
+    print_cross_duplicates(scene_to_sets, "scenes")
 
     print("\n===================================")
     print("FINAL SUMMARY")
