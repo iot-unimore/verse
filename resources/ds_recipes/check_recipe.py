@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+
+import argparse
+from pathlib import Path
+import yaml
+import os
+
+GREEN = "\033[92m"
+RED = "\033[91m"
+CYAN = "\033[96m"
+YELLOW = "\033[93m"
+RESET = "\033[0m"
+
+RESOURCE_TYPES = ("voices", "heads", "rooms", "scenes")
+
+
+def iter_resources(task, resource_type):
+    """
+    Safely iterate resources.
+    Returns empty generator if section is missing or empty.
+    """
+    resources = task.get(resource_type)
+
+    if not resources:
+        return  # nothing to iterate
+
+    for _, group in resources.items():
+        if not isinstance(group, dict):
+            continue
+
+        subtype = group.get("subtype")
+        info = group.get("info", [])
+
+        if not subtype or not info:
+            continue
+
+        for item in info:
+            yield subtype, item
+
+
+def check_recipe(recipe_file: Path, resource_dir: Path):
+
+    with recipe_file.open("r") as f:
+        recipe = yaml.safe_load(f)
+
+    global_total = 0
+    global_missing = 0
+
+    sets = recipe.get("sets", {})
+
+    for set_name, set_data in sets.items():
+
+        print(f"\n{CYAN}=============================={RESET}")
+        print(f"{CYAN}{set_name.upper()}{RESET}")
+        print(f"{CYAN}=============================={RESET}")
+
+        tasks = set_data.get("tasks", {})
+
+        for resource_type in RESOURCE_TYPES:
+
+            print(f"\n{YELLOW}Checking {resource_type}{RESET}")
+
+            any_found = False
+
+            for task_id, task in tasks.items():
+
+                items = list(iter_resources(task, resource_type))
+
+                # 👉 CASE: empty or commented-out section
+                if not items:
+                    continue
+
+                any_found = True
+
+                for subtype, resource in items:
+
+                    filename = (
+                        resource_dir
+                        / resource_type
+                        / subtype
+                        / "info"
+                        / f"{resource}.yaml"
+                    )
+
+                    global_total += 1
+
+                    if filename.exists():
+                        print(f"{GREEN}[OK]{RESET}   {filename}")
+                    else:
+                        global_missing += 1
+                        print(f"{RED}[MISS]{RESET} {filename}")
+
+            # 👉 if nothing existed at all for this resource_type
+            if not any_found:
+                print("none")
+
+    print("\n===================================")
+    print("FINAL SUMMARY")
+    print("===================================")
+    print(f"Checked : {global_total}")
+    print(f"Present : {global_total - global_missing}")
+    print(f"Missing : {global_missing}")
+
+
+def main():
+
+    parser = argparse.ArgumentParser(
+        description="Verify dataset resources from recipe YAML"
+    )
+
+    parser.add_argument(
+        "--recipe",
+        type=Path,
+        help="YAML recipe file",
+    )
+
+    parser.add_argument(
+        "--resource_dir",
+        type=Path,
+        default=Path("resources"),
+        help="Root resource directory",
+    )
+
+    args = parser.parse_args()
+
+    check_recipe(args.recipe, args.resource_dir)
+
+
+if __name__ == "__main__":
+    main()
