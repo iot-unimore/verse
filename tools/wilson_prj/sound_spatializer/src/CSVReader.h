@@ -33,14 +33,19 @@ public:
                 row.push_back(cell);
             }
 
-            // skip comments starting with "#"
-            if(row[0][0] != '#')
+            // skip blank lines and comments starting with "#"
+            if (row.empty())
+            {
+                continue;
+            }
+
+            if (row[0].empty() || row[0][0] != '#')
             {
                 result.push_back(row);
             }
             else
             {
-                cout << "skip line: " << row[0] << std::endl;
+                std::cout << "skip line: " << row[0] << std::endl;
             }
         }
 

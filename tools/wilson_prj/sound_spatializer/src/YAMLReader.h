@@ -65,12 +65,35 @@ public:
         return true;
     }
 
+    static void dumpNode(const YAML::Node& node)
+    {
+        YAML::Emitter out;
+        out << node;
+
+        std::cout << "Node type: ";
+
+        switch (node.Type())
+        {
+        case YAML::NodeType::Null:      std::cout << "Null"; break;
+        case YAML::NodeType::Scalar:    std::cout << "Scalar"; break;
+        case YAML::NodeType::Sequence:  std::cout << "Sequence"; break;
+        case YAML::NodeType::Map:       std::cout << "Map"; break;
+        case YAML::NodeType::Undefined: std::cout << "Undefined"; break;
+        }
+
+        std::cout << "\n";
+        std::cout << out.c_str() << "\n";
+        std::cout << "=============================\n";
+    }
+
     // Helper function to traverse YAML nodes (recursive)
-    static void traverseYAMLNode(const YAML::Node& node,
+    static void traverseYAMLNode( const YAML::Node& node,
                                   std::function<void(const YAML::Node&)> nodeHandler) {
         if (node.IsNull()) {
             return;
         }
+
+        dumpNode(node);
 
         // If the node is a Map (key-value pairs)
         if (node.IsMap()) {

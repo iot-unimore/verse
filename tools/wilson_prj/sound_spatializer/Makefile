@@ -1,7 +1,4 @@
-EXTERNALS_PATH = ./externals/
-#EXTERNALS_PATH = ./../../
-
-
+EXTERNALS_PATH = /media/gfilippi/fast01/Fil_PRJ/verse/tools/wilson_prj/sound_spatializer/externals
 ########################### DO NOT MODIFY BELOW THIS LINE ##########################################
 
 #### PROJECT SETTINGS ####

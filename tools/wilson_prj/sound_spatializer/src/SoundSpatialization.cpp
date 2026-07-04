@@ -211,17 +211,22 @@ int8_t csvSearchNextIndex( std::vector<std::vector<std::string> >& csvText, uint
     {
         tmpIdx = *idx;
 
-        float tmpKey = key;
-        float tmpVal = std::stof( csvText[ tmpIdx ][ 0 ] );
-
-        if ( tmpIdx >= csvText.size( ) )
+        if ( ( tmpIdx >= csvText.size( ) ) || csvText[ tmpIdx ].empty( ) )
         {
             return -1;
         }
 
+        float tmpKey = key;
+        float tmpVal = std::stof( csvText[ tmpIdx ][ 0 ] );
+
         while ( ( tmpVal < tmpKey ) && ( tmpVal < 100.0f ) && ( ( tmpIdx + 1 ) < csvText.size( ) ) )
         {
             tmpIdx++;
+
+            if ( csvText[ tmpIdx ].empty( ) )
+            {
+                return -1;
+            }
 
             tmpVal = std::stof( csvText[ tmpIdx ][ 0 ] );
         }
@@ -362,6 +367,7 @@ int8_t setConfigParams( YAML::Node* yaml_config )
     std::cout << ( *yaml_config )[ "setup" ][ "room" ][ "brir_sofa" ] << std::endl;
 
     std::string brir_sofa_file = ( *yaml_config )[ "setup" ][ "room" ][ "brir_sofa" ].as<std::string>( );
+
     if ( 0 != brir_sofa_file.compare( "none" ) )
     {
         bEnableReverb = true;
@@ -785,6 +791,7 @@ int8_t openInputFiles( YAML::Node                                            yam
             }
         }
 
+        LOG_MSG( LOG_LOW, verbosity, "Opening Input CSV files (count=%d)\n", sources_count );
 
         /*
          * CSV files
@@ -818,7 +825,6 @@ int8_t openInputFiles( YAML::Node                                            yam
             soundSourcesPath.push_back( { { "none" } } );
             soundSourcesPathIdx.push_back( 0 );
         }
-
 
         if ( 0 == err )
         {
@@ -1203,6 +1209,11 @@ int8_t csvCoordInterpPosition( Common::CTransform&                     posCurren
                                uint64_t                                frames_total )
 {
     int8_t err = -1;
+
+    if ( ( csvText[ currIdx ].size( ) < 5 ) || ( csvText[ nextIdx ].size( ) < 5 ) )
+    {
+        return -1;
+    }
 
     float positionA[ 3 ] = { 0.0f };
     float framesA = stof( csvText[ currIdx ][ 0 ] );
