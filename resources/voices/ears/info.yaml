@@ -29,6 +29,8 @@ license: https://creativecommons.org/licenses/by-nc/4.0/deed.en
 
 details: Interspeech-2024.EARS contains 100 h of anechoic speech recordings at 48 kHz from over 100 English speakers with high demographic diversity. The dataset spans the full range of human speech, including reading tasks in seven different reading styles, emotional reading and freeform speech in 22 different emotions, conversational speech, and non-verbal sounds like laughter or coughing.
 
+# https://sp-uhh.github.io/ears_dataset/
+#
 # @inproceedings{richter2024ears,
 #   title={{EARS}: An Anechoic Fullband Speech Dataset Benchmarked for Speech Enhancement and Dereverberation},
 #   author={Richter, Julius and Wu, Yi-Chiao and Krenn, Steven and Welker, Simon and Lay, Bunlong and Watanabe, Shinjii and Richard, Alexander and Gerkmann, Timo},
