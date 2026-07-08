@@ -2407,7 +2407,7 @@ def main():
     results = find_verse_dataset(args.input_path, args.output_path, args.max_workers, args.timeout, args.verbose)
     logger.info(f"Valid folders: {len(results)}")
 
-    results = export_to_locata(results, args.output_path, args.max_workers, args.timeout, args.verbose, args.position, args.select_array)
+    results = export_to_locata(sorted(results), args.output_path, args.max_workers, args.timeout, args.verbose, args.position, args.select_array)
     logger.info(f"Processed results: {len(results)}")
 
 
