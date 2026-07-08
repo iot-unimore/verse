@@ -15,7 +15,7 @@ content: audio
 
 description: 8732 labeled sound excerpts (<=4s) of urban sounds from 10 classes air_conditioner, car_horn, children_playing, dog_bark, drilling, enginge_idling, gun_shot, jackhammer, siren, and street_music.
 
-size_bytes: 3G
+size_bytes: 7.5G
 
 source: https://github.com/ravising-h/Urbansound8k
 

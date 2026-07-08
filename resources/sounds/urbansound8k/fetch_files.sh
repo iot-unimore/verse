@@ -29,7 +29,7 @@ if [ -d  $SCRIPT_DIR/files ] ; then
 
   cd $SCRIPT_DIR/files
 
-  $WGET $RESOURCES_TAR_LINK
+  #$WGET $RESOURCES_TAR_LINK
 
   if [ ! -f ./$RESOURCES_TAR_FILE ] ; then
     echo "Error: could not fetch the remote file: $RESOURCES_TAR_LINK"
@@ -37,7 +37,7 @@ if [ -d  $SCRIPT_DIR/files ] ; then
   fi
 
   echo "extracting files.."
-  unzip $RESOURCES_TAR_FILE > ./error.log
+  tar -xvf $RESOURCES_TAR_FILE > ./error.log
 
   if [ ! -d  $SCRIPT_DIR/files ] ; then
     echo "Error: could not extract files from: $RESOURCES_TAR_LINK, see error.log"
