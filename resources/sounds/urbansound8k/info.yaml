@@ -1,0 +1,37 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: urbansound8k
+
+type: dataset
+
+content: audio
+
+description: 8732 labeled sound excerpts (<=4s) of urban sounds from 10 classes air_conditioner, car_horn, children_playing, dog_bark, drilling, enginge_idling, gun_shot, jackhammer, siren, and street_music.
+
+size_bytes: 3G
+
+source: https://github.com/ravising-h/Urbansound8k
+
+source_original: https://urbansounddataset.weebly.com/urbansound8k.html
+
+fetch_script: fetch_files.sh
+
+copyright: CC BY-NC 3.0
+
+license: https://creativecommons.org/licenses/by-nc/3.0/
+
+details:
+
+# Justin Salamon*^, Christopher Jacoby* and Juan Pablo Bello*
+# * Music and Audio Research Laboratory (MARL), New York University
+# ^ Center for Urban Science and Progress (CUSP), New York University
+
+#EOF
+...
