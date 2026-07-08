@@ -1,0 +1,36 @@
+---
+# VERSE resource info                  
+syntax:
+  name: resource_info
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+title: ears
+
+type: dataset
+
+content: audio
+
+description: AID (Open-Source Anechoic Interferer Dataset). A dataset of anechoic recordings of various sound sources encountered in domestic environments.
+
+size_bytes: 3G
+
+source: https://github.com/Yuan-ManX/ai-audio-datasets
+
+source_original: https://www.audiolabs-erlangen.de/resources/2022-IWAENC-Anechoic-Noise-Dataset
+
+fetch_script: fetch_files.sh
+
+copyright:
+
+license:
+
+details: A dataset of anechoic recordings of various sound sources encountered in domestic environments is presented. The dataset is intended to be a resource of non-stationary, environmental noise signals that, when convolved with acoustic impulse responses, may be used to simulate complex acoustic scenes. Additionally, a Python library is provided, which implements a signal generator for random mixtures of the recordings in the dataset, that may be used as non-stationary interference signals.
+
+# https://github.com/audiolabs/anechoic-noise/blob/main/anechoic_noise.py
+# https://arxiv.org/html/2208.03023v2
+
+#EOF
+...
