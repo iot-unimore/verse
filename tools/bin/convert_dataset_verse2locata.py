@@ -50,6 +50,15 @@ _MKVMERGE_EXE = "/usr/bin/mkvmerge"
 
 _LOCATA_TASK_TYPES={'task1':"task1",'task2':"task2",'task3':"task3",'task4':"task4",'task5':"task5",'task6':"task6"}
 
+# important: the order of channel pairs is important, make sure that for each mic array configuration
+#            the channels are listed in order of extraction for the final locata .wav file
+_MIC_ARRAY_CHANNELS={
+    'default':["binaural", "array_six_front", "array_six_middle", "array_six_rear"],
+    'auralys2ch':["binaural"],
+    'auralys6ch':["array_six_front", "array_six_middle", "array_six_rear"],
+    'auralys8ch':["binaural", "array_six_front", "array_six_middle", "array_six_rear"],
+}
+
 
 class ColoredFormatter(logging.Formatter):
 
@@ -226,6 +235,18 @@ def find_measurement_folders(base_path):
             measurement_folders.extend(subfolders)
 
     return measurement_folders or first_level
+
+
+# --- FOLDER CLEANUP ---
+def cleanup_folder(output_path="", output_postfix="default", source_postfix=""):
+
+    # remove position_full*.txt which is not part of LOCATA syntax
+
+    folder = Path(output_path)
+    for file in folder.glob("position_full*.txt"):
+        file.unlink()  # Deletes the file
+        logger.debug(f"Deleted: {file.name} from {output_path}")    
+
 
 
 # --- GENERIC PARALLEL EXECUTION ---
@@ -1877,7 +1898,7 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
     return err
 
 
-def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_array_", output_postfix="loudspeaker_",audio_samples=0, source_postfix="loudspeaker_"):
+def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_array_", output_postfix="loudspeaker_",audio_samples=0, source_postfix="loudspeaker_", select_array="default"):
     err = 0
 
     # check for mkv presence
@@ -1901,8 +1922,11 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
         return err
 
     # output filename for merged wav
-    filename = f"{output_prefix}{output_postfix}.wav"
-    
+    if(select_array=="default"):
+        filename = f"{output_prefix}{output_postfix}.wav"
+    else:
+        filename = f"{output_prefix}{output_postfix}_{select_array}.wav"
+
     output_filename = os.path.join(output_path, filename)        
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -1912,6 +1936,7 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
         for receiver_number, receiver_info in yaml_data["receivers"].items():
             channels = receiver_info.get("channels")
             track_id = receiver_info.get("track_id")
+            file_wav = receiver_info.get("file")
 
             # extract audio tracks into mono files (ordered list)
 
@@ -1942,6 +1967,20 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                     extracted_wavs.append(track_wav)
                 else:
                     for channel_number in range(channels):
+
+                        # here we select only the auralys sub-array we need
+                        channel_selected = False
+                        if(select_array=="default"):
+                            channel_selected = True
+                        else:
+                            for ch_name in _MIC_ARRAY_CHANNELS[select_array]:
+                                if ch_name in file_wav:
+                                    channel_selected = True
+                                    break
+
+                        if(channel_selected == False):
+                            logger.debug(f"Array selection for {select_array}: skipping channel number {channel_number}, file {file_wav}")
+                            continue
 
                         tmp_wav = os.path.join(tmpdir, f"receiver_{receiver_number}_{channel_number}.wav")
 
@@ -2066,7 +2105,12 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
             return -1
 
         if(err == 0):
-            filename = f"{output_prefix}timestamps_{output_postfix}.txt"
+
+            if(select_array=="default"):
+                filename = f"{output_prefix}timestamps_{output_postfix}.txt"
+            else:
+                filename = f"{output_prefix}timestamps_{output_postfix}_{select_array}.txt"
+
             audio_samples = generate_timestamps_file(output_filename, start_datetime, output_path, output_file=filename, target_time_step_seconds=0)
             if(audio_samples != total_samples):
                 logger.error(f"5 Invalid audio_samples count {audio_samples}!={total_samples} on audio file timestamps: {output_filename}")
@@ -2194,7 +2238,14 @@ def verse_to_locata(idx, path, **kwargs):
     if "output_path" in kwargs:
         output_path = kwargs["output_path"]
     else:
+        logger.error(f"Missing output folder for verse_to_locata [{idx}]")
         return None
+
+    if(kwargs["select_array"] not in _MIC_ARRAY_CHANNELS):
+        supported_mic_array= ", ".join(_MIC_ARRAY_CHANNELS)
+        logger.error(f"Invalid mic_array for verse_to_locata, select from [{supported_mic_array}]")
+        return None
+
 
     logger.debug(f"Processing folder: {path}")
 
@@ -2264,7 +2315,10 @@ def verse_to_locata(idx, path, **kwargs):
     mic_array_name=scene_yaml["setup"]["listeners"][0]["subtype"]+"_"+scene_yaml["setup"]["listeners"][0]["info"]
 
     # additional locata data structure
-    output_locata_path = os.path.join(output_locata_path, data_type, task_type, "recording"+str(idx), mic_array_name)
+    if(kwargs["select_array"]=="default"):
+        output_locata_path = os.path.join(output_locata_path, data_type, task_type, "recording"+str(idx), mic_array_name)
+    else:
+        output_locata_path = os.path.join(output_locata_path, data_type, task_type, "recording"+str(idx), "_".join( [mic_array_name, kwargs["select_array"]] ) )
 
     # STEP-1: create output folder as per Locata syntax
 
@@ -2287,7 +2341,17 @@ def verse_to_locata(idx, path, **kwargs):
     if(task_type==_LOCATA_TASK_TYPES["task3"] or task_type==_LOCATA_TASK_TYPES["task4"]):
         output_postfix = "talker"
 
-    err = generate_position_file(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_prefix=mic_array_name, output_postfix=output_postfix, scene=scene_yaml, offset_xyz=array_pos, target_xyz=array_pos)
+    if( kwargs["select_array"] == "default" ):
+        err = generate_position_file(mkv_yaml["file"], start_dt, 
+                output_path=output_locata_path, output_prefix=mic_array_name, 
+                output_postfix=output_postfix, scene=scene_yaml, 
+                offset_xyz=array_pos, target_xyz=array_pos)
+    else:
+        err = generate_position_file(mkv_yaml["file"], start_dt, 
+                output_path=output_locata_path, output_prefix="_".join( [mic_array_name, kwargs["select_array"]] ), 
+                output_postfix=output_postfix, scene=scene_yaml, 
+                offset_xyz=array_pos, target_xyz=array_pos)
+
     if ( err != 0):
         return None
 
@@ -2303,22 +2367,26 @@ def verse_to_locata(idx, path, **kwargs):
     if stop_event.is_set():
         return None
 
-    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples)
+    err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples, select_array=kwargs["select_array"])
     if ( err != 0):
         return None
+
+    # remove intermediate files
+    cleanup_folder(output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix)
 
     return (path, mkv_descriptor, source)
 
 
-def export_to_locata(folders, output_path, num_workers, timeout, verbose, position):
-    return run_parallel(folders, verse_to_locata, num_workers, timeout, verbose, position=position, output_path=output_path)
+def export_to_locata(folders, output_path, num_workers, timeout, verbose, position, select_array):
+    return run_parallel(folders, verse_to_locata, num_workers, timeout, verbose, position=position, output_path=output_path, select_array=select_array)
 
 
 # --- MAIN ---
 def main():
     parser = argparse.ArgumentParser(description="Dataset pipeline")
-    parser.add_argument("-i", "--input_path", required=True)
-    parser.add_argument("-o", "--output_path", required=True)
+    parser.add_argument("-i", "--input-path", required=True)
+    parser.add_argument("-o", "--output-path", required=True)
+    parser.add_argument("-s", "--select-array", default="default", help="select array type [all, auralys2ch, auralys6h, auralys8ch]")
     parser.add_argument("-m", "--max-workers", type=int, default=os.cpu_count())
     parser.add_argument("-t", "--timeout", type=int, default=10, help="Timeout per task (seconds)")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging (disables progress bar)")
@@ -2339,7 +2407,7 @@ def main():
     results = find_verse_dataset(args.input_path, args.output_path, args.max_workers, args.timeout, args.verbose)
     logger.info(f"Valid folders: {len(results)}")
 
-    results = export_to_locata(results, args.output_path, args.max_workers, args.timeout, args.verbose, args.position)
+    results = export_to_locata(results, args.output_path, args.max_workers, args.timeout, args.verbose, args.position, args.select_array)
     logger.info(f"Processed results: {len(results)}")
 
 
