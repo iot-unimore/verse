@@ -13,9 +13,9 @@ type: dataset
 
 content: audio
 
-description: ARS (Expressive Anechoic Recordings of Speech), a high-quality dataset with 100 hours of clean anechoic speech from 107 diverse speakers.
+description: EARS (Expressive Anechoic Recordings of Speech), a high-quality dataset with 100 hours of clean anechoic speech from 107 diverse speakers.
 
-size_bytes: 3G
+size_bytes: 75G
 
 source: https://github.com/facebookresearch/ears_dataset
 
