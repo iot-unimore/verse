@@ -280,7 +280,8 @@ def plot_map(
     )
 
 
-    plt.grid()
+    if(args.lines):
+        plt.grid()
 
 
     plt.colorbar(
@@ -367,6 +368,14 @@ def main():
         help="show SOFA measurement positions"
     )
 
+
+    parser.add_argument(
+        "-l",
+        "--lines",
+        default=False,
+        action="store_true",
+        help="show grid lines"
+    )
 
     args = parser.parse_args()
 
