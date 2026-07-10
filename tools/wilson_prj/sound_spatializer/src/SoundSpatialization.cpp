@@ -21,6 +21,7 @@
 #include "YAMLConfigDefault.h"
 #include "CSVReader.h"
 
+
 /*******************************************************************************
  * Macros & Defines
  *******************************************************************************/
@@ -50,6 +51,8 @@
 /*******************************************************************************
  * Global Variables
  *******************************************************************************/
+
+// static FILE * mylog = NULL;
 
 /*  This will be the length of the buffer used to hold audio frames */
 uint16_t iBufferSize = BUFFER_LEN;
@@ -1230,9 +1233,28 @@ int8_t csvCoordInterpPosition( Common::CTransform&                     posCurren
     {
         float alfa = ( (float) ( frames * 100.0f / frames_total )  - framesA ) / ( framesB - framesA );
 
-        for ( int8_t i; i < 3; i++ )
+        for ( int8_t i = 0; i < 3; i++ )
         {
-            positionA[ i ] = alfa * ( positionB[ i ] - positionA[ i ] ) + positionA[ i ];
+            if ( i == 0 )
+            {
+                // azimuth: interpolate along the shortest angular path, wrapping at 0/360
+                float diff = positionB[ i ] - positionA[ i ];
+
+                if ( diff > 180.0f )
+                {
+                    diff -= 360.0f;
+                }
+                else if ( diff < -180.0f )
+                {
+                    diff += 360.0f;
+                }
+
+                positionA[ i ] = fmod_positive( positionA[ i ] + alfa * diff, 360.0f );
+            }
+            else
+            {
+                positionA[ i ] = alfa * ( positionB[ i ] - positionA[ i ] ) + positionA[ i ];
+            }
         }
 
         coordValidate( positionA, COORD_TYPE_SPHERICAL, sizeof( positionA ) / sizeof( float ), true );
@@ -1570,16 +1592,28 @@ void processData(
                                                   totalFrames,
                                                   soundSourcesFileInfo[ idx ].frames ) )
                 {
-                    ////printf("nextPos,%3.3f,%3.3f,%3.3f\n", nextPosition.GetPosition().x, nextPosition.GetPosition().y, nextPosition.GetPosition().z);
+
+                    // static FILE * mylog=NULL;
+
+                    // if (mylog == NULL)
+                    // {  
+                    //     mylog = fopen("./mylog.csv", "w");
+                    // }
+
+                    // if (mylog != NULL)
+                    // {  
+                    //     fprintf(mylog, "nextPos,%3.3f,%3.3f,%3.3f\n", nextPosition.GetPosition().x, nextPosition.GetPosition().y, nextPosition.GetPosition().z);
+                    // }
 
                     soundSources[ idx ]->SetSourceTransform( nextPosition );
                     soundSourcesPosition[ idx ] = nextPosition;
                 }
 
-                // update index if needed
-                if ( nextIdx > ( 1 + soundSourcesPathIdx[ idx ] ) )
+                // advance to the last CSV row actually passed, however many rows the
+                // search had to skip over in this single buffer
+                if ( nextIdx > soundSourcesPathIdx[ idx ] )
                 {
-                    soundSourcesPathIdx[ idx ] = 1 + soundSourcesPathIdx[ idx ];
+                    soundSourcesPathIdx[ idx ] = nextIdx - 1;
                 }
             }
         }
@@ -1923,6 +1957,10 @@ int main( int argc, char* argv[] )
     LOG_MSG( LOG_LOW,    verbosity, "done. \n" );
     LOG_MSG( LOG_ALWAYS, verbosity, "\n" );
 
+    // if (mylog != NULL)
+    // {
+    //     fclose(mylog);  
+    // }
     return 0;
 } // main
 
