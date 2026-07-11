@@ -43,7 +43,7 @@ setup:
         value:
           type: paths
           subtype: locata
-          info: path_023.yaml
+          info: path_023
 
     1:
       # source type and info file
@@ -57,7 +57,7 @@ setup:
         value:
           type: paths
           subtype: locata
-          info: path_026.yaml
+          info: path_026
 
   #
   # listener heads (MUST be count=1)

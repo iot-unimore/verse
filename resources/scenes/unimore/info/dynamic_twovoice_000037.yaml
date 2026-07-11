@@ -43,7 +43,7 @@ setup:
         value:
           type: paths
           subtype: unimore
-          info: path_037.yaml
+          info: path_037
 
     1:
       # source type and info file
@@ -57,7 +57,7 @@ setup:
         value:
           type: paths
           subtype: unimore
-          info: path_141.yaml
+          info: path_141
 
   #
   # listener heads (MUST be count=1)

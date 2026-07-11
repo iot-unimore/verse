@@ -43,7 +43,7 @@ setup:
         value:
           type: paths
           subtype: locata
-          info: path_016.yaml
+          info: path_016
 
     1:
       # source type and info file
@@ -57,7 +57,7 @@ setup:
         value:
           type: paths
           subtype: locata
-          info: path_012.yaml
+          info: path_012
 
     2:
       # source type and info file
@@ -71,7 +71,7 @@ setup:
         value:
           type: paths
           subtype: locata
-          info: path_017.yaml
+          info: path_017
 
 
   #

@@ -63,7 +63,7 @@ setup:
         value:
           type: paths
           subtype: unimore
-          info: path_024.yaml
+          info: path_024
 
   #
   # listener heads (MUST be count=1)

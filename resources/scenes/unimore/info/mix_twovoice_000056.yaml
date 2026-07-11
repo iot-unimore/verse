@@ -43,7 +43,7 @@ setup:
         value:
           type: paths
           subtype: unimore
-          info: path_056.yaml
+          info: path_056
 
     1:
       # source type and info file

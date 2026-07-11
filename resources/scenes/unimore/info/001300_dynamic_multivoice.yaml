@@ -61,7 +61,7 @@ setup:
       #  value:
       #    type: paths
       #    subtype: unimore
-      #    info: path_001.yaml
+      #    info: path_001
     1:
       # source type and info file
       type: voices
@@ -74,7 +74,7 @@ setup:
        value:
          type: paths
          subtype: unimore
-         info: path_001.yaml
+         info: path_001
 
     2:
       # source type and info file
@@ -88,7 +88,7 @@ setup:
        value:
          type: paths
          subtype: unimore
-         info: path_002.yaml
+         info: path_002
 
   #
   # listener heads (MUST be count=1)
