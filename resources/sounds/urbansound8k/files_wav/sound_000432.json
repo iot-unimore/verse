@@ -3,69 +3,93 @@
     "version": 1,
     "sample_rate": 16000,
     "target_length": 55.0,
-    "repeat_max": 2,
+    "repeat_max": 1,
     "repeat_silence_max": 2.0,
     "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000432.wav",
+    "classes": [
+        "children_playing",
+        "drilling",
+        "gun_shot",
+        "jackhammer",
+        "street_music"
+    ],
     "items": [
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/17578-5-0-9.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/7390-9-1-5.wav",
             "duration": 4.0,
-            "pause_after": 0.99842645704842,
-            "repeat_group": 0
+            "pause_after": 0.2936967828602184,
+            "repeat_group": 0,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/34931-3-0-0.wav",
-            "duration": 3.91,
-            "pause_after": 0.21442649501216304,
-            "repeat_group": 1
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/34931-3-0-0.wav",
-            "duration": 3.91,
-            "pause_after": 0.8503971550646087,
-            "repeat_group": 1
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/74950-3-2-5.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/7390-9-1-5.wav",
             "duration": 4.0,
-            "pause_after": 0.9286912984962812,
-            "repeat_group": 2
+            "pause_after": 0.14287809423701203,
+            "repeat_group": 0,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/74950-3-2-5.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/135527-6-14-9.wav",
             "duration": 4.0,
-            "pause_after": 1.1562606378664386,
-            "repeat_group": 2
+            "pause_after": 0.3972176427849512,
+            "repeat_group": 1,
+            "class_name": "gun_shot"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/74950-3-2-5.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/135527-6-14-9.wav",
             "duration": 4.0,
-            "pause_after": 2.3929071793393764,
-            "repeat_group": 2
+            "pause_after": 0.2530540940481989,
+            "repeat_group": 1,
+            "class_name": "gun_shot"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/16692-5-0-6.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/174906-2-0-10.wav",
             "duration": 4.0,
-            "pause_after": 0.8322424366270517,
-            "repeat_group": 3
+            "pause_after": 2.7395678341523673,
+            "repeat_group": 2,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/71171-4-3-2.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/105029-7-2-16.wav",
             "duration": 4.0,
-            "pause_after": 1.9378722754029631,
-            "repeat_group": 4
+            "pause_after": 2.1424514318901218,
+            "repeat_group": 3,
+            "class_name": "jackhammer"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/138031-2-0-47.wav",
-            "duration": 4.0,
-            "pause_after": 1.2793777402079405,
-            "repeat_group": 5
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/174276-7-6-0.wav",
+            "duration": 3.04,
+            "pause_after": 1.7760269405037552,
+            "repeat_group": 4,
+            "class_name": "jackhammer"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/138031-2-0-47.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/174276-7-6-0.wav",
+            "duration": 3.04,
+            "pause_after": 2.832884184531274,
+            "repeat_group": 4,
+            "class_name": "jackhammer"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/39532-4-1-0.wav",
+            "duration": 1.585147,
+            "pause_after": 0.8600238892500911,
+            "repeat_group": 5,
+            "class_name": "drilling"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/39532-4-1-0.wav",
+            "duration": 1.585147,
+            "pause_after": 2.012519556382219,
+            "repeat_group": 5,
+            "class_name": "drilling"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/58857-2-0-7.wav",
             "duration": 4.0,
-            "pause_after": 1.5502855267843796,
-            "repeat_group": 5
+            "pause_after": 1.0259698090551326,
+            "repeat_group": 6,
+            "class_name": "children_playing"
         }
     ]
 }

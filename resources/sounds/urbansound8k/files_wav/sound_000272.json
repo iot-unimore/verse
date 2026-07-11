@@ -3,75 +3,91 @@
     "version": 1,
     "sample_rate": 16000,
     "target_length": 55.0,
-    "repeat_max": 2,
+    "repeat_max": 1,
     "repeat_silence_max": 2.0,
     "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000272.wav",
+    "classes": [
+        "car_horn",
+        "engine_idling",
+        "street_music"
+    ],
     "items": [
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/102853-8-0-3.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/72259-1-7-14.wav",
             "duration": 4.0,
-            "pause_after": 2.667500190928,
-            "repeat_group": 0
+            "pause_after": 0.6282117410211832,
+            "repeat_group": 0,
+            "class_name": "car_horn"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/193699-2-0-32.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/72259-1-7-14.wav",
             "duration": 4.0,
-            "pause_after": 0.8168286930877815,
-            "repeat_group": 1
+            "pause_after": 0.253459185339991,
+            "repeat_group": 0,
+            "class_name": "car_horn"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/193699-2-0-32.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/113202-5-0-9.wav",
             "duration": 4.0,
-            "pause_after": 1.6513993434161869,
-            "repeat_group": 1
+            "pause_after": 1.3308771678654507,
+            "repeat_group": 1,
+            "class_name": "engine_idling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/193699-2-0-32.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/113202-5-0-9.wav",
             "duration": 4.0,
-            "pause_after": 0.007366102727881629,
-            "repeat_group": 1
+            "pause_after": 1.0897814812247262,
+            "repeat_group": 1,
+            "class_name": "engine_idling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/123399-2-0-83.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/14385-9-0-14.wav",
             "duration": 4.0,
-            "pause_after": 0.9020625036743288,
-            "repeat_group": 2
+            "pause_after": 0.856375823609077,
+            "repeat_group": 2,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/123399-2-0-83.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/14385-9-0-14.wav",
             "duration": 4.0,
-            "pause_after": 1.9795433452543372,
-            "repeat_group": 2
+            "pause_after": 2.3775684226768714,
+            "repeat_group": 2,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/123399-2-0-83.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/39967-9-0-78.wav",
             "duration": 4.0,
-            "pause_after": 0.9054458328586399,
-            "repeat_group": 2
+            "pause_after": 1.5272934756487975,
+            "repeat_group": 3,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/72567-1-2-1.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/39967-9-0-78.wav",
             "duration": 4.0,
-            "pause_after": 1.2423306318561687,
-            "repeat_group": 3
+            "pause_after": 2.264969129786203,
+            "repeat_group": 3,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/72567-1-2-1.wav",
-            "duration": 4.0,
-            "pause_after": 1.8904365912296552,
-            "repeat_group": 3
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/171249-1-2-0.wav",
+            "duration": 0.3,
+            "pause_after": 1.0008918839814944,
+            "repeat_group": 4,
+            "class_name": "car_horn"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/63095-4-1-10.wav",
-            "duration": 4.0,
-            "pause_after": 0.1779043656357333,
-            "repeat_group": 4
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/171249-1-2-0.wav",
+            "duration": 0.3,
+            "pause_after": 2.0220358421468583,
+            "repeat_group": 4,
+            "class_name": "car_horn"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/63095-4-1-10.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/104327-2-0-28.wav",
             "duration": 4.0,
-            "pause_after": 0.8309019321255915,
-            "repeat_group": 4
+            "pause_after": 2.0002004031032983,
+            "repeat_group": 5,
+            "class_name": "children_playing"
         }
     ]
 }

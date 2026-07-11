@@ -3,75 +3,86 @@
     "version": 1,
     "sample_rate": 16000,
     "target_length": 55.0,
-    "repeat_max": 2,
+    "repeat_max": 1,
     "repeat_silence_max": 2.0,
     "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000453.wav",
+    "classes": [
+        "air_conditioner",
+        "children_playing",
+        "drilling",
+        "engine_idling",
+        "siren"
+    ],
     "items": [
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/123688-8-0-12.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/99500-2-0-23.wav",
             "duration": 4.0,
-            "pause_after": 0.06101221999917317,
-            "repeat_group": 0
+            "pause_after": 1.8753632220849858,
+            "repeat_group": 0,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/123688-8-0-12.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/156634-5-0-4.wav",
             "duration": 4.0,
-            "pause_after": 0.6400186411772133,
-            "repeat_group": 0
+            "pause_after": 1.25262724747722,
+            "repeat_group": 1,
+            "class_name": "engine_idling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/123688-8-0-12.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/161129-4-0-13.wav",
             "duration": 4.0,
-            "pause_after": 0.5732151119156237,
-            "repeat_group": 0
+            "pause_after": 0.5770634796681408,
+            "repeat_group": 2,
+            "class_name": "drilling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/184805-0-0-32.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/113202-5-0-3.wav",
             "duration": 4.0,
-            "pause_after": 0.5840417299365719,
-            "repeat_group": 1
+            "pause_after": 1.596180236672239,
+            "repeat_group": 3,
+            "class_name": "engine_idling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/184805-0-0-32.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/113202-5-0-3.wav",
             "duration": 4.0,
-            "pause_after": 1.3846222017147924,
-            "repeat_group": 1
+            "pause_after": 1.7530356104701657,
+            "repeat_group": 3,
+            "class_name": "engine_idling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/184805-0-0-32.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/146709-0-0-34.wav",
             "duration": 4.0,
-            "pause_after": 2.9842176016818445,
-            "repeat_group": 1
+            "pause_after": 1.6474725205656107,
+            "repeat_group": 4,
+            "class_name": "air_conditioner"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/76568-9-0-2.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/157866-8-0-7.wav",
             "duration": 4.0,
-            "pause_after": 1.7577751831441775,
-            "repeat_group": 2
+            "pause_after": 0.7259812366080727,
+            "repeat_group": 5,
+            "class_name": "siren"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/76568-9-0-2.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/157866-8-0-7.wav",
             "duration": 4.0,
-            "pause_after": 0.24624044193998085,
-            "repeat_group": 2
+            "pause_after": 2.630781111764227,
+            "repeat_group": 5,
+            "class_name": "siren"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/76568-9-0-2.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/180125-4-3-0.wav",
             "duration": 4.0,
-            "pause_after": 0.5329227517780971,
-            "repeat_group": 2
+            "pause_after": 1.3602743162249262,
+            "repeat_group": 6,
+            "class_name": "drilling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/39533-4-1-0.wav",
-            "duration": 1.58,
-            "pause_after": 1.861413275711238,
-            "repeat_group": 3
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/39533-4-1-0.wav",
-            "duration": 1.58,
-            "pause_after": 1.810737222990426,
-            "repeat_group": 3
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/180125-4-3-0.wav",
+            "duration": 4.0,
+            "pause_after": 1.603773411450239,
+            "repeat_group": 6,
+            "class_name": "drilling"
         }
     ]
 }

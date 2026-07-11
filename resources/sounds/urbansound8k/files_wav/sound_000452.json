@@ -3,69 +3,94 @@
     "version": 1,
     "sample_rate": 16000,
     "target_length": 55.0,
-    "repeat_max": 2,
+    "repeat_max": 1,
     "repeat_silence_max": 2.0,
     "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000452.wav",
+    "classes": [
+        "air_conditioner",
+        "children_playing",
+        "drilling",
+        "engine_idling",
+        "gun_shot",
+        "siren"
+    ],
     "items": [
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/57584-4-0-6.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/177726-0-0-25.wav",
             "duration": 4.0,
-            "pause_after": 1.0681577125908461,
-            "repeat_group": 0
+            "pause_after": 2.414698391327404,
+            "repeat_group": 0,
+            "class_name": "air_conditioner"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/57584-4-0-6.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/166942-0-0-9.wav",
             "duration": 4.0,
-            "pause_after": 2.081909567654135,
-            "repeat_group": 0
+            "pause_after": 0.9669936300478423,
+            "repeat_group": 1,
+            "class_name": "air_conditioner"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/71177-8-1-0.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/159742-8-0-4.wav",
             "duration": 4.0,
-            "pause_after": 0.7788031128721289,
-            "repeat_group": 1
+            "pause_after": 1.454000513691292,
+            "repeat_group": 2,
+            "class_name": "siren"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/71177-8-1-0.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/159742-8-0-4.wav",
             "duration": 4.0,
-            "pause_after": 0.7646818069962,
-            "repeat_group": 1
+            "pause_after": 1.6828055454386608,
+            "repeat_group": 2,
+            "class_name": "siren"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/71177-8-1-0.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/55018-0-0-110.wav",
             "duration": 4.0,
-            "pause_after": 0.9649113280943082,
-            "repeat_group": 1
+            "pause_after": 0.02983649078650019,
+            "repeat_group": 3,
+            "class_name": "air_conditioner"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/146690-0-0-25.wav",
-            "duration": 4.0,
-            "pause_after": 2.8408812819965608,
-            "repeat_group": 2
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/159701-6-3-0.wav",
+            "duration": 1.75,
+            "pause_after": 0.8575551670617783,
+            "repeat_group": 4,
+            "class_name": "gun_shot"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/177537-7-1-4.wav",
-            "duration": 4.0,
-            "pause_after": 0.09139359200315522,
-            "repeat_group": 3
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/159701-6-3-0.wav",
+            "duration": 1.75,
+            "pause_after": 2.8147057476146236,
+            "repeat_group": 4,
+            "class_name": "gun_shot"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/177537-7-1-4.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/161005-2-0-4.wav",
             "duration": 4.0,
-            "pause_after": 0.061471037384199345,
-            "repeat_group": 3
+            "pause_after": 2.1313531397799044,
+            "repeat_group": 5,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/177537-7-1-4.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/14114-4-0-1.wav",
             "duration": 4.0,
-            "pause_after": 1.349581558649793,
-            "repeat_group": 3
+            "pause_after": 0.014913948421390266,
+            "repeat_group": 6,
+            "class_name": "drilling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/76568-9-0-10.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/156634-5-0-5.wav",
             "duration": 4.0,
-            "pause_after": 1.5484880184887246,
-            "repeat_group": 4
+            "pause_after": 0.190281797878456,
+            "repeat_group": 7,
+            "class_name": "engine_idling"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/17578-5-0-23.wav",
+            "duration": 4.0,
+            "pause_after": 0.733298408223817,
+            "repeat_group": 8,
+            "class_name": "engine_idling"
         }
     ]
 }

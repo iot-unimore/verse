@@ -3,75 +3,86 @@
     "version": 1,
     "sample_rate": 16000,
     "target_length": 55.0,
-    "repeat_max": 2,
+    "repeat_max": 1,
     "repeat_silence_max": 2.0,
     "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000456.wav",
+    "classes": [
+        "air_conditioner",
+        "children_playing",
+        "drilling",
+        "jackhammer",
+        "street_music"
+    ],
     "items": [
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/49313-2-0-9.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/93193-9-1-6.wav",
             "duration": 4.0,
-            "pause_after": 0.2514547948047763,
-            "repeat_group": 0
+            "pause_after": 2.8737730105261314,
+            "repeat_group": 0,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/49313-2-0-9.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/178826-2-0-16.wav",
             "duration": 4.0,
-            "pause_after": 0.4339231045395894,
-            "repeat_group": 0
+            "pause_after": 2.966168933804374,
+            "repeat_group": 1,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/148841-6-1-0.wav",
-            "duration": 1.329751,
-            "pause_after": 1.282193085617515,
-            "repeat_group": 1
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/148841-6-1-0.wav",
-            "duration": 1.329751,
-            "pause_after": 1.7986259405102882,
-            "repeat_group": 1
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/148841-6-1-0.wav",
-            "duration": 1.329751,
-            "pause_after": 2.8168455211135215,
-            "repeat_group": 1
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/55013-3-0-4.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/177729-0-0-97.wav",
             "duration": 4.0,
-            "pause_after": 2.4595548632796813,
-            "repeat_group": 2
+            "pause_after": 0.8900176374224108,
+            "repeat_group": 2,
+            "class_name": "air_conditioner"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/159745-8-1-7.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/167702-4-8-0.wav",
             "duration": 4.0,
-            "pause_after": 1.1737768840549674,
-            "repeat_group": 3
+            "pause_after": 0.2967379310932503,
+            "repeat_group": 3,
+            "class_name": "drilling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/159745-8-1-7.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/167702-4-8-0.wav",
             "duration": 4.0,
-            "pause_after": 1.5883236483825853,
-            "repeat_group": 3
+            "pause_after": 2.4641497715014387,
+            "repeat_group": 3,
+            "class_name": "drilling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/39856-5-0-14.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/60935-2-0-13.wav",
             "duration": 4.0,
-            "pause_after": 0.7394843056256075,
-            "repeat_group": 4
+            "pause_after": 1.4915478260305175,
+            "repeat_group": 4,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/39856-5-0-14.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/60935-2-0-13.wav",
             "duration": 4.0,
-            "pause_after": 2.9890567440518745,
-            "repeat_group": 4
+            "pause_after": 1.2935542705967693,
+            "repeat_group": 4,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/155280-2-0-15.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/104998-7-9-9.wav",
             "duration": 4.0,
-            "pause_after": 1.6680214884096123,
-            "repeat_group": 5
+            "pause_after": 1.6937592329468707,
+            "repeat_group": 5,
+            "class_name": "jackhammer"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/104998-7-9-9.wav",
+            "duration": 4.0,
+            "pause_after": 2.8858531790492243,
+            "repeat_group": 5,
+            "class_name": "jackhammer"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/66599-9-0-11.wav",
+            "duration": 4.0,
+            "pause_after": 1.1993283674350903,
+            "repeat_group": 6,
+            "class_name": "street_music"
         }
     ]
 }

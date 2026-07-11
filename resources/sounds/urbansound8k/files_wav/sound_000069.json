@@ -3,75 +3,101 @@
     "version": 1,
     "sample_rate": 16000,
     "target_length": 55.0,
-    "repeat_max": 2,
+    "repeat_max": 1,
     "repeat_silence_max": 2.0,
     "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000069.wav",
+    "classes": [
+        "car_horn",
+        "children_playing",
+        "dog_bark",
+        "drilling",
+        "jackhammer",
+        "street_music"
+    ],
     "items": [
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/79377-9-0-4.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/76086-4-0-43.wav",
             "duration": 4.0,
-            "pause_after": 1.1329540426570275,
-            "repeat_group": 0
+            "pause_after": 2.869471911948432,
+            "repeat_group": 0,
+            "class_name": "drilling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/79377-9-0-4.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/7389-1-4-4.wav",
             "duration": 4.0,
-            "pause_after": 1.6609211117608165,
-            "repeat_group": 0
+            "pause_after": 0.21708402198059984,
+            "repeat_group": 1,
+            "class_name": "car_horn"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/30206-7-0-34.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/7389-1-4-4.wav",
             "duration": 4.0,
-            "pause_after": 0.2897588254104835,
-            "repeat_group": 1
+            "pause_after": 1.8539987529302895,
+            "repeat_group": 1,
+            "class_name": "car_horn"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/182739-2-0-13.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/155217-9-1-58.wav",
             "duration": 4.0,
-            "pause_after": 1.0747235842830516,
-            "repeat_group": 2
+            "pause_after": 0.28323888649928475,
+            "repeat_group": 2,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/182739-2-0-13.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/155217-9-1-58.wav",
             "duration": 4.0,
-            "pause_after": 1.9426621675142506,
-            "repeat_group": 2
+            "pause_after": 0.4735210121979917,
+            "repeat_group": 2,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/182739-2-0-13.wav",
-            "duration": 4.0,
-            "pause_after": 0.2639652752984597,
-            "repeat_group": 2
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/102104-3-0-0.wav",
+            "duration": 0.81,
+            "pause_after": 2.185521198673128,
+            "repeat_group": 3,
+            "class_name": "dog_bark"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/157867-8-0-10.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/129356-2-0-98.wav",
             "duration": 4.0,
-            "pause_after": 0.4666727526771066,
-            "repeat_group": 3
+            "pause_after": 1.0745092173205666,
+            "repeat_group": 4,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/157867-8-0-10.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/129356-2-0-98.wav",
             "duration": 4.0,
-            "pause_after": 1.2841064889361005,
-            "repeat_group": 3
+            "pause_after": 0.8229383972846804,
+            "repeat_group": 4,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/42954-9-0-18.wav",
-            "duration": 4.0,
-            "pause_after": 1.3188514379191882,
-            "repeat_group": 4
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/44110-3-3-0.wav",
+            "duration": 3.188526,
+            "pause_after": 1.4198432199100082,
+            "repeat_group": 5,
+            "class_name": "dog_bark"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/42954-9-0-18.wav",
-            "duration": 4.0,
-            "pause_after": 1.5636351811429101,
-            "repeat_group": 4
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/44110-3-3-0.wav",
+            "duration": 3.188526,
+            "pause_after": 0.6646555690524326,
+            "repeat_group": 5,
+            "class_name": "dog_bark"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/177726-0-0-11.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/105029-7-1-8.wav",
             "duration": 4.0,
-            "pause_after": 1.70753782385928,
-            "repeat_group": 5
+            "pause_after": 1.1767775801134377,
+            "repeat_group": 6,
+            "class_name": "jackhammer"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/159754-8-0-0.wav",
+            "duration": 1.076833,
+            "pause_after": 2.4615300495167816,
+            "repeat_group": 7,
+            "class_name": "siren"
         }
     ]
 }

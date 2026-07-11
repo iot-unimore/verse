@@ -3,81 +3,95 @@
     "version": 1,
     "sample_rate": 16000,
     "target_length": 55.0,
-    "repeat_max": 2,
+    "repeat_max": 1,
     "repeat_silence_max": 2.0,
     "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000371.wav",
+    "classes": [
+        "air_conditioner",
+        "car_horn",
+        "dog_bark",
+        "engine_idling",
+        "jackhammer",
+        "siren",
+        "street_music"
+    ],
     "items": [
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/69661-3-0-23.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/4201-3-2-0.wav",
+            "duration": 0.35,
+            "pause_after": 1.9592669755555345,
+            "repeat_group": 0,
+            "class_name": "dog_bark"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/36263-9-0-13.wav",
             "duration": 4.0,
-            "pause_after": 1.8160108967939803,
-            "repeat_group": 0
+            "pause_after": 0.6230872455561915,
+            "repeat_group": 1,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/69661-3-0-23.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/36263-9-0-13.wav",
             "duration": 4.0,
-            "pause_after": 1.1913772140553687,
-            "repeat_group": 0
+            "pause_after": 1.5814906116526686,
+            "repeat_group": 1,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/69661-3-0-23.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/172519-9-0-53.wav",
             "duration": 4.0,
-            "pause_after": 1.0743244566073962,
-            "repeat_group": 0
+            "pause_after": 2.5288090205109865,
+            "repeat_group": 2,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/189982-0-0-38.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/57323-8-0-3.wav",
             "duration": 4.0,
-            "pause_after": 1.1615347660018016,
-            "repeat_group": 1
+            "pause_after": 2.4781657264984456,
+            "repeat_group": 3,
+            "class_name": "siren"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/189982-0-0-38.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/201988-5-0-1.wav",
             "duration": 4.0,
-            "pause_after": 1.3281441302034331,
-            "repeat_group": 1
+            "pause_after": 2.3217634909891425,
+            "repeat_group": 4,
+            "class_name": "engine_idling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/107357-8-1-5.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/184355-1-0-0.wav",
+            "duration": 0.66,
+            "pause_after": 1.1839855367202445,
+            "repeat_group": 5,
+            "class_name": "car_horn"
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/162134-7-16-1.wav",
             "duration": 4.0,
-            "pause_after": 0.2106806862193955,
-            "repeat_group": 2
+            "pause_after": 0.37952740852174216,
+            "repeat_group": 6,
+            "class_name": "jackhammer"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/107357-8-1-5.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/162134-7-16-1.wav",
             "duration": 4.0,
-            "pause_after": 1.5611734368726602,
-            "repeat_group": 2
+            "pause_after": 0.9459869856183204,
+            "repeat_group": 6,
+            "class_name": "jackhammer"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/107357-8-1-5.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/55018-0-0-87.wav",
             "duration": 4.0,
-            "pause_after": 1.5245178208915813,
-            "repeat_group": 2
+            "pause_after": 2.80747053676663,
+            "repeat_group": 7,
+            "class_name": "air_conditioner"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/180156-1-5-0.wav",
-            "duration": 1.618333,
-            "pause_after": 1.6552210957175624,
-            "repeat_group": 3
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/180156-1-5-0.wav",
-            "duration": 1.618333,
-            "pause_after": 0.45730724469359196,
-            "repeat_group": 3
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/136399-6-9-0.wav",
-            "duration": 2.03,
-            "pause_after": 1.3349676979318792,
-            "repeat_group": 4
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/136399-6-9-0.wav",
-            "duration": 2.03,
-            "pause_after": 0.7719161215261341,
-            "repeat_group": 4
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/187378-3-0-7.wav",
+            "duration": 4.0,
+            "pause_after": 2.1589442452312877,
+            "repeat_group": 8,
+            "class_name": "dog_bark"
         }
     ]
 }

@@ -3,81 +3,86 @@
     "version": 1,
     "sample_rate": 16000,
     "target_length": 55.0,
-    "repeat_max": 2,
+    "repeat_max": 1,
     "repeat_silence_max": 2.0,
     "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000223.wav",
+    "classes": [
+        "air_conditioner",
+        "children_playing",
+        "drilling",
+        "jackhammer",
+        "street_music"
+    ],
     "items": [
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/175848-1-0-0.wav",
-            "duration": 0.537771,
-            "pause_after": 2.1989874437220496,
-            "repeat_group": 0
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/145683-6-5-0.wav",
-            "duration": 0.5,
-            "pause_after": 0.2636617615429132,
-            "repeat_group": 1
-        },
-        {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/171478-9-0-26.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/55018-0-0-110.wav",
             "duration": 4.0,
-            "pause_after": 0.9690840903446523,
-            "repeat_group": 2
+            "pause_after": 1.495238462593735,
+            "repeat_group": 0,
+            "class_name": "air_conditioner"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/171478-9-0-26.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/187377-4-0-1.wav",
             "duration": 4.0,
-            "pause_after": 1.8434305245365379,
-            "repeat_group": 2
+            "pause_after": 1.2509877406210228,
+            "repeat_group": 1,
+            "class_name": "drilling"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/174906-2-0-10.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/160016-2-0-40.wav",
             "duration": 4.0,
-            "pause_after": 0.672058016547608,
-            "repeat_group": 3
+            "pause_after": 0.6256154655178131,
+            "repeat_group": 2,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/52077-3-0-13.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/66000-9-0-3.wav",
             "duration": 4.0,
-            "pause_after": 1.6199517096841274,
-            "repeat_group": 4
+            "pause_after": 1.2791483005449167,
+            "repeat_group": 3,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/52077-3-0-13.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/22883-7-29-2.wav",
             "duration": 4.0,
-            "pause_after": 1.097833260186618,
-            "repeat_group": 4
+            "pause_after": 2.7511858768539197,
+            "repeat_group": 4,
+            "class_name": "jackhammer"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/114587-3-0-7.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/139665-9-0-25.wav",
             "duration": 4.0,
-            "pause_after": 0.1275270002133302,
-            "repeat_group": 5
+            "pause_after": 0.4193894472339612,
+            "repeat_group": 5,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/114587-3-0-7.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/139665-9-0-25.wav",
             "duration": 4.0,
-            "pause_after": 0.40444310712133924,
-            "repeat_group": 5
+            "pause_after": 2.207129596250673,
+            "repeat_group": 5,
+            "class_name": "street_music"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold1/114587-3-0-7.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold7/164797-2-0-8.wav",
             "duration": 4.0,
-            "pause_after": 2.2102543757799475,
-            "repeat_group": 5
+            "pause_after": 1.2851197665258265,
+            "repeat_group": 6,
+            "class_name": "children_playing"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/149254-9-0-51.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold4/195969-0-0-9.wav",
             "duration": 4.0,
-            "pause_after": 1.206893458680829,
-            "repeat_group": 6
+            "pause_after": 2.0635651142982723,
+            "repeat_group": 7,
+            "class_name": "air_conditioner"
         },
         {
-            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/149254-9-0-51.wav",
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold6/54697-7-0-0.wav",
             "duration": 4.0,
-            "pause_after": 1.9426806470767277,
-            "repeat_group": 6
+            "pause_after": 0.146210121619341,
+            "repeat_group": 8,
+            "class_name": "jackhammer"
         }
     ]
 }
