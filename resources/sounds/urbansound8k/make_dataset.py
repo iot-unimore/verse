@@ -38,23 +38,19 @@ from typing import List
 
 BASE_DIR = Path(__file__).resolve().parent
 
-# SOURCE_FOLDER = BASE_DIR / "files/UrbanSound8K/audio/"
-SOURCE_FOLDER = BASE_DIR / "pippo/"
-
-OUTPUT_FOLDER = BASE_DIR / "files_gen/"
-
+SOURCE_FOLDER = BASE_DIR / "files/UrbanSound8K/audio/"
+OUTPUT_FOLDER = BASE_DIR / "files_wav/"
 
 # Number of generated wav files in normal generation mode
-NUMBER_OF_FILES = 10
+NUMBER_OF_FILES = 100
 
 # Audio parameters
 TARGET_SR = 16000
 TARGET_LENGTH = 60.0
 
 # Normal silence between different clips
-PAUSE_MIN = 1.0
-PAUSE_MAX = 5.0
-
+PAUSE_MIN = 0.0
+PAUSE_MAX = 3.0
 
 # Repetition parameters
 #
