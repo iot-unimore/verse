@@ -11,4 +11,6 @@ tools/wilson_prj/sound_spatializer/bin/
 tools/wilson_prj/sound_spatializer/build/
 tools/wilson_prj/sound_spatializer/externals/
 tools/wilson_prj/sound_spatializer/sspat
-resources/sounds/urbansound8k/info
+resources/sounds/urbansound8k/info/
+resources/sounds/urbansound8k/files_wav/
+src/__pycache__/
