@@ -71,7 +71,7 @@ setup:
         value:
           type: paths
           subtype: unimore
-          info: path_070.yaml
+          info: path_140.yaml
 
 
   #
