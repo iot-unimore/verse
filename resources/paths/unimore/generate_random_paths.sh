@@ -1,5 +1,7 @@
 #!/bin/bash
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # ---------------------------------------------------------
 # Random walk path review loop
 # ---------------------------------------------------------
@@ -23,7 +25,7 @@ do
 
     # Generate path
 
-    ../random_walk_generator.py \
+    $SCRIPT_DIR/random_walk_generator.py \
         -c 8 \
         -o "./path_${num}.csv"
 
@@ -36,7 +38,7 @@ do
 
     # Display path
 
-    ../../../../tools/bin/display_path.py \
+    $SCRIPT_DIR/../../../tools/bin/display_path.py \
         -i "./path_${num}.csv"
 
 
