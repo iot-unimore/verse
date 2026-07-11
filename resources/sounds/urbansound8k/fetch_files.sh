@@ -46,7 +46,7 @@ if [ -d  $SCRIPT_DIR/files ] ; then
 
   rm -rf ./$RESOURCES_TAR_FILE
 
-  # generate long files
+  # generate long wav files
   cd $SCRIPT_DIR
 
   ./make_dataset.py -j 8 -g ./files_wav/ >> ./error.log 
@@ -57,6 +57,9 @@ if [ -d  $SCRIPT_DIR/files ] ; then
     exit 1
   fi
 
+  # generate info files
+  cd $SCRIPT_DIR
+  ./make_info.py -j 8 >> ./error.log 
 
 fi
 
