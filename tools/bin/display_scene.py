@@ -11,6 +11,8 @@ import argparse
 import yaml
 import os
 
+from pathlib import Path
+
 #
 # Set logger format and color
 #
@@ -40,8 +42,11 @@ def signal_handler(sig, frame):
 def readYamlFile(filename=None):
     yaml_params = []
     if filename != None:
+
+        yaml_filename = str(Path(filename).with_suffix(".yaml"))
+
         try:
-            with open(filename, "r") as file:
+            with open(yaml_filename, "r") as file:
                 yaml_params = yaml.safe_load(file)
         except:
             logger.error("cannot open/parse yaml file: {}".format(filename))
