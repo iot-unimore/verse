@@ -29,7 +29,7 @@ if [ -d  $SCRIPT_DIR/files ] ; then
 
   cd $SCRIPT_DIR/files
 
-  #$WGET $RESOURCES_TAR_LINK
+  $WGET $RESOURCES_TAR_LINK
 
   if [ ! -f ./$RESOURCES_TAR_FILE ] ; then
     echo "Error: could not fetch the remote file: $RESOURCES_TAR_LINK"
@@ -45,6 +45,18 @@ if [ -d  $SCRIPT_DIR/files ] ; then
   fi
 
   rm -rf ./$RESOURCES_TAR_FILE
+
+  # generate long files
+  cd $SCRIPT_DIR
+
+  ./make_dataset.py -j 8 -g ./files_wav/ >> ./error.log 
+
+  # check for last file
+  if [ ! -f  $SCRIPT_DIR/files_wav/sound_000499.wav ] ; then
+    echo "Error: could not generate wav files see error.log"
+    exit 1
+  fi
+
 
 fi
 
