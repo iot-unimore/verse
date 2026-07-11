@@ -1,0 +1,14 @@
+resources/voices/unimore/files/
+resources/noise/unimore/files/
+resources/heads/unimore/files/
+resources/rooms/unimore/files/
+resources/sounds/urbansound8k/files/
+resources/voices/OpenSLR_LibriSpeech/files/
+resources/voices/daps/files/
+resources/voices/dr-vctk/files/
+resources/voices/librivox_tiny/files/
+tools/wilson_prj/sound_spatializer/bin/
+tools/wilson_prj/sound_spatializer/build/
+tools/wilson_prj/sound_spatializer/externals/
+tools/wilson_prj/sound_spatializer/sspat
+resources/sounds/urbansound8k/info
