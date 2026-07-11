@@ -1,0 +1,95 @@
+{
+    "recipe_is": "AUDIO_CONCAT_GENERATION_RECIPE_V1",
+    "version": 1,
+    "sample_rate": 16000,
+    "target_length": 55.0,
+    "repeat_max": 2,
+    "repeat_silence_max": 2.0,
+    "output_file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files_wav/sound_000186.wav",
+    "items": [
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/162541-1-1-0.wav",
+            "duration": 0.449208,
+            "pause_after": 1.4649941173697714,
+            "repeat_group": 0
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/162541-1-1-0.wav",
+            "duration": 0.449208,
+            "pause_after": 1.0588574910751698,
+            "repeat_group": 0
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/162541-1-1-0.wav",
+            "duration": 0.449208,
+            "pause_after": 0.8112342471564523,
+            "repeat_group": 0
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/201652-5-0-2.wav",
+            "duration": 4.0,
+            "pause_after": 1.2474273637336175,
+            "repeat_group": 1
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/179865-1-0-0.wav",
+            "duration": 1.33,
+            "pause_after": 0.7015192005856301,
+            "repeat_group": 2
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold3/179865-1-0-0.wav",
+            "duration": 1.33,
+            "pause_after": 2.2936886172036277,
+            "repeat_group": 2
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/157868-8-0-23.wav",
+            "duration": 4.0,
+            "pause_after": 0.5384957619425821,
+            "repeat_group": 3
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold8/157868-8-0-23.wav",
+            "duration": 4.0,
+            "pause_after": 0.3089197844838092,
+            "repeat_group": 3
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold2/108187-3-2-0.wav",
+            "duration": 0.495125,
+            "pause_after": 2.2420303518155915,
+            "repeat_group": 4
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold10/189982-0-0-4.wav",
+            "duration": 4.0,
+            "pause_after": 2.7176040560048174,
+            "repeat_group": 5
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/174282-6-2-0.wav",
+            "duration": 3.785333,
+            "pause_after": 0.5512495376951603,
+            "repeat_group": 6
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/174282-6-2-0.wav",
+            "duration": 3.785333,
+            "pause_after": 1.2675192839408933,
+            "repeat_group": 6
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold9/174282-6-2-0.wav",
+            "duration": 3.785333,
+            "pause_after": 0.06902708459245788,
+            "repeat_group": 6
+        },
+        {
+            "file": "/media/gfilippi/fast01/Fil_PRJ/verse/resources/sounds/urbansound8k/files/UrbanSound8K/audio/fold5/105425-9-0-12.wav",
+            "duration": 4.0,
+            "pause_after": 0.7194841769560599,
+            "repeat_group": 7
+        }
+    ]
+}
