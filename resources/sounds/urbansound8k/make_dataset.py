@@ -42,11 +42,11 @@ SOURCE_FOLDER = BASE_DIR / "files/UrbanSound8K/audio/"
 OUTPUT_FOLDER = BASE_DIR / "files_wav/"
 
 # Number of generated wav files in normal generation mode
-NUMBER_OF_FILES = 100
+NUMBER_OF_FILES = 500
 
 # Audio parameters
 TARGET_SR = 16000
-TARGET_LENGTH = 60.0
+TARGET_LENGTH = 55.0
 
 # Normal silence between different clips
 PAUSE_MIN = 0.0
@@ -616,7 +616,7 @@ def generate_random_dataset(jobs, overwrite, seed=None):
     recipes = []
 
     for i in range(NUMBER_OF_FILES):
-        output_file = OUTPUT_FOLDER / f"sample_{i:06d}.wav"
+        output_file = OUTPUT_FOLDER / f"sound_{i:06d}.wav"
 
         recipe = create_recipe(database, output_file, clip_rng, repeat_rng, pause_rng)
 
