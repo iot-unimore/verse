@@ -24,6 +24,7 @@ from setproctitle import setproctitle
 from subprocess import check_output
 from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 #
 # Set logger format and color
@@ -872,13 +873,16 @@ def audioSceneRender(cli_params=None):
                             )
                         )
                 elif scene_yaml["setup"]["sources"][idx]["position"]["type"] == "dynamic":
-                    tmp_filename = os.path.join(
+                    tmp1_filename = os.path.join(
                         _RESOURCES_DIR,
                         scene_yaml["setup"]["sources"][idx]["position"]["value"]["type"],
                         scene_yaml["setup"]["sources"][idx]["position"]["value"]["subtype"],
                         "info",
                         scene_yaml["setup"]["sources"][idx]["position"]["value"]["info"],
                     )
+
+                    tmp_filename = str(Path(tmp1_filename).with_suffix(".yaml"))
+
                     if not os.path.isfile(tmp_filename):
                         err = -1
                         logger.error("missing path file {}".format(tmp_filename))
@@ -1212,13 +1216,15 @@ def audioSpatialize(
                                     )
                                 )
                         else:
-                            tmp_filename = os.path.join(
+                            tmp1_filename = os.path.join(
                                 _RESOURCES_DIR,
                                 scene_yaml["setup"]["sources"][sidx]["position"]["value"]["type"],
                                 scene_yaml["setup"]["sources"][sidx]["position"]["value"]["subtype"],
                                 "info",
                                 scene_yaml["setup"]["sources"][sidx]["position"]["value"]["info"],
                             )
+
+                            tmp_filename = str(Path(tmp1_filename).with_suffix(".yaml"))
 
                             path_yaml = readYamlFile(tmp_filename)
 
