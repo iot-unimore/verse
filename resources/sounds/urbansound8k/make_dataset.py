@@ -23,6 +23,7 @@ import shutil
 import subprocess
 import sys
 import os
+import csv
 
 from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
@@ -40,6 +41,9 @@ BASE_DIR = Path(__file__).resolve().parent
 
 SOURCE_FOLDER = BASE_DIR / "files/UrbanSound8K/audio/"
 OUTPUT_FOLDER = BASE_DIR / "files_wav/"
+
+# CSV metadata file (UrbanSound8K style)
+CSV_METADATA_FILE = BASE_DIR / "files/UrbanSound8K/metadata/UrbanSound8K.csv"
 
 # Number of generated wav files in normal generation mode
 NUMBER_OF_FILES = 500
@@ -68,7 +72,7 @@ PAUSE_MAX = 3.0
 # 4 times
 #
 # because this is the number of ADDITIONAL repetitions
-REPEAT_N = 2
+REPEAT_N = 1
 # Maximum silence seconds between repetitions
 REPEAT_SILENCE_S = 2.0
 
@@ -99,10 +103,9 @@ class RecipeItem:
 
     pause_after: float
 
-    # same value means that these clips came from
-    # the same repetition decision
-
     repeat_group: int
+
+    class_name: str
 
 
 @dataclass
@@ -120,6 +123,8 @@ class Recipe:
     repeat_silence_max: float
 
     output_file: str
+
+    classes: List[str]
 
     items: List[RecipeItem]
 
@@ -149,6 +154,28 @@ def check_dependencies():
     ):
         if shutil.which(exe) is None:
             raise RuntimeError(f"{exe} not found in PATH")
+
+
+def load_csv_classes(csv_file):
+    """
+    Load filename -> class mapping
+
+    Expected CSV:
+    slice_file_name,...,class
+
+    """
+
+    classes = {}
+
+    with open(csv_file, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+
+        for row in reader:
+            filename = row["slice_file_name"]
+
+            classes[filename] = row["class"]
+
+    return classes
 
 
 # ============================================================
@@ -182,59 +209,21 @@ def wav_duration(filename: Path):
     return float(run_command(cmd))
 
 
-# def build_database(files):
-
-#     database = []
-
-#     for filename in files:
-#         database.append({"file": filename, "duration": wav_duration(filename)})
-
-#     return database
-
-
-def build_database(files):
+def build_database(files, csv_classes):
 
     database = []
 
+    for filename in tqdm(files, desc="Reading WAV durations"):
+        wav_name = filename.name
 
-    for filename in tqdm(
-        files,
-        desc="Reading WAV durations",
-        unit="file"
-    ):
+        class_name = csv_classes.get(wav_name, "unknown")
 
-        try:
-
-            duration = wav_duration(
-                filename
-            )
-
-
-            database.append(
-                {
-                    "file": filename,
-
-                    "duration": duration
-                }
-            )
-
-
-        except Exception as e:
-
-            print(
-                f"Skipping {filename}: {e}",
-                file=sys.stderr
-            )
-
-
-    if not database:
-
-        raise RuntimeError(
-            "No valid WAV files found"
+        database.append(
+            {"file": filename, "duration": wav_duration(filename), "class": class_name}
         )
 
-
     return database
+
 
 # ============================================================
 # RECIPE GENERATION
@@ -292,6 +281,7 @@ def create_recipe(database, output_file, clip_rng, repeat_rng, pause_rng):
                     duration=source["duration"],
                     pause_after=pause,
                     repeat_group=repeat_group,
+                    class_name=source["class"],
                 )
             )
 
@@ -305,6 +295,8 @@ def create_recipe(database, output_file, clip_rng, repeat_rng, pause_rng):
         if abs(total_length - TARGET_LENGTH) <= STOP_TOLERANCE:
             break
 
+        used_classes = sorted(list(set(item.class_name for item in items)))
+
     return Recipe(
         recipe_is=RECIPE_MAGIC,
         version=1,
@@ -313,6 +305,7 @@ def create_recipe(database, output_file, clip_rng, repeat_rng, pause_rng):
         repeat_max=REPEAT_N,
         repeat_silence_max=REPEAT_SILENCE_S,
         output_file=str(output_file.resolve()),
+        classes=used_classes,
         items=items,
     )
 
@@ -332,13 +325,46 @@ def save_recipe(recipe: Recipe):
 
 def load_recipe(filename):
 
-    with open(filename, encoding="utf8") as f:
+    with open(filename, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    if data.get("recipe_is") != RECIPE_MAGIC:
-        raise ValueError(f"Invalid recipe file: {filename}")
+    #
+    # Verify magic number
+    #
 
-    items = [RecipeItem(**item) for item in data["items"]]
+    if data.get("recipe_is") != RECIPE_MAGIC:
+        raise ValueError(f"{filename} is not a valid audio generation recipe")
+
+    #
+    # Load items
+    #
+    # class_name is optional for backward compatibility
+    #
+
+    items = []
+
+    for item in data.get("items", []):
+        items.append(
+            RecipeItem(
+                file=item["file"],
+                duration=item["duration"],
+                pause_after=item["pause_after"],
+                repeat_group=item.get("repeat_group", 0),
+                class_name=item.get("class_name", "unknown"),
+            )
+        )
+
+    #
+    # Recover class list
+    #
+    # If not present (old recipes),
+    # reconstruct it from items
+    #
+
+    classes = data.get("classes")
+
+    if classes is None:
+        classes = sorted(list(set(item.class_name for item in items)))
 
     return Recipe(
         recipe_is=data["recipe_is"],
@@ -348,6 +374,7 @@ def load_recipe(filename):
         repeat_max=data.get("repeat_max", 0),
         repeat_silence_max=data.get("repeat_silence_max", 0),
         output_file=data["output_file"],
+        classes=classes,
         items=items,
     )
 
@@ -542,10 +569,12 @@ def scan_recipe_folder(folder):
 
             recipes.append(recipe)
 
-            print(f"Accepted recipe: {filename}")
+            print(f"Accepted: {filename.name}, classes: {', '.join(recipe.classes)}")
 
         except Exception as e:
-            print(f"Ignored {filename}: {e}")
+            print(f"Ignored: {filename.name}")
+
+            print(f"  reason: {e}")
 
     if not recipes:
         raise RuntimeError("No valid audio generation recipes found")
@@ -590,7 +619,9 @@ def generate_random_dataset(jobs, overwrite, seed=None):
 
     print(f"Found {len(wav_files)} WAV files")
 
-    database = build_database(wav_files)
+    csv_classes = load_csv_classes(CSV_METADATA_FILE)
+
+    database = build_database(wav_files, csv_classes)
 
     OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 
