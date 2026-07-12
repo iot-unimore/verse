@@ -1,5 +1,32 @@
 #!/usr/bin/env python3
-"""Render audio scene"""
+"""
+Render one audio scene into a spatialized, multi-track MKV file.
+
+A "scene" is a single .yaml file (typically under resources/scenes/*/info/)
+describing a listener (head + HRTF), zero or more voice "sources", optional
+non-voice "sounds", an optional room (BRIR), and their static/dynamic
+positioning over time. This script is the leaf-level renderer: it consumes
+exactly one scene file per invocation (-sf/--scene_file) and does not know
+about datasets or recipes at all -- render_dataset.py is what generates many
+scene files and calls this script once per scene, in parallel, to build a
+full dataset.
+
+Pipeline (see audioSceneRender -> audioSpatialize -> executeSpatializeTasks):
+  1. Load and validate the scene .yaml; ffmpeg-convert every voice/sound
+     source to the scene's target format (loadAudioObjectGroup).
+  2. Resolve the listener's HRTF/head and the room's BRIR, and build one
+     sound_spatializer ("sspat") task per listener HRTF entry, with every
+     source/sound resolved into an sspat source entry (coord or path_csv).
+  3. Write one sspat config .yaml per task and run the 3DTI-based `sspat`
+     binary on each, in a CPU/MEM-sized process pool.
+  4. Optionally run a scene-defined post-processing script on each output.
+  5. Mux the mono dry source tracks and the stereo spatialized receiver
+     tracks into a single multi-track MKV (ffmpeg), plus a .yaml descriptor.
+
+Non-voice "sounds" (scene syntax v0.2.0+) are acoustically spatialized
+identically to voice sources, but are excluded from the MKV's dry tracks and
+descriptor by default -- see -is/--include_sounds_output.
+"""
 
 import os
 import re

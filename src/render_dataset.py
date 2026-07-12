@@ -1,5 +1,37 @@
 #!/usr/bin/env python3
-"""Render dataset recipe"""
+"""
+Render a full dataset from a "dataset recipe" .yaml (typically under
+resources/ds_recipes/*/info/), by expanding it into many individual scene
+files and rendering each one via render_scene.py.
+
+A recipe (-i/--input_file) declares one or more "sets", each with "tasks"
+that list which scenes to use and, optionally, which voices/heads/rooms/
+pre-postproc resources to substitute into them -- with wildcard ("*", "?",
+"!") and "all" selectors resolved via readResourceList(). This script does
+not spatialize audio itself; it is the orchestration layer over the
+leaf-level renderer (render_scene.py), which is spawned as a subprocess
+once per generated scene.
+
+Pipeline (see renderDataSet):
+  1. Walk every set/task/scene in the recipe and resolve its scenes/heads/
+     rooms/voices/preproc/postproc resource lists into one work item per
+     (dataset, task, scene) unit.
+  2. buildDataSetRecipes(): in a CPU/MEM-sized process pool, expand each
+     work item into concrete scene .yaml file(s) under the dataset output
+     folder -- either copied "as-is" (only the audio format is overridden)
+     or, if voices/heads/rooms customization was requested, once per
+     permutation of the given resource lists (buildDataSetRecipe).
+  3. soundSpatializeDataSet(): find every generated scene .yaml and render
+     each one in a second CPU/MEM-sized process pool by spawning
+     render_scene.py as a subprocess (soundSpatializeScene), producing the
+     spatialized MKV output for that scene.
+
+Logging/progress: -v/-vv/-vvv, -q/--quiet and -s/--silent control this
+script's own console output and its tqdm progress bar (shouldShowProgress);
+the same effective verbosity is propagated down to every render_scene.py
+subprocess (renderSceneLoggingArgs) so parallel workers don't corrupt the
+progress bar or violate quiet/silent mode.
+"""
 
 import os
 import re
