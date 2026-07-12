@@ -216,7 +216,7 @@ def check_object_sanity(scene_label, obj, min_distance, el_min, el_max):
     if worst_el_point[1] < el_min or worst_el_point[1] > el_max:
         n_bad = sum(1 for p in points if p[1] < el_min or p[1] > el_max)
         warnings.append(
-            f"{label}: elevation {worst_el_point[1]:.3f}deg outside [{el_min:.1f}, {el_max:.1f}] "
+            f"{label}: [{obj['kind']}] elevation {worst_el_point[1]:.3f}deg outside [{el_min:.1f}, {el_max:.1f}] "
             f"({n_bad}/{len(points)} point(s))"
         )
 
