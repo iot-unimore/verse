@@ -167,6 +167,7 @@ def waitFileCompleted(filepath, stable_time=3.0, timeout=120.0, check_interval=0
         last_size = size
         time.sleep(check_interval)
 
+
 def resampleAudioFile(input_file, output_file, samplerate=0, overwrite=False):
     """ """
 
@@ -314,7 +315,7 @@ def getSourceFilesSoundSpatializer(cfg_yaml={}, skip_sounds=True):
     return source_files
 
 
-def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[] ):
+def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[]):
     """
     write a descriptor file (.yaml) for audio_scene final wav file (multi-track)
 
@@ -333,7 +334,7 @@ def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[] ):
 
     if filename != None:
         yaml_descriptor["sources_count"] = len(mono_files)
- 
+
         yaml_descriptor["sources_count"] = len(mono_files)
         yaml_descriptor["sources"] = {}
         idx = 0
@@ -485,7 +486,9 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
                 cfg["setup"]["sources"][sidx]["3dti"]["enableReverbProcess"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableDistanceAttenuationReverb"] = "yes"
             cfg["setup"]["sources"][sidx]["3dti"]["enableFarDistanceEffect"] = "yes"
-            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = "no" #"yes" removing since we do not have ILD map
+            cfg["setup"]["sources"][sidx]["3dti"]["enableNearFieldEffect"] = (
+                "no"  # "yes" removing since we do not have ILD map
+            )
             cfg["setup"]["sources"][sidx]["3dti"]["enablePropagationDelay"] = "yes"
 
         #
@@ -947,9 +950,7 @@ def resolveSpatializerSourceEntry(scene_yaml, group_key, idx, wav_file):
         mycoord = list(position["coord"]["value"])
         if 0 != verifySpericalCoord(str(mycoord[0]) + "," + str(mycoord[1]) + "," + str(mycoord[2])):
             err = -1
-            logger.error(
-                "invalid position coordinates {} for {} {}".format(position["coord"]["value"], group_key, idx)
-            )
+            logger.error("invalid position coordinates {} for {} {}".format(position["coord"]["value"], group_key, idx))
         entry["coord"] = str(mycoord[0]) + "," + str(mycoord[1]) + "," + str(mycoord[2])
         entry["path_csv"] = "none"
     else:
@@ -1215,7 +1216,6 @@ def audioSpatialize(
                         rooms_brir_file = "none"
 
                         if scene_yaml["setup"]["rooms_count"] == 1:
-
                             # check for BRIR samplerate
                             if scene_yaml["setup"]["format"]["samplerate"] in rooms_yaml[0]["brir_samplerates"]:
                                 # index match
@@ -1269,19 +1269,22 @@ def audioSpatialize(
                             except:
                                 err = -1
 
-
                             # SAFE selection for HRTF samplerate, will leverage samplerate conversion if we do not have a match.
                             samplerate_select = scene_yaml["setup"]["format"]["samplerate"]
 
                             if samplerate_select not in listeners_yaml[0]["hrtf_samplerates"]:
-                                samplerate_select  = max(listeners_yaml[0]["hrtf_samplerates"])
-                                logger.warning("render_scene: missing match on HRTF samplerate, fallback on {}".format(samplerate_select))
+                                samplerate_select = max(listeners_yaml[0]["hrtf_samplerates"])
+                                logger.warning(
+                                    "render_scene: missing match on HRTF samplerate, fallback on {}".format(
+                                        samplerate_select
+                                    )
+                                )
 
                             # # check for HRTF samplerate
                             # if samplerate_select in listeners_yaml[0]["hrtf_samplerates"]:
 
                             # index match
-                            sr_idx = listeners_yaml[0]["hrtf_samplerates"].index( samplerate_select )
+                            sr_idx = listeners_yaml[0]["hrtf_samplerates"].index(samplerate_select)
 
                             # check for HRTF name match
                             names = [entry["name"] for entry in listener["hrtf"].values()]
@@ -1315,7 +1318,9 @@ def audioSpatialize(
 
                     # read sources (human voices)
                     for sidx in range(len(sources_wav[0])):
-                        err_entry, entry = resolveSpatializerSourceEntry(scene_yaml, "sources", sidx, sources_wav[0][sidx])
+                        err_entry, entry = resolveSpatializerSourceEntry(
+                            scene_yaml, "sources", sidx, sources_wav[0][sidx]
+                        )
                         if err_entry != 0:
                             err = -1
                         else:
@@ -1574,7 +1579,11 @@ def executeSpatializeTasks(cli_params, tasks={}):
         logger.info("file:{}".format(tmp_filename))
 
         writeAudioMKVDescriptor(
-            filename=tmp_filename, mono_files=ref_files, stereo_files=sspat_files, mkv_filename=ffmpeg_file, scene_filename=cli_params["scene_file"]
+            filename=tmp_filename,
+            mono_files=ref_files,
+            stereo_files=sspat_files,
+            mkv_filename=ffmpeg_file,
+            scene_filename=cli_params["scene_file"],
         )
 
     if (err == 0) and (cli_params["keep_files"] == False):
