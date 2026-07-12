@@ -5,7 +5,6 @@ import os
 import re
 import sys
 import yaml
-import coloredlogs
 import logging
 import signal
 import argparse
@@ -25,7 +24,67 @@ from subprocess import check_output
 # Set logger format and color
 #
 logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
+
+# short format (default for -v/-vv): no source location
+# full format (-vvv only): adds [filename->funcName():lineno] for deep tracing
+FORMAT_SHORT = "%(asctime)s [%(levelname)s] %(message)s"
+FORMAT_FULL = "%(asctime)s [%(levelname)s] [%(filename)s->%(funcName)s():%(lineno)s] %(message)s"
+
+
+class ColoredFormatter(logging.Formatter):
+    """Same colored console formatter used by tools/bin/convert_dataset_verse2locata.py,
+    kept consistent across the VERSE toolchain."""
+
+    # ANSI escape codes
+    COLORS = {
+        logging.DEBUG: "\033[90m",  # light gray
+        logging.INFO: "\033[92m",  # green
+        logging.WARNING: "\033[93m",  # yellow
+        logging.ERROR: "\033[91m",  # red
+        logging.CRITICAL: "\033[1;91m",  # bold red
+    }
+
+    RESET = "\033[0m"
+
+    def format(self, record):
+        color = self.COLORS.get(record.levelno, self.RESET)
+        message = super().format(record)
+        return f"{color}{message}{self.RESET}"
+
+
+def setup_logging(verbose, logfile=None):
+    """Configure logging for the whole process: colored console output (always),
+    plus an optional plain-text file handler when a logfile path is given.
+
+    verbose is a count:
+      0 (default) -> WARNING, short format
+      1 (-v)      -> INFO, short format
+      2 (-vv)     -> DEBUG, short format
+      3+ (-vvv)   -> DEBUG, full format (adds [filename->funcName():lineno])
+    """
+    if verbose >= 2:
+        level = logging.DEBUG
+    elif verbose == 1:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+
+    fmt = FORMAT_FULL if verbose >= 3 else FORMAT_SHORT
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+
+    # remove any pre-existing handlers (e.g. from a prior basicConfig call)
+    root_logger.handlers.clear()
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(ColoredFormatter(fmt))
+    root_logger.addHandler(console_handler)
+
+    if logfile is not None:
+        file_handler = logging.FileHandler(logfile, encoding="utf-8")
+        file_handler.setFormatter(logging.Formatter(fmt))
+        root_logger.addHandler(file_handler)
 
 
 #
@@ -157,7 +216,7 @@ def readResourceList(recipe_yaml, resource, set_idx, task_idx, res_idx):
                             rule = rule.replace("?", "\w+")
                             # rule = rule.replace("_", "\_")
 
-                            logger.log(logging.INFO, "filter rule: {} {}".format(info[0], rule))
+                            logger.debug("filter rule: {} {}".format(info[0], rule))
 
                             filter_rule = re.compile(rule)
 
@@ -278,7 +337,7 @@ def buildDataSetRecipe(data=None):
 
                     if not os.path.isdir(recipe_output_folder):
                         os.makedirs(recipe_output_folder)
-                        logger.log(logging.DEBUG, "mkdir: {}", format(recipe_output_folder))
+                        logger.debug("mkdir: {}".format(recipe_output_folder))
 
                     if not os.path.isdir(recipe_output_folder):
                         err = -1
@@ -460,7 +519,7 @@ def buildDataSetRecipe(data=None):
                         recipe_output_folder = os.path.join(_OUTPUT_DIR, str(ds_idx), str(recipe_name))
                         if not os.path.isdir(recipe_output_folder):
                             os.makedirs(recipe_output_folder)
-                            logger.log(logging.DEBUG, "mkdir: {}", format(recipe_output_folder))
+                            logger.debug("mkdir: {}".format(recipe_output_folder))
 
                         if not os.path.isdir(recipe_output_folder):
                             err = -1
@@ -480,8 +539,8 @@ def buildDataSetRecipes(cli_params=None, data=None):
     err = 0
 
     for item in data:
-        logger.info("-" * 80)
-        logger.info(yaml.dump(item))
+        logger.debug("-" * 80)
+        logger.debug(yaml.dump(item))
 
     #
     # compute process pool size based on CPU/MEM requirements
@@ -494,7 +553,7 @@ def buildDataSetRecipes(cli_params=None, data=None):
 
     max_pool_size = min(cpu_count, int(mem_gib / _MIN_MEM_GB))
 
-    logger.info("buildDataSetRecipes Pool size: {}".format(max_pool_size))
+    logger.debug("buildDataSetRecipes Pool size: {}".format(max_pool_size))
     cpu_pool = Pool(max_pool_size)
 
     result = cpu_pool.map(buildDataSetRecipe, data)
@@ -691,9 +750,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v",
         "--verbose",
-        action="store_true",
-        default=False,
-        help="verbose (default: %(default)s)",
+        action="count",
+        default=0,
+        help="verbose, repeat for more detail: -v=INFO, -vv=DEBUG, -vvv=DEBUG+source location (default: WARNING)",
     )
     parser.add_argument(
         "-log",
@@ -722,13 +781,7 @@ if __name__ == "__main__":
     #
     # set debug verbosity
     #
-    if args.verbose:
-        if args.logfile != None:
-            logging.basicConfig(filename=args.logfile, encoding="utf-8", level=logging.INFO, format=FORMAT)
-        else:
-            logging.basicConfig(level=logging.INFO)
-    else:
-        logging.basicConfig(level=logging.WARNING)
+    setup_logging(args.verbose, args.logfile)
 
     #
     # load params from external config file (if given)

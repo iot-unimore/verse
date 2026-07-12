@@ -5,7 +5,6 @@ import os
 import re
 import sys
 import yaml
-import coloredlogs
 import logging
 import signal
 import argparse
@@ -30,7 +29,67 @@ from pathlib import Path
 # Set logger format and color
 #
 logger = logging.getLogger(__name__)
-FORMAT = "[%(asctime)s %(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
+
+# short format (default for -v/-vv): no source location
+# full format (-vvv only): adds [filename->funcName():lineno] for deep tracing
+FORMAT_SHORT = "%(asctime)s [%(levelname)s] %(message)s"
+FORMAT_FULL = "%(asctime)s [%(levelname)s] [%(filename)s->%(funcName)s():%(lineno)s] %(message)s"
+
+
+class ColoredFormatter(logging.Formatter):
+    """Same colored console formatter used by tools/bin/convert_dataset_verse2locata.py,
+    kept consistent across the VERSE toolchain."""
+
+    # ANSI escape codes
+    COLORS = {
+        logging.DEBUG: "\033[90m",  # light gray
+        logging.INFO: "\033[92m",  # green
+        logging.WARNING: "\033[93m",  # yellow
+        logging.ERROR: "\033[91m",  # red
+        logging.CRITICAL: "\033[1;91m",  # bold red
+    }
+
+    RESET = "\033[0m"
+
+    def format(self, record):
+        color = self.COLORS.get(record.levelno, self.RESET)
+        message = super().format(record)
+        return f"{color}{message}{self.RESET}"
+
+
+def setup_logging(verbose, logfile=None):
+    """Configure logging for the whole process: colored console output (always),
+    plus an optional plain-text file handler when a logfile path is given.
+
+    verbose is a count:
+      0 (default) -> WARNING, short format
+      1 (-v)      -> INFO, short format
+      2 (-vv)     -> DEBUG, short format
+      3+ (-vvv)   -> DEBUG, full format (adds [filename->funcName():lineno])
+    """
+    if verbose >= 2:
+        level = logging.DEBUG
+    elif verbose == 1:
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+
+    fmt = FORMAT_FULL if verbose >= 3 else FORMAT_SHORT
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(level)
+
+    # remove any pre-existing handlers (e.g. from a prior basicConfig call)
+    root_logger.handlers.clear()
+
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(ColoredFormatter(fmt))
+    root_logger.addHandler(console_handler)
+
+    if logfile is not None:
+        file_handler = logging.FileHandler(logfile, encoding="utf-8")
+        file_handler.setFormatter(logging.Formatter(fmt))
+        root_logger.addHandler(file_handler)
 
 
 #
@@ -141,7 +200,7 @@ def waitFileCompleted(filepath, stable_time=3.0, timeout=120.0, check_interval=0
     last_size = -1
     stable_start = None
 
-    logger.warning("waiting for file complete: {}".format(filepath))
+    logger.debug("waiting for file complete: {}".format(filepath))
 
     while True:
         # Timeout check
@@ -159,7 +218,7 @@ def waitFileCompleted(filepath, stable_time=3.0, timeout=120.0, check_interval=0
             if stable_start is None:
                 stable_start = time.time()
             elif time.time() - stable_start >= stable_time:
-                logger.warning("waiting for file complete. DONE.: {}".format(filepath))
+                logger.debug("waiting for file complete. DONE.: {}".format(filepath))
                 return True  # file stable
         else:
             stable_start = None  # reset stability timer
@@ -226,14 +285,14 @@ def resampleAudioFile(input_file, output_file, samplerate=0, overwrite=False):
         ]
 
         try:
-            logger.info("Running ffmpeg audio_resampling command:")
-            logger.info(" ".join(cmd))
+            logger.debug("Running ffmpeg audio_resampling command:")
+            logger.debug(" ".join(cmd))
             _ = check_output(cmd, stderr=subprocess.DEVNULL).decode("utf-8").strip()
 
         except:
             raise ValueError("resampleAudioFile: cannot resample audio file: {}.".format(input_file))
     else:
-        logger.info("file {} already done, skipping resample".format(str(output_file)))
+        logger.debug("file {} already done, skipping resample".format(str(output_file)))
 
     if not (Path(output_file).exists()):
         raise ValueError("resampleAudioFile: missing output file {}.".format(output_file))
@@ -282,8 +341,8 @@ def muxWavFilesMKV(mono_files, stereo_files, output_file):
         " > /dev/null 2>&1",
     ]
 
-    logger.info("Running ffmpeg command:")
-    logger.info(" ".join(cmd))
+    logger.debug("Running ffmpeg command:")
+    logger.debug(" ".join(cmd))
 
     os.system(" ".join(cmd))
     # subprocess.run(cmd, check=True)
@@ -512,7 +571,7 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
 
     if len(cfg) > 0:
         # logger.info(yaml.dump(cfg))
-        logger.info(cfg)
+        logger.debug(cfg)
 
         with open(filename, "w") as file:
             yaml.dump(cfg, file)
@@ -595,7 +654,7 @@ def executeSoundSpatializerCmd(cmd=""):
 
         # now execute command
         if err == 0:
-            logger.info("soundSpatializer, executing:" + str(cmd))
+            logger.debug("soundSpatializer, executing:" + str(cmd))
 
             # rename output if needed
             if not head_samplerate_match:
@@ -615,7 +674,7 @@ def executeSoundSpatializerCmd(cmd=""):
                 logger.error("spatializer, missing audio output file: {}".format(cmd[4]))
             else:
                 if not head_samplerate_match:
-                    logger.info("sspat samplerate mismatch: will resample output (suboptimal)")
+                    logger.warning("sspat samplerate mismatch: will resample output (suboptimal)")
                     resampleAudioFile(input_file=str(cmd[4]), output_file=out_file, samplerate=int(src_samplerate))
                     if not (Path(out_file).exists()):
                         err = -1
@@ -681,7 +740,7 @@ def writePostProcessingCFG(cfg_file=None, wav_file=None, cli=[], task_yaml={}, p
 
     if (err == 0) and (len(cfg) > 0):
         # logger.info(yaml.dump(cfg))
-        logger.info(cfg)
+        logger.debug(cfg)
 
         with open(cfg_file, "w") as file:
             yaml.dump(cfg, file)
@@ -697,7 +756,7 @@ def writePostProcessingCFG(cfg_file=None, wav_file=None, cli=[], task_yaml={}, p
 
 def executePostProcessingCmd(cmd=""):
     err = 0
-    logger.info("post-processing, executing:" + str(cmd))
+    logger.debug("post-processing, executing:" + str(cmd))
 
     try:
         result = check_output(cmd)
@@ -914,12 +973,12 @@ def loadAudioObjectGroup(cli_params, scene_yaml, group_key):
                 os_cmd += [out_filename]
 
                 if not os.path.isfile(out_filename):
-                    logger.info("convert audio file {}".format(out_filename))
+                    logger.debug("convert audio file {}".format(out_filename))
 
                     result = check_output(os_cmd)
                 else:
                     waitFileCompleted(out_filename)
-                    logger.info("audio file already converted {}".format(out_filename))
+                    logger.debug("audio file already converted {}".format(out_filename))
 
                 group_wav.append(os.path.join(_ROOT_DIR, out_filename))
 
@@ -1700,9 +1759,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "-v",
         "--verbose",
-        action="store_true",
-        default=False,
-        help="verbose (default: %(default)s)",
+        action="count",
+        default=0,
+        help="verbose, repeat for more detail: -v=INFO, -vv=DEBUG, -vvv=DEBUG+source location (default: WARNING)",
     )
     parser.add_argument(
         "-log",
@@ -1717,15 +1776,7 @@ if __name__ == "__main__":
     #
     # set debug verbosity
     #
-    if args.verbose:
-        if args.logfile != None:
-            logging.basicConfig(filename=args.logfile, encoding="utf-8", level=logging.INFO, format=FORMAT)
-        else:
-            logging.basicConfig(level=logging.INFO)
-            # coloredlogs.install(level='INFO', logger=logger)
-    else:
-        logging.basicConfig(level=logging.WARNING)
-        # coloredlogs.install(level='WARNING', logger=logger)
+    setup_logging(args.verbose, args.logfile)
 
     #
     # load params from external config file (if given)
