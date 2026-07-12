@@ -318,10 +318,10 @@ def analyze_recipe(recipe, resource_dir, az_bins, el_bins, dist_min, dist_max, d
     return stats
 
 
-def fmt_range(values):
+def fmt_range(values, decimals=0):
     if not values:
         return "n/a"
-    return f"{min(values):.0f}..{max(values):.0f}"
+    return f"{min(values):.{decimals}f}..{max(values):.{decimals}f}"
 
 
 def overall_sky_cells(stats):
@@ -353,7 +353,7 @@ def print_summary_table(stats, az_bins, el_bins):
                 len(s.unique_paths),
                 fmt_range(s.az_values),
                 fmt_range(s.el_values),
-                fmt_range(s.dist_values),
+                fmt_range(s.dist_values, decimals=1),
                 f"{len(s.sky_cells)}/{total_sky_cells} ({coverage_pct:.1f}%)",
             ]
         )
