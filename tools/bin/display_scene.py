@@ -56,6 +56,143 @@ def readYamlFile(filename=None):
     return yaml_params
 
 
+def plotAudioObjectGroup(ax, info_yaml, group_key, verbose, static_marker="o", dynamic_marker="x"):
+    """plot a group of audio objects (e.g. 'sources' or 'sounds') from a scene setup, returns the
+    plotted x/y/z coordinates so the caller can use them to size the axes. the group is optional:
+    if not present in the scene (e.g. 'sounds' in scene syntax <0.2.0) nothing is plotted."""
+    xx, yy, zz = [], [], []
+
+    if group_key not in info_yaml["setup"]:
+        return xx, yy, zz
+
+    group = info_yaml["setup"][group_key]
+
+    for src in group:
+        entry = group[src]
+
+        if "static" == entry["position"]["type"]:
+            if verbose:
+                print(":".join([entry["type"], entry["subtype"], entry["info"]]))
+                print(entry["position"]["type"])
+                print(entry["position"]["coord"]["value"])
+                print(entry["position"]["coord"]["type"])
+
+            if "spherical" == entry["position"]["coord"]["type"]:
+                tmp = entry["position"]["coord"]["value"]
+
+                # Spherical to Cartesian conversion
+                x = tmp[2] * np.cos(np.radians(tmp[1])) * np.cos(np.radians(tmp[0]))
+                y = tmp[2] * np.cos(np.radians(tmp[1])) * np.sin(np.radians(tmp[0]))
+                z = tmp[2] * np.sin(np.radians(tmp[1]))
+
+            if "cartesian" == entry["position"]["coord"]["type"]:
+                coord = entry["position"]["coord"]["value"]
+
+            pt = ax.scatter(x, y, z, marker=static_marker)
+            ax.text(
+                x,
+                y,
+                z,
+                ":".join([entry["subtype"], entry["info"]]),
+                color=pt.get_facecolor()[0].tolist(),
+            )
+
+            xx.append(x)
+            yy.append(y)
+            zz.append(z)
+
+        elif "dynamic" == entry["position"]["type"]:
+            if verbose:
+                print(":".join([entry["type"], entry["subtype"], entry["info"]]))
+
+                print(entry["position"]["type"])
+                print(entry["position"]["value"]["type"])
+                print(entry["position"]["value"]["subtype"])
+                print(entry["position"]["value"]["info"])
+
+            yaml_path_file = os.path.join(
+                _RESOURCES_DIR,
+                entry["position"]["value"]["type"],
+                entry["position"]["value"]["subtype"],
+                "info",
+                entry["position"]["value"]["info"],
+            )
+
+            print(yaml_path_file)
+
+            path_info_yaml = readYamlFile(yaml_path_file)
+            if not ("syntax" in path_info_yaml):
+                logging.error("invalid path file syntax")
+                exit(0)
+            if not ("name" in path_info_yaml["syntax"]):
+                logging.error("invalid path file syntax")
+                exit(0)
+            if path_info_yaml["syntax"]["name"] != "path_map":
+                logging.error("invalid path file syntax")
+                exit(0)
+            if not (("format" in path_info_yaml) and ("path" in path_info_yaml)):
+                logging.error("invalid path file syntax")
+                exit(0)
+            #
+            # only csv files for now
+            if path_info_yaml["format"] != "csv":
+                logging.error("only .csv path files are supported")
+                exit(0)
+
+            csv_path_file = os.path.join(
+                _RESOURCES_DIR,
+                entry["position"]["value"]["type"],
+                entry["position"]["value"]["subtype"],
+                path_info_yaml["path"][0]["file"],
+            )
+
+            # check for CSV file presence
+            if not (os.path.isfile(csv_path_file)):
+                logging.error("cannot read file {}".format(csv_path_file))
+                exit(0)
+
+            # Load the file, skipping metadata
+            file_path = csv_path_file
+            df = pd.read_csv(file_path, comment="#")
+            df.columns = ["time_percent", "volume_percent", "azimuth_deg", "elevation_deg", "distance_m", "type"]
+
+            # Convert angles to radians
+            df["azimuth_rad"] = np.radians(df["azimuth_deg"])
+            df["elevation_rad"] = np.radians(df["elevation_deg"])
+
+            # Spherical to Cartesian conversion
+            df["x"] = df["distance_m"] * np.cos(df["elevation_rad"]) * np.cos(df["azimuth_rad"])
+            df["y"] = df["distance_m"] * np.cos(df["elevation_rad"]) * np.sin(df["azimuth_rad"])
+            df["z"] = df["distance_m"] * np.sin(df["elevation_rad"])
+
+            if verbose:
+                print(tabulate(df, headers="keys", tablefmt="psql"))
+
+            pt = ax.scatter(df["x"], df["y"], df["z"], marker=dynamic_marker)
+
+            last = len(df["x"]) - 1
+
+            ax.scatter(df["x"][0], df["y"][0], df["z"][0], marker="o", color="green")
+            ax.text(
+                df["x"][0],
+                df["y"][0],
+                df["z"][0],
+                ":".join([entry["subtype"], entry["info"]]),
+                color=pt.get_facecolor()[0].tolist(),
+            )
+
+            ax.scatter(df["x"][last], df["y"][last], df["z"][last], marker="o", color="red")
+
+            xx.append(min(df["x"]))
+            xx.append(max(df["x"]))
+            yy.append(min(df["y"]))
+            yy.append(max(df["y"]))
+            zz.append(min(df["z"]))
+            zz.append(max(df["z"]))
+
+    return xx, yy, zz
+
+
 #
 ###############################################################################
 # MAIN
@@ -154,6 +291,7 @@ if __name__ == "__main__":
         logging.info("name        :{}".format(info_yaml["scene"]["name"]))
         logging.info("description :{}".format(info_yaml["scene"]["description"]))
         logging.info("sources num :{}".format(info_yaml["setup"]["sources_count"]))
+        logging.info("sounds num  :{}".format(info_yaml["setup"].get("sounds_count", 0)))
 
     fig = plt.figure()
     ax = fig.add_subplot(projection="3d")
@@ -173,142 +311,17 @@ if __name__ == "__main__":
     # #define ELEVATION_ZERO FORWARD_AXIS     ///< In LISTEN database, elevation=0 is in the front
     # #define ELEVATION_MOTION ANTICLOCKWISE  ///< In LISTEN database, elevation motion is anti-clockwise
 
-    for src in info_yaml["setup"]["sources"]:
-        if "static" == info_yaml["setup"]["sources"][src]["position"]["type"]:
-            if args.verbose:
-                print(
-                    ":".join(
-                        [
-                            info_yaml["setup"]["sources"][src]["type"],
-                            info_yaml["setup"]["sources"][src]["subtype"],
-                            info_yaml["setup"]["sources"][src]["info"],
-                        ]
-                    )
-                )
-                print(info_yaml["setup"]["sources"][src]["position"]["type"])
-                print(info_yaml["setup"]["sources"][src]["position"]["coord"]["value"])
-                print(info_yaml["setup"]["sources"][src]["position"]["coord"]["type"])
+    # voices ('sources') use circle/cross markers, non-voice 'sounds' (optional, scene syntax
+    # >=0.2.0) use square/plus markers so the two groups stay visually distinguishable
+    gx, gy, gz = plotAudioObjectGroup(ax, info_yaml, "sources", args.verbose, static_marker="o", dynamic_marker="x")
+    xx += gx
+    yy += gy
+    zz += gz
 
-            if "spherical" == info_yaml["setup"]["sources"][src]["position"]["coord"]["type"]:
-                tmp = info_yaml["setup"]["sources"][src]["position"]["coord"]["value"]
-
-                # Spherical to Cartesian conversion
-                x = tmp[2] * np.cos(np.radians(tmp[1])) * np.cos(np.radians(tmp[0]))
-                y = tmp[2] * np.cos(np.radians(tmp[1])) * np.sin(np.radians(tmp[0]))
-                z = tmp[2] * np.sin(np.radians(tmp[1]))
-
-            if "cartesian" == info_yaml["setup"]["sources"][src]["position"]["coord"]["type"]:
-                coord = info_yaml["setup"]["sources"][src]["position"]["coord"]["value"]
-
-            pt = ax.scatter(x, y, z, marker="o")
-            ax.text(
-                x,
-                y,
-                z,
-                ":".join([info_yaml["setup"]["sources"][src]["subtype"], info_yaml["setup"]["sources"][src]["info"]]),
-                color=pt.get_facecolor()[0].tolist(),
-            )
-
-            xx.append(x)
-            yy.append(y)
-            zz.append(z)
-
-        elif "dynamic" == info_yaml["setup"]["sources"][src]["position"]["type"]:
-            if args.verbose:
-                print(
-                    ":".join(
-                        [
-                            info_yaml["setup"]["sources"][src]["type"],
-                            info_yaml["setup"]["sources"][src]["subtype"],
-                            info_yaml["setup"]["sources"][src]["info"],
-                        ]
-                    )
-                )
-
-                print(info_yaml["setup"]["sources"][src]["position"]["type"])
-                print(info_yaml["setup"]["sources"][src]["position"]["value"]["type"])
-                print(info_yaml["setup"]["sources"][src]["position"]["value"]["subtype"])
-                print(info_yaml["setup"]["sources"][src]["position"]["value"]["info"])
-
-            yaml_path_file = os.path.join(
-                _RESOURCES_DIR,
-                info_yaml["setup"]["sources"][src]["position"]["value"]["type"],
-                info_yaml["setup"]["sources"][src]["position"]["value"]["subtype"],
-                "info",
-                info_yaml["setup"]["sources"][src]["position"]["value"]["info"],
-            )
-
-            print(yaml_path_file)
-
-            path_info_yaml = readYamlFile(yaml_path_file)
-            if not ("syntax" in path_info_yaml):
-                logging.error("invalid path file syntax")
-                exit(0)
-            if not ("name" in path_info_yaml["syntax"]):
-                logging.error("invalid path file syntax")
-                exit(0)
-            if path_info_yaml["syntax"]["name"] != "path_map":
-                logging.error("invalid path file syntax")
-                exit(0)
-            if not (("format" in path_info_yaml) and ("path" in path_info_yaml)):
-                logging.error("invalid path file syntax")
-                exit(0)
-            #
-            # only csv files for now
-            if path_info_yaml["format"] != "csv":
-                logging.error("only .csv path files are supported")
-                exit(0)
-
-            csv_path_file = os.path.join(
-                _RESOURCES_DIR,
-                info_yaml["setup"]["sources"][src]["position"]["value"]["type"],
-                info_yaml["setup"]["sources"][src]["position"]["value"]["subtype"],
-                path_info_yaml["path"][0]["file"],
-            )
-
-            # check for CSV file presence
-            if not (os.path.isfile(csv_path_file)):
-                logging.error("cannot read file {}".format(csv_path_file))
-                exit(0)
-
-            # Load the file, skipping metadata
-            file_path = csv_path_file
-            df = pd.read_csv(file_path, comment="#")
-            df.columns = ["time_percent", "volume_percent", "azimuth_deg", "elevation_deg", "distance_m", "type"]
-
-            # Convert angles to radians
-            df["azimuth_rad"] = np.radians(df["azimuth_deg"])
-            df["elevation_rad"] = np.radians(df["elevation_deg"])
-
-            # Spherical to Cartesian conversion
-            df["x"] = df["distance_m"] * np.cos(df["elevation_rad"]) * np.cos(df["azimuth_rad"])
-            df["y"] = df["distance_m"] * np.cos(df["elevation_rad"]) * np.sin(df["azimuth_rad"])
-            df["z"] = df["distance_m"] * np.sin(df["elevation_rad"])
-
-            if args.verbose:
-                print(tabulate(df, headers="keys", tablefmt="psql"))
-
-            pt = ax.scatter(df["x"], df["y"], df["z"], marker="x")
-
-            last = len(df["x"]) - 1
-
-            ax.scatter(df["x"][0], df["y"][0], df["z"][0], marker="o", color="green")
-            ax.text(
-                df["x"][0],
-                df["y"][0],
-                df["z"][0],
-                ":".join([info_yaml["setup"]["sources"][src]["subtype"], info_yaml["setup"]["sources"][src]["info"]]),
-                color=pt.get_facecolor()[0].tolist(),
-            )
-
-            ax.scatter(df["x"][last], df["y"][last], df["z"][last], marker="o", color="red")
-
-            xx.append(min(df["x"]))
-            xx.append(max(df["x"]))
-            yy.append(min(df["y"]))
-            yy.append(max(df["y"]))
-            zz.append(min(df["z"]))
-            zz.append(max(df["z"]))
+    gx, gy, gz = plotAudioObjectGroup(ax, info_yaml, "sounds", args.verbose, static_marker="s", dynamic_marker="+")
+    xx += gx
+    yy += gy
+    zz += gz
 
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
