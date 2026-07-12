@@ -3,21 +3,14 @@
 
 import os
 import re
-import sys
 import yaml
 import logging
 import signal
 import argparse
-import sys
 import glob
-import shutil
-
-import json
-import subprocess
 
 from multiprocessing import Pool
 from setproctitle import setproctitle
-from subprocess import check_output
 from functools import partial
 from tqdm import tqdm
 
@@ -146,7 +139,6 @@ _OUTPUT_TMP_DIR = "/tmp/"
 
 _MIN_CPU_COUNT = 1  # we need at least one CPU for each compute process
 _MIN_MEM_GB = 1  # min amount of memory for each compute process
-_MAX_MEM_GB = 1  # max amount of memory for each compute process
 
 #
 # EXECUTABLES / EXTERNAL CMDs
@@ -157,14 +149,6 @@ _SCENE_RENDER_EXE = _ROOT_DIR + "/render_scene.py"
 #
 # TOOLS
 #
-def int_or_str(text):
-    """Helper function for argument parsing."""
-    try:
-        return int(text)
-    except Error:
-        return text
-
-
 def signal_handler(sig, frame):
     global _CTRL_EXIT_SIGNAL
     print("\npressed Ctrl+C\n")
@@ -423,10 +407,6 @@ def buildDataSetRecipe(data=None):
                 if (len(scene) == 2) and scene[1].endswith((".yaml")):
                     # load scene
                     recipe_name = os.path.split(scene[1])[1][0:-5]
-                    scene_yaml = readYamlFile(scene[1])
-
-                    # check voices count in scene recipe
-                    scene_sources_count = scene_yaml["setup"]["sources_count"]
 
                     #
                     # compute number of permutations due to customization (VOICES_MAX*HEAD_MAX*ROOM_MAX)
@@ -581,8 +561,6 @@ def buildDataSetRecipe(data=None):
 
 
 def buildDataSetRecipes(cli_params=None, data=None):
-    err = 0
-
     for item in data:
         logger.debug("-" * 80)
         logger.debug(yaml.dump(item))
@@ -617,8 +595,6 @@ def soundSpatializeScene(data=None, cli_params=None):
     if data is not None:
         output_dir = os.path.split(data)[0]
         logger.info("Dataset, Rendering Scene: " + str(output_dir))
-
-        logfile = os.path.join(output_dir, "soundspatializer.log")
 
         # SYNTAX: ./render_scene.py -sf path/scene.yaml  -o path/out_folder/ -c 8 -v
 
@@ -691,8 +667,6 @@ def soundSpatializeDataSet(cli_params=None):
 
 
 def renderDataSet(cli_params=None, recipe_yaml=None):
-    err = 0
-
     workers_data = []
 
     if ("sets" not in recipe_yaml) or (recipe_yaml["sets"] is None):
@@ -702,34 +676,19 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
     for dsidx in recipe_yaml["sets"]:
         if recipe_yaml["sets"][dsidx] is not None:
             if ("tasks" in recipe_yaml["sets"][dsidx]) and (recipe_yaml["sets"][dsidx]["tasks"] is not None):
-                # set folder output
-                tasks_output_folder = _OUTPUT_DIR + "/" + dsidx
-
-                # print(tasks_output_folder)
-
-                # scenes folder output
-                # print(_OUTPUT_DIR + "/" + dsidx + "/scenes")
-
                 # loop over Tasks
                 for tidx in recipe_yaml["sets"][dsidx]["tasks"]:
-                    # print("-----")
-                    # print("TASK: " + str(tidx))
-                    # print("-----")
-
                     # loop over Scenes
                     for sidx in recipe_yaml["sets"][dsidx]["tasks"][tidx]["scenes"]:
                         scenes_list = readResourceList(recipe_yaml, "scenes", dsidx, tidx, sidx)
-                        # print("scenes: " + str(scenes_list))
 
                         # loop for Heads
                         heads_list = []
                         heads_list = readResourceListFull(recipe_yaml, "heads", dsidx, tidx)
-                        # print("heads: " + str(heads_list))
 
                         # loop for Rooms
                         rooms_list = []
                         rooms_list = readResourceListFull(recipe_yaml, "rooms", dsidx, tidx)
-                        # print("rooms: " + str(rooms_list))
 
                         # loop for Voices: this is different because in one scene there could
                         # be multiple voices and we replace them "in order"
@@ -738,8 +697,6 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
                             for vidx in recipe_yaml["sets"][dsidx]["tasks"][tidx]["voices"]:
                                 tmp_list = readResourceList(recipe_yaml, "voices", dsidx, tidx, vidx)
                                 voices_list.append(tmp_list)
-
-                        # print("voices: " + str(voices_list))
 
                         # loop for task pre-processing
                         preproc_list = []
@@ -771,7 +728,7 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
     # we got all the work listed, now spawn multi-process to create all the scene files
     # inside the dataset folder [DATASET]/scenes
 
-    if (err == 0) and (len(workers_data)):
+    if len(workers_data):
         buildDataSetRecipes(cli_params, workers_data)
 
         soundSpatializeDataSet(cli_params)
@@ -936,7 +893,7 @@ if __name__ == "__main__":
 
         os.makedirs(_OUTPUT_DIR)
         if not os.path.isdir(_OUTPUT_DIR):
-            log.error("cannot create output folder. exit")
+            logger.error("cannot create output folder. exit")
 
     renderDataSet(cli_params, recipe_yaml)
 

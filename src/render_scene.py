@@ -3,12 +3,10 @@
 
 import os
 import re
-import sys
 import yaml
 import logging
 import signal
 import argparse
-import sys
 import random
 import time
 import shutil
@@ -20,10 +18,8 @@ from subprocess import check_output
 
 from multiprocessing import Pool
 from setproctitle import setproctitle
-from subprocess import check_output
 from pathlib import Path
 from datetime import datetime
-from pathlib import Path
 
 #
 # Set logger format and color
@@ -113,7 +109,6 @@ _OUTPUT_TMP_DIR = "/tmp/"
 
 _MIN_CPU_COUNT = 1  # we need at least one CPU for each compute process
 _MIN_MEM_GB = 1  # min amount of memory for each compute process
-_MAX_MEM_GB = 1  # max amount of memory for each compute process
 
 
 #
@@ -128,14 +123,6 @@ _FFPROBE_EXE = "/usr/bin/ffprobe"
 #
 # TOOLS
 #
-def int_or_str(text):
-    """Helper function for argument parsing."""
-    try:
-        return int(text)
-    except Error:
-        return text
-
-
 def signal_handler(sig, frame):
     global _CTRL_EXIT_SIGNAL
     print("\npressed Ctrl+C\n")
@@ -156,28 +143,6 @@ def readYamlFile(filename=None):
     return yaml_params
 
 
-def get_channel_count(wav_file):
-    """Uses ffprobe to get number of audio channels in a WAV file."""
-    cmd = [
-        _FFPROBE_EXE,
-        "-hide_banner",
-        "-loglevel",
-        "panic",
-        "-select_streams",
-        "a:0",
-        "-show_entries",
-        "stream=channels",
-        "-of",
-        "json",
-        str(wav_file),
-    ]
-    # '-v', 'error',
-
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
-    info = json.loads(result.stdout)
-    return info["streams"][0]["channels"]
-
-
 def get_samplerate(wav_file):
     """Uses ffprobe to get number of audio channels in a WAV file."""
     cmd = [
@@ -193,7 +158,6 @@ def get_samplerate(wav_file):
         "json",
         str(wav_file),
     ]
-    # '-v', 'error',
 
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, text=True)
     info = json.loads(result.stdout)
@@ -212,7 +176,6 @@ def waitFileCompleted(filepath, stable_time=3.0, timeout=120.0, check_interval=0
     while True:
         # Timeout check
         if time.time() - start_time > timeout:
-            # raise TimeoutError(f"Timeout waiting for file to stabilize: {filepath}")
             return False
 
         if not filepath.exists():
@@ -352,7 +315,6 @@ def muxWavFilesMKV(mono_files, stereo_files, output_file):
     logger.debug(" ".join(cmd))
 
     os.system(" ".join(cmd))
-    # subprocess.run(cmd, check=True)
 
 
 def getSourceFilesSoundSpatializer(cfg_yaml={}, skip_sounds=True):
@@ -367,8 +329,6 @@ def getSourceFilesSoundSpatializer(cfg_yaml={}, skip_sounds=True):
     -------
     t.b.d
     """
-    err = -1
-
     source_files = []
 
     if len(cfg_yaml) > 0:
@@ -379,57 +339,6 @@ def getSourceFilesSoundSpatializer(cfg_yaml={}, skip_sounds=True):
                 source_files.append(cfg_yaml["sources"][sidx]["file"])
 
     return source_files
-
-
-def writeAudioWavDescriptor(filename=None, mono_files=[], stereo_files=[]):
-    """
-    write a descriptor file (.yaml) for audio_scene final wav file (multi-track)
-
-    Parameters
-    ----------
-    t.b.d
-
-    Returns
-    -------
-    t.b.d
-    """
-
-    track_id = 0
-
-    yaml_descriptor = {}
-
-    if filename != None:
-        yaml_descriptor["sources_count"] = len(mono_files)
-
-        yaml_descriptor["sources_count"] = len(mono_files)
-        yaml_descriptor["sources"] = {}
-        idx = 0
-        for file in mono_files:
-            yaml_descriptor["sources"][idx] = {}
-            yaml_descriptor["sources"][idx]["file"] = os.path.split(file)[1]
-            yaml_descriptor["sources"][idx]["channels"] = 1
-            yaml_descriptor["sources"][idx]["track_id"] = track_id
-            yaml_descriptor["sources"][idx]["lr"] = "none"
-            track_id += 1
-            idx += 1
-
-        yaml_descriptor["receivers_count"] = len(stereo_files)  # * 2
-        yaml_descriptor["receivers"] = {}
-        idx = 0
-        for file in stereo_files:
-            for lr in ["left", "right"]:
-                yaml_descriptor["receivers"][idx] = {}
-                yaml_descriptor["receivers"][idx]["file"] = os.path.split(file)[1]
-                yaml_descriptor["receivers"][idx]["channels"] = 1
-                yaml_descriptor["receivers"][idx]["track_id"] = track_id
-                yaml_descriptor["receivers"][idx]["lr"] = lr
-                track_id += 1
-                idx += 1
-
-        # print(yaml.dump(yaml_descriptor))
-
-        with open(filename, "w") as file:
-            yaml.dump(yaml_descriptor, file)
 
 
 def writeAudioMKVDescriptor(filename=None, mono_files=[], stereo_files=[], mkv_filename=None, scene_filename=None):
@@ -577,7 +486,6 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
         cfg["setup"]["listeners"][0]["3dti"]["directionality_R_dB"] = 0
 
     if len(cfg) > 0:
-        # logger.info(yaml.dump(cfg))
         logger.debug(cfg)
 
         with open(filename, "w") as file:
@@ -623,7 +531,11 @@ def executeSoundSpatializerCmd(cmd=""):
             match = re.search(r"Data_SamplingRate\s*:\s*([0-9.]+)", text)
             head_samplerate = float(match.group(1)) if match else None
         except:
-            logger.error("executeSoundSpatializerCmd, could not parse sofa file: {}".format(task["head"]))
+            logger.error(
+                "executeSoundSpatializerCmd, could not parse sofa file: {}".format(
+                    yaml_param["setup"]["head"]["hrtf_sofa"]
+                )
+            )
             err = -1
 
         # extract input files sampling rate
@@ -766,7 +678,7 @@ def executePostProcessingCmd(cmd=""):
     logger.debug("post-processing, executing:" + str(cmd))
 
     try:
-        result = check_output(cmd)
+        _ = check_output(cmd)
     except:
         logger.error("post-processing, could not run cmd: {}".format(cmd))
         err = -1
@@ -982,7 +894,7 @@ def loadAudioObjectGroup(cli_params, scene_yaml, group_key):
                 if not os.path.isfile(out_filename):
                     logger.debug("convert audio file {}".format(out_filename))
 
-                    result = check_output(os_cmd)
+                    _ = check_output(os_cmd)
                 else:
                     waitFileCompleted(out_filename)
                     logger.debug("audio file already converted {}".format(out_filename))
@@ -1346,9 +1258,6 @@ def audioSpatialize(
                                     )
                                 )
 
-                            # # check for HRTF samplerate
-                            # if samplerate_select in listeners_yaml[0]["hrtf_samplerates"]:
-
                             # index match
                             sr_idx = listeners_yaml[0]["hrtf_samplerates"].index(samplerate_select)
 
@@ -1370,15 +1279,6 @@ def audioSpatialize(
                                     scene_yaml["setup"]["listeners"][scene_listener_idx]["subtype"],
                                     listener["hrtf"][listener["hrtf_main_idx"]]["file"],
                                 )
-                            # else:
-                            #     logger.error("render_scene: missing match on HRTF samplerate, fallback on default")
-                            #     head_sofa_file = os.path.join(
-                            #         _RESOURCES_DIR,
-                            #         scene_yaml["setup"]["listeners"][scene_listener_idx]["type"],
-                            #         scene_yaml["setup"]["listeners"][scene_listener_idx]["subtype"],
-                            #         listener["hrtf"][listener["hrtf_main_idx"]]["file"],
-                            #     )
-
                             sound_spatializer_cmd["head"] = head_sofa_file
                             sound_spatializer_cmd["head_radius"] = listener["geometry"]["head_radius"]
 
@@ -1464,8 +1364,6 @@ def executeSpatializeTasks(cli_params, tasks={}):
     err = 0
     idx = 0
     for task in tasks:
-        # print(yaml.dump(task))
-
         tmp_filename = task["scene"]["name"] + "_" + task["name"] + "_" + f"{idx:03d}"
         cfg_filename = os.path.abspath(os.path.join(_OUTPUT_TMP_DIR, tmp_filename) + ".yaml")
         wav_filename = os.path.abspath(os.path.join(_OUTPUT_REF_DIR + "/../", tmp_filename) + ".wav")
@@ -1500,7 +1398,7 @@ def executeSpatializeTasks(cli_params, tasks={}):
         logger.info("launch SoundSpatializer (multi-process)")
         logger.info("-" * 80)
 
-        result = cpu_pool.map(executeSoundSpatializerCmd, sspat_cmds)
+        _ = cpu_pool.map(executeSoundSpatializerCmd, sspat_cmds)
 
         cpu_pool.close()
         cpu_pool.join()
@@ -1556,7 +1454,7 @@ def executeSpatializeTasks(cli_params, tasks={}):
                             err = -1
                             logger.error("missing postprocessing script_exe file")
                     except:
-                        logger.error("could not configure post-processing: {}".format(os_cmd))
+                        logger.error("could not configure post-processing for: {}".format(wav_filename))
 
                 if err == 0:
                     if 0 != writePostProcessingCFG(
@@ -1591,7 +1489,7 @@ def executeSpatializeTasks(cli_params, tasks={}):
                 logger.info("launch post-processing (multi-process)")
                 logger.info("-" * 80)
 
-                result = cpu_pool.map(executePostProcessingCmd, postproc_cmds)
+                _ = cpu_pool.map(executePostProcessingCmd, postproc_cmds)
 
                 cpu_pool.close()
                 cpu_pool.join()
@@ -1608,7 +1506,6 @@ def executeSpatializeTasks(cli_params, tasks={}):
         #
         cmd = ""
         tmp_filename = tasks[0]["scene"]["name"]
-        # ffmpeg_file = os.path.abspath(os.path.join(_OUTPUT_REF_DIR + "/../", tmp_filename) + ".wav")
         ffmpeg_file = os.path.abspath(os.path.join(_OUTPUT_REF_DIR + "/../", tmp_filename) + ".mkv")
 
         # reference source files (mono): "sounds" are excluded by default (dry track + MKV
