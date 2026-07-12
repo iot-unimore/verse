@@ -27,7 +27,8 @@ Two optional caps can be applied on top of the above:
 
 Every time a point's distance or elevation is actually changed by capping
 (whether from the always-on physical elevation bound or from -d/-e), a
-[WARN] line is printed identifying the affected row.
+[WARN] line is printed identifying the affected row. After processing, a
+summary [INFO] line reports the resulting azimuth/elevation/distance ranges.
 
 By default the output overwrites the input file in place; pass -o/--output
 to write to a different file instead, or --dry-run to parse and report
@@ -117,13 +118,19 @@ def process_file(
     elevation into [-elevation_range, elevation_range] on top of the
     physical [-90, 90] bound (no extra capping if None). Whenever a point's
     distance or elevation is actually changed by capping, a [WARN] line is
-    printed identifying the offending row. If `dry_run` is True, the file is
-    parsed and warnings are still printed, but the output is not written."""
+    printed identifying the offending row. After processing, an [INFO]
+    summary line reports the min/max azimuth, elevation and distance of the
+    kept (post-dedup) rows. If `dry_run` is True, the file is parsed and
+    these messages are still printed, but the output is not written."""
     processed_rows = []
 
     last_az = None
     last_el = None
     data_row_num = 0
+
+    az_values = []
+    el_values = []
+    dist_values = []
 
     # -----------------------------
     # Read file once
@@ -194,6 +201,10 @@ def process_file(
         last_az = az_i
         last_el = el_i
 
+        az_values.append(az_i)
+        el_values.append(el_i)
+        dist_values.append(dist)
+
         processed_rows.append([
             f"{time:.6f}",
             str(volume),
@@ -202,6 +213,18 @@ def process_file(
             f"{dist:.6f}",
             mode
         ])
+
+    # -----------------------------
+    # Summary
+    # -----------------------------
+    if az_values:
+        print(
+            f"[INFO] azimuth range: {min(az_values)}..{max(az_values)}deg, "
+            f"elevation range: {min(el_values)}..{max(el_values)}deg, "
+            f"distance range: {min(dist_values):.1f}..{max(dist_values):.1f}m"
+        )
+    else:
+        print("[INFO] no valid data rows to summarize")
 
     # -----------------------------
     # Write output
