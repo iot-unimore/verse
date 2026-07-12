@@ -208,7 +208,7 @@ def check_object_sanity(scene_label, obj, min_distance, el_min, el_max):
     if min_dist_point[2] < min_distance:
         n_bad = sum(1 for p in points if p[2] < min_distance)
         warnings.append(
-            f"{label}: distance {min_dist_point[2]:.3f}m below minimum {min_distance:.3f}m "
+            f"{label}: [{obj['kind']}] distance {min_dist_point[2]:.3f}m below minimum {min_distance:.3f}m "
             f"({n_bad}/{len(points)} point(s))"
         )
 
@@ -324,6 +324,18 @@ def fmt_range(values):
     return f"{min(values):.0f}..{max(values):.0f}"
 
 
+def overall_sky_cells(stats):
+    """Union of the sky cells touched by every set -- i.e. how much of the sky map
+    the recipe uses at all, regardless of which set. This is the context needed to
+    judge cross-set sky cell overlap: if the recipe already covers most of the sky,
+    sets overlapping heavily is close to unavoidable; if overall coverage is low,
+    the same overlap instead signals room to spread sets into unused regions."""
+    cells = set()
+    for s in stats.values():
+        cells |= s.sky_cells
+    return cells
+
+
 def print_summary_table(stats, az_bins, el_bins):
     from tabulate import tabulate
 
@@ -346,6 +358,22 @@ def print_summary_table(stats, az_bins, el_bins):
             ]
         )
 
+    union_cells = overall_sky_cells(stats)
+    union_pct = 100.0 * len(union_cells) / total_sky_cells
+    rows.append(
+        [
+            f"{CYAN}ALL (union){RESET}",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            "-",
+            f"{CYAN}{len(union_cells)}/{total_sky_cells} ({union_pct:.1f}%){RESET}",
+        ]
+    )
+
     print(f"\n{CYAN}=============================={RESET}")
     print(f"{CYAN}PER-SET SPATIAL COVERAGE{RESET}")
     print(f"{CYAN}=============================={RESET}")
@@ -366,15 +394,25 @@ def print_summary_table(stats, az_bins, el_bins):
             tablefmt="psql",
         )
     )
+    print(
+        f"\nOverall sky coverage (union of all sets): {len(union_cells)}/{total_sky_cells} ({union_pct:.1f}%) "
+        f"-- low overall coverage means there is room to spread sets further apart; "
+        f"high overall coverage means some cross-set overlap is close to unavoidable."
+    )
 
 
-def print_overlap_report(stats):
+def print_overlap_report(stats, az_bins, el_bins):
     set_names = sorted(stats.keys())
     had_error = False
+
+    total_sky_cells = az_bins * el_bins
+    union_cells = overall_sky_cells(stats)
+    union_pct = 100.0 * len(union_cells) / total_sky_cells
 
     print(f"\n{CYAN}=============================={RESET}")
     print(f"{CYAN}CROSS-SET OVERLAP{RESET}")
     print(f"{CYAN}=============================={RESET}")
+    print(f"(for reference, overall sky coverage across all sets is {union_pct:.1f}% -- see above)")
 
     for i in range(len(set_names)):
         for j in range(i + 1, len(set_names)):
@@ -474,7 +512,7 @@ def main():
 
     print_summary_table(stats, args.az_bins, args.el_bins)
     print_sanity_report(sanity_warnings)
-    had_error = print_overlap_report(stats)
+    had_error = print_overlap_report(stats, args.az_bins, args.el_bins)
 
     print("\n===================================")
     print("FINAL SUMMARY")
