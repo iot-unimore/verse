@@ -754,7 +754,7 @@ if __name__ == "__main__":
     # sanity checks
     #
     if cli_params["input_file"] == None:
-        logger.error("audio scene file is needed.")
+        logger.error("dataset recipe file is needed.")
         exit(1)
     else:
         if not (os.path.isfile(cli_params["input_file"])):

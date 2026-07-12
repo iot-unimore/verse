@@ -288,7 +288,7 @@ def muxWavFilesMKV(mono_files, stereo_files, output_file):
     # subprocess.run(cmd, check=True)
 
 
-def getSourceFilesSoundSpatializer(cfg_yaml={}):
+def getSourceFilesSoundSpatializer(cfg_yaml={}, skip_sounds=True):
     """
     write a config file (.yaml) for sound_spatializer tool
 
@@ -307,6 +307,8 @@ def getSourceFilesSoundSpatializer(cfg_yaml={}):
     if len(cfg_yaml) > 0:
         if "sources" in cfg_yaml:
             for sidx in cfg_yaml["sources"]:
+                if skip_sounds and cfg_yaml["sources"][sidx].get("is_sound", False):
+                    continue
                 source_files.append(cfg_yaml["sources"][sidx]["file"])
 
     return source_files
@@ -755,6 +757,254 @@ def verifySpericalCoord(source_coord):
     return err
 
 
+def loadAudioObjectGroup(cli_params, scene_yaml, group_key):
+    """
+    Load and ffmpeg-convert every entry of a scene "sources" (human voices) or
+    "sounds" (non-voice, syntax v0.2.0+) group. Both groups share the identical
+    descriptor schema (voice_file / sound_file) and static/dynamic positioning
+    syntax, so the loading/validation/conversion logic is shared here.
+
+    group_key is missing/zero-count for scenes written before syntax v0.2.0,
+    in which case this returns empty lists (no-op).
+
+    Returns
+    -------
+    (err, group_yaml, group_wav)
+    """
+    err = 0
+    group_yaml = []
+    group_wav = []
+
+    count = scene_yaml["setup"].get(group_key + "_count", 0)
+    if count == 0:
+        return err, group_yaml, group_wav
+
+    entries = scene_yaml["setup"][group_key]
+
+    # load per-entry descriptor yaml
+    for idx in entries:
+        tmp_yaml = []
+        tmp_filename = ""
+        try:
+            tmp_filename = os.path.join(
+                _RESOURCES_DIR,
+                entries[idx]["type"],
+                entries[idx]["subtype"],
+                "info",
+                entries[idx]["info"],
+            )
+            with open(tmp_filename + ".yaml", "r") as file:
+                tmp_yaml = yaml.safe_load(file)
+            group_yaml.append(tmp_yaml)
+        except:
+            err = -1
+            logger.error("cannot open/parse {} yaml file: {}".format(group_key, tmp_filename))
+
+    if err == 0:
+        for idx in range(count):
+            media_filename = os.path.join(
+                _RESOURCES_DIR,
+                entries[idx]["type"],
+                entries[idx]["subtype"],
+                group_yaml[idx]["file"],
+            )
+
+            media_info = getMediaInfo(media_filename, print_result=False)
+
+            # sanity checks : only one audio stream
+            if media_info["format"]["nb_streams"] != 1:
+                err = -1
+                logger.error("more than one stream in file {}".format(media_filename))
+
+            # sanity checks : position
+            tmp_filename = media_filename
+            if "position" in entries[idx]:
+                if entries[idx]["position"]["type"] == "static":
+                    if entries[idx]["position"]["coord"]["type"] != "spherical":
+                        err = -1
+                        logger.error("invalid position type for {} {} in file {}".format(group_key, idx, tmp_filename))
+
+                    mycoord = list(entries[idx]["position"]["coord"]["value"])
+
+                    if 0 != verifySpericalCoord(str(mycoord[0]) + "," + str(mycoord[1]) + "," + str(mycoord[2])):
+                        err = -1
+                        logger.error(
+                            "invalid position coordinates {} for {} {} in file {}".format(
+                                entries[idx]["position"]["coord"]["value"], group_key, idx, tmp_filename
+                            )
+                        )
+                elif entries[idx]["position"]["type"] == "dynamic":
+                    tmp1_filename = os.path.join(
+                        _RESOURCES_DIR,
+                        entries[idx]["position"]["value"]["type"],
+                        entries[idx]["position"]["value"]["subtype"],
+                        "info",
+                        entries[idx]["position"]["value"]["info"],
+                    )
+
+                    tmp_filename = str(Path(tmp1_filename).with_suffix(".yaml"))
+
+                    if not os.path.isfile(tmp_filename):
+                        err = -1
+                        logger.error("missing path file {}".format(tmp_filename))
+                else:
+                    err = -1
+                    logger.error("invalid position type for {} {} in file {}".format(group_key, idx, tmp_filename))
+            else:
+                err = -1
+                logger.error("invalid position for {} {} in file {}".format(group_key, idx, tmp_filename))
+
+            if err == 0:
+                out_filename = os.path.join(_OUTPUT_REF_DIR, entries[idx]["info"]) + ".wav"
+
+                overwrite_option = "-n"
+                if cli_params["force_overwrite"] == True:
+                    overwrite_option = "-y"
+
+                os_cmd = [
+                    _FFMPEG_EXE,
+                    overwrite_option,
+                    "-hide_banner",
+                    "-loglevel",
+                    "error",
+                    "-i",
+                    media_filename,
+                    "-c:a",
+                    str(scene_yaml["setup"]["format"]["subtype"]),
+                    "-ar",
+                    str(scene_yaml["setup"]["format"]["samplerate"]),
+                    "-ac",
+                    "1",
+                ]
+
+                if "playback" in group_yaml[idx]:
+                    os_cmd += [
+                        "-ss",
+                        str(group_yaml[idx]["playback"]["begin"]),
+                        "-to",
+                        str(group_yaml[idx]["playback"]["end"]),
+                    ]
+
+                if "playback" in entries[idx]:
+                    if "padding" in entries[idx]["playback"]:
+                        if ("pre" in entries[idx]["playback"]["padding"]) and (
+                            "post" in entries[idx]["playback"]["padding"]
+                        ):
+                            os_cmd += [
+                                "-af",
+                                "adelay="
+                                + str(entries[idx]["playback"]["padding"]["pre"])
+                                + ",apad=pad_dur="
+                                + str(entries[idx]["playback"]["padding"]["post"]),
+                            ]
+                        elif "pre" in entries[idx]["playback"]["padding"]:
+                            os_cmd += [
+                                "-af",
+                                "adelay=" + str(entries[idx]["playback"]["padding"]["pre"]) + "s:all_true",
+                            ]
+                        elif "post" in entries[idx]["playback"]["padding"]:
+                            os_cmd += [
+                                "-af",
+                                "apad=pad_dur=" + str(entries[idx]["playback"]["padding"]["post"]),
+                            ]
+
+                os_cmd += [out_filename]
+
+                if not os.path.isfile(out_filename):
+                    logger.info("convert audio file {}".format(out_filename))
+
+                    result = check_output(os_cmd)
+                else:
+                    waitFileCompleted(out_filename)
+                    logger.info("audio file already converted {}".format(out_filename))
+
+                group_wav.append(os.path.join(_ROOT_DIR, out_filename))
+
+                if not os.path.isfile(os.path.join(_ROOT_DIR, out_filename)):
+                    err = -1
+                    logger.error("could not render .wav file {}".format(os.path.join(_ROOT_DIR, out_filename)))
+
+    return err, group_yaml, group_wav
+
+
+def resolveSpatializerSourceEntry(scene_yaml, group_key, idx, wav_file):
+    """
+    Resolve the sound_spatializer "sources" entry (file/coord/path_csv) for one
+    "sources" or "sounds" entry of a scene, static or dynamic positioning alike.
+    sspat itself does not distinguish sources from sounds: both become plain
+    point sources to spatialize.
+
+    Returns
+    -------
+    (err, entry)
+    """
+    err = 0
+    entry = {"file": wav_file}
+
+    position = scene_yaml["setup"][group_key][idx]["position"]
+
+    if position["type"] == "static":
+        mycoord = list(position["coord"]["value"])
+        if 0 != verifySpericalCoord(str(mycoord[0]) + "," + str(mycoord[1]) + "," + str(mycoord[2])):
+            err = -1
+            logger.error(
+                "invalid position coordinates {} for {} {}".format(position["coord"]["value"], group_key, idx)
+            )
+        entry["coord"] = str(mycoord[0]) + "," + str(mycoord[1]) + "," + str(mycoord[2])
+        entry["path_csv"] = "none"
+    else:
+        tmp1_filename = os.path.join(
+            _RESOURCES_DIR,
+            position["value"]["type"],
+            position["value"]["subtype"],
+            "info",
+            position["value"]["info"],
+        )
+        tmp_filename = str(Path(tmp1_filename).with_suffix(".yaml"))
+
+        path_yaml = readYamlFile(tmp_filename)
+        path_file = ""
+
+        # sanity checks: must be a csv
+        if "format" in path_yaml:
+            if path_yaml["format"] != "csv":
+                err = -1
+                logger.error("unsupported path file format: {}".format(tmp_filename))
+        else:
+            err = -1
+            logger.error("missing path file format: {}".format(tmp_filename))
+
+        # sanity checks: must have a path file
+        if "path" in path_yaml:
+            if (len(path_yaml["path"]) > 1) or (len(path_yaml["path"]) == 0):
+                err = -1
+                logger.error("more than one path in file: {}".format(tmp_filename))
+
+            if "file" in path_yaml["path"][0]:
+                tmp_filename2 = os.path.join(
+                    _RESOURCES_DIR,
+                    position["value"]["type"],
+                    position["value"]["subtype"],
+                    path_yaml["path"][0]["file"],
+                )
+                if os.path.isfile(tmp_filename2):
+                    path_file = tmp_filename2
+                else:
+                    err = -1
+                    logger.error("missing path file in folder: {}".format(tmp_filename2))
+            else:
+                err = -1
+                logger.error("missing path filename: {}".format(tmp_filename))
+        else:
+            err = -1
+            logger.error("invalid path file syntax: {}".format(tmp_filename))
+
+        entry["coord"] = "0,0,0"
+        entry["path_csv"] = path_file
+
+    return err, entry
+
+
 def audioSceneRender(cli_params=None):
     """
     Render audio scene (.yaml) file.
@@ -779,6 +1029,8 @@ def audioSceneRender(cli_params=None):
     scene_yaml = []
     sources_yaml = []
     sources_wav = []
+    sounds_yaml = []
+    sounds_wav = []
     listeners_yaml = []
     rooms_yaml = []
 
@@ -817,163 +1069,17 @@ def audioSceneRender(cli_params=None):
         scene_yaml["scene"]["name"] = cli_params["scene_name"] + "_" + scene_yaml["scene"]["name"]
 
     #
-    # loop over sources
+    # load & convert audio sources: "sources" (human voices) and "sounds"
+    # (non-voice, optional, syntax v0.2.0+). Both share identical loading,
+    # validation and ffmpeg-conversion logic, see loadAudioObjectGroup().
     #
     if err == 0:
-        # sources
-        for idx in scene_yaml["setup"]["sources"]:
-            tmp_yaml = []
-            try:
-                tmp_filename = os.path.join(
-                    _RESOURCES_DIR,
-                    scene_yaml["setup"]["sources"][idx]["type"],
-                    scene_yaml["setup"]["sources"][idx]["subtype"],
-                    "info",
-                    scene_yaml["setup"]["sources"][idx]["info"],
-                )
-                with open(tmp_filename + ".yaml", "r") as file:
-                    tmp_yaml = yaml.safe_load(file)
-                sources_yaml.append(tmp_yaml)
-            except:
-                err = -1
-                logger.error("cannot open/parse source yaml file: {}".format(tmp_filename))
+        err, sources_yaml, tmp_sources_wav = loadAudioObjectGroup(cli_params, scene_yaml, "sources")
+        sources_wav.append(tmp_sources_wav)
 
     if err == 0:
-        tmp_sources_coord = []
-        tmp_sources_wav = []
-        for idx in range(scene_yaml["setup"]["sources_count"]):
-            media_filename = os.path.join(
-                _RESOURCES_DIR,
-                scene_yaml["setup"]["sources"][idx]["type"],
-                scene_yaml["setup"]["sources"][idx]["subtype"],
-                sources_yaml[idx]["file"],
-            )
-
-            media_info = getMediaInfo(media_filename, print_result=False)
-
-            # sanity checks : only one audio stream
-            if media_info["format"]["nb_streams"] != 1:
-                err = -1
-                logger.error("more than one stream in file {}".format(tmp_filename))
-
-            # sanity checks : position
-            if "position" in scene_yaml["setup"]["sources"][idx]:
-                if scene_yaml["setup"]["sources"][idx]["position"]["type"] == "static":
-                    if scene_yaml["setup"]["sources"][idx]["position"]["coord"]["type"] != "spherical":
-                        err = -1
-                        logger.error("invalid position type for source {} in file {}".format(idx, tmp_filename))
-
-                    mycoord = list(scene_yaml["setup"]["sources"][idx]["position"]["coord"]["value"])
-
-                    if 0 != verifySpericalCoord(str(mycoord[0]) + "," + str(mycoord[1]) + "," + str(mycoord[2])):
-                        err = -1
-                        logger.error(
-                            "invalid position coordinates {} for source {} in file {}".format(
-                                scene_yaml["setup"]["sources"][idx]["position"]["coord"]["value"], idx, tmp_filename
-                            )
-                        )
-                elif scene_yaml["setup"]["sources"][idx]["position"]["type"] == "dynamic":
-                    tmp1_filename = os.path.join(
-                        _RESOURCES_DIR,
-                        scene_yaml["setup"]["sources"][idx]["position"]["value"]["type"],
-                        scene_yaml["setup"]["sources"][idx]["position"]["value"]["subtype"],
-                        "info",
-                        scene_yaml["setup"]["sources"][idx]["position"]["value"]["info"],
-                    )
-
-                    tmp_filename = str(Path(tmp1_filename).with_suffix(".yaml"))
-
-                    if not os.path.isfile(tmp_filename):
-                        err = -1
-                        logger.error("missing path file {}".format(tmp_filename))
-                else:
-                    err = -1
-                    logger.error("invalid position type for source {} in file {}".format(idx, tmp_filename))
-            else:
-                err = -1
-                logger.error("invalid position for source {} in file {}".format(idx, tmp_filename))
-
-            if err == 0:
-                out_filename = os.path.join(_OUTPUT_REF_DIR, scene_yaml["setup"]["sources"][idx]["info"]) + ".wav"
-
-                overwrite_option = "-n"
-                if cli_params["force_overwrite"] == True:
-                    overwrite_option = "-y"
-
-                os_cmd = [
-                    _FFMPEG_EXE,
-                    overwrite_option,
-                    "-hide_banner",
-                    "-loglevel",
-                    "error",
-                    "-i",
-                    media_filename,
-                    # "-ss",
-                    # sources_yaml[idx]["playback"]["begin"],
-                    # "-to",
-                    # sources_yaml[idx]["playback"]["end"],
-                    "-c:a",
-                    str(scene_yaml["setup"]["format"]["subtype"]),
-                    "-ar",
-                    str(scene_yaml["setup"]["format"]["samplerate"]),
-                    "-ac",
-                    "1",
-                    # out_filename,
-                ]
-
-                if "playback" in sources_yaml[idx]:
-                    os_cmd += [
-                        "-ss",
-                        str(sources_yaml[idx]["playback"]["begin"]),
-                        "-to",
-                        str(sources_yaml[idx]["playback"]["end"]),
-                    ]
-
-                if "playback" in scene_yaml["setup"]["sources"][idx]:
-                    if "padding" in scene_yaml["setup"]["sources"][idx]["playback"]:
-                        if ("pre" in scene_yaml["setup"]["sources"][idx]["playback"]["padding"]) and (
-                            "post" in scene_yaml["setup"]["sources"][idx]["playback"]["padding"]
-                        ):
-                            os_cmd += [
-                                "-af",
-                                "adelay="
-                                + str(scene_yaml["setup"]["sources"][idx]["playback"]["padding"]["pre"])
-                                + ",apad=pad_dur="
-                                + str(scene_yaml["setup"]["sources"][idx]["playback"]["padding"]["post"]),
-                            ]
-                        elif "pre" in scene_yaml["setup"]["sources"][idx]["playback"]["padding"]:
-                            os_cmd += [
-                                "-af",
-                                "adelay="
-                                + str(scene_yaml["setup"]["sources"][idx]["playback"]["padding"]["pre"])
-                                + "s:all_true",
-                            ]
-                        elif "post" in scene_yaml["setup"]["sources"][idx]["playback"]["padding"]:
-                            os_cmd += [
-                                "-af",
-                                "apad=pad_dur="
-                                + str(scene_yaml["setup"]["sources"][idx]["playback"]["padding"]["post"]),
-                            ]
-
-                os_cmd += [out_filename]
-
-                if not os.path.isfile(out_filename):
-                    logger.info("convert audio file {}".format(out_filename))
-
-                    result = check_output(os_cmd)
-                    # os.system(" ".join(os_cmd))
-                else:
-                    waitFileCompleted(out_filename)
-                    logger.info("audio file already converted {}".format(out_filename))
-
-                tmp_sources_wav.append(os.path.join(_ROOT_DIR, out_filename))
-
-                if not os.path.isfile(os.path.join(_ROOT_DIR, out_filename)):
-                    err = -1
-                    logger.error("could not render .wav file {}".format(os.path.join(_ROOT_DIR, out_filename)))
-
-        # collect .wav files (converted) for each source
-        sources_wav.append(tmp_sources_wav)
+        err, sounds_yaml, tmp_sounds_wav = loadAudioObjectGroup(cli_params, scene_yaml, "sounds")
+        sounds_wav.append(tmp_sounds_wav)
 
     #
     # loop over listeners
@@ -1040,11 +1146,20 @@ def audioSceneRender(cli_params=None):
     if err != 0:
         logger.error("could not render audio scene: {}".format(cli_params["scene_file"]))
     else:
-        audioSpatialize(cli_params, scene_yaml, sources_yaml, sources_wav, listeners_yaml, rooms_yaml)
+        audioSpatialize(
+            cli_params, scene_yaml, sources_yaml, sources_wav, listeners_yaml, rooms_yaml, sounds_yaml, sounds_wav
+        )
 
 
 def audioSpatialize(
-    cli_params=None, scene_yaml=None, sources_yaml=None, sources_wav=None, listeners_yaml=None, rooms_yaml=None
+    cli_params=None,
+    scene_yaml=None,
+    sources_yaml=None,
+    sources_wav=None,
+    listeners_yaml=None,
+    rooms_yaml=None,
+    sounds_yaml=None,
+    sounds_wav=None,
 ):
     """
     Runs the spatializer tool on a specific scene configuration
@@ -1198,97 +1313,44 @@ def audioSpatialize(
                             sound_spatializer_cmd["head"] = head_sofa_file
                             sound_spatializer_cmd["head_radius"] = listener["geometry"]["head_radius"]
 
-                    # read sources
+                    # read sources (human voices)
                     for sidx in range(len(sources_wav[0])):
-                        # position static or dynamic, if dynamic load motion file definition
-                        path_file = ""
-                        if scene_yaml["setup"]["sources"][sidx]["position"]["type"] == "static":
-                            mycoord = list(scene_yaml["setup"]["sources"][sidx]["position"]["coord"]["value"])
-                            if 0 != verifySpericalCoord(
-                                str(mycoord[0]) + "," + str(mycoord[1]) + "," + str(mycoord[2])
-                            ):
-                                err = -1
-                                logger.error(
-                                    "invalid position coordinates {} for source {} in file {}".format(
-                                        scene_yaml["setup"]["sources"][sidx]["position"]["coord"]["value"],
-                                        idx,
-                                        tmp_filename,
-                                    )
-                                )
+                        err_entry, entry = resolveSpatializerSourceEntry(scene_yaml, "sources", sidx, sources_wav[0][sidx])
+                        if err_entry != 0:
+                            err = -1
                         else:
-                            tmp1_filename = os.path.join(
-                                _RESOURCES_DIR,
-                                scene_yaml["setup"]["sources"][sidx]["position"]["value"]["type"],
-                                scene_yaml["setup"]["sources"][sidx]["position"]["value"]["subtype"],
-                                "info",
-                                scene_yaml["setup"]["sources"][sidx]["position"]["value"]["info"],
-                            )
-
-                            tmp_filename = str(Path(tmp1_filename).with_suffix(".yaml"))
-
-                            path_yaml = readYamlFile(tmp_filename)
-
-                            # sanity checks: must be a csv
-                            if "format" in path_yaml:
-                                if path_yaml["format"] != "csv":
-                                    err = -1
-                                    logger.error("unsupported path file format: {}", format(tmp_filename))
-                            else:
-                                err = -1
-                                logger.error("missing path file format: {}", format(tmp_filename))
-
-                            # sanity checks: must have a path file
-                            if "path" in path_yaml:
-                                if (len(path_yaml["path"]) > 1) or (len(path_yaml["path"]) == 0):
-                                    err = -1
-                                    logger.error("more than one path in file: {}", format(tmp_filename))
-
-                                if "file" in path_yaml["path"][0]:
-                                    tmp_filename = os.path.join(
-                                        _RESOURCES_DIR,
-                                        scene_yaml["setup"]["sources"][sidx]["position"]["value"]["type"],
-                                        scene_yaml["setup"]["sources"][sidx]["position"]["value"]["subtype"],
-                                        path_yaml["path"][0]["file"],
-                                    )
-                                    if os.path.isfile(tmp_filename):
-                                        path_file = tmp_filename
-                                    else:
-                                        err = -1
-                                        logger.error("missing path file in folder: {}", format(tmp_filename))
-                                else:
-                                    err = -1
-                                    logger.error("missing path filename: {}", format(tmp_filename))
-                            else:
-                                err = -1
-                                logger.error("invalid path file syntax: {}", format(tmp_filename))
-
-                        # add spatializer to task list
-                        if err == 0:
-                            sound_spatializer_cmd["sources"][sidx] = {}
-                            sound_spatializer_cmd["sources"][sidx]["file"] = sources_wav[0][sidx]
-                            if scene_yaml["setup"]["sources"][sidx]["position"]["type"] == "static":
-                                mycoord = list(scene_yaml["setup"]["sources"][sidx]["position"]["coord"]["value"])
-                                sound_spatializer_cmd["sources"][sidx]["coord"] = (
-                                    str(mycoord[0]) + "," + str(mycoord[1]) + "," + str(mycoord[2])
-                                )
-                                sound_spatializer_cmd["sources"][sidx]["path_csv"] = "none"
-                            else:
-                                sound_spatializer_cmd["sources"][sidx]["coord"] = "0,0,0"
-                                sound_spatializer_cmd["sources"][sidx]["path_csv"] = path_file
+                            entry["is_sound"] = False
+                            sound_spatializer_cmd["sources"][sidx] = entry
 
                             # log for debug
                             logger.info("   sidx: " + str(sidx))
                             logger.info("   source:" + sources_wav[0][sidx])
-                            # if(scene_yaml["setup"]["sources"][sidx]["position"]["type"]=="static"):
-                            logger.info("      coord:")
-                            if scene_yaml["setup"]["sources"][sidx]["position"]["type"] == "static":
-                                logger.info("      static:")
-                                logger.info(
-                                    "      " + str(scene_yaml["setup"]["sources"][sidx]["position"]["coord"]["value"])
-                                )
+                            logger.info("      coord: " + entry["coord"])
+                            logger.info("      path_csv: " + entry["path_csv"])
+                            logger.info("   head:" + head_sofa_file)
+                            logger.info("   room:" + rooms_brir_file)
+
+                    # read sounds (non-voice sources, optional, syntax v0.2.0+).
+                    # sspat does not distinguish sources from sounds: they are appended to the
+                    # same "sources" list (continuing the index) and spatialized identically.
+                    # the "is_sound" marker is only used later to optionally exclude them from
+                    # the final MKV dry tracks/descriptor, see -is/--include_sounds_output.
+                    if sounds_wav and len(sounds_wav[0]) > 0:
+                        base_idx = len(sources_wav[0])
+                        for j in range(len(sounds_wav[0])):
+                            sidx = base_idx + j
+                            err_entry, entry = resolveSpatializerSourceEntry(scene_yaml, "sounds", j, sounds_wav[0][j])
+                            if err_entry != 0:
+                                err = -1
                             else:
-                                logger.info("      dynamic:")
-                                logger.info("      " + path_file)
+                                entry["is_sound"] = True
+                                sound_spatializer_cmd["sources"][sidx] = entry
+
+                                # log for debug
+                                logger.info("   sidx: " + str(sidx) + " (sound)")
+                                logger.info("   source:" + sounds_wav[0][j])
+                                logger.info("      coord: " + entry["coord"])
+                                logger.info("      path_csv: " + entry["path_csv"])
                                 logger.info("   head:" + head_sofa_file)
                                 logger.info("   room:" + rooms_brir_file)
 
@@ -1478,8 +1540,11 @@ def executeSpatializeTasks(cli_params, tasks={}):
         # ffmpeg_file = os.path.abspath(os.path.join(_OUTPUT_REF_DIR + "/../", tmp_filename) + ".wav")
         ffmpeg_file = os.path.abspath(os.path.join(_OUTPUT_REF_DIR + "/../", tmp_filename) + ".mkv")
 
-        # reference source files (mono)
-        ref_files = getSourceFilesSoundSpatializer(tasks[0])
+        # reference source files (mono): "sounds" are excluded by default (dry track + MKV
+        # descriptor) unless explicitly requested with -is/--include_sounds_output. They are
+        # always present in the spatialized array/binaural receiver renders regardless of
+        # this option, since they still need to acoustically be part of the recorded mix.
+        ref_files = getSourceFilesSoundSpatializer(tasks[0], skip_sounds=not cli_params["include_sounds_output"])
 
         sspat_files = []
         for cmd in sspat_cmds:
@@ -1591,6 +1656,16 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="audio source conversion (ffmpeg) force overwrite (default: %(default)s)",
+    )
+    parser.add_argument(
+        "-is",
+        "--include_sounds_output",
+        action="store_true",
+        default=False,
+        help="include non-voice 'sounds' as separate dry tracks in the MKV output and its "
+        "yaml descriptor (default: %(default)s). Sounds are always spatialized into the "
+        "array/binaural receiver renders regardless of this option; this only controls "
+        "whether they are also exposed as a labeled ground-truth track.",
     )
     parser.add_argument(
         "-o",
