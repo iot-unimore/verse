@@ -41,7 +41,7 @@ setup:
       position:
         type: static
         coord:
-          value: [90, 60, 1]
+          value: [80, 45, 1]
           type: spherical
           units: ['degree','degree','metre']
         view_vect:
