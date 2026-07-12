@@ -18,6 +18,8 @@ import subprocess
 from multiprocessing import Pool
 from setproctitle import setproctitle
 from subprocess import check_output
+from functools import partial
+from tqdm import tqdm
 
 
 #
@@ -52,15 +54,20 @@ class ColoredFormatter(logging.Formatter):
         return f"{color}{message}{self.RESET}"
 
 
-def setup_logging(verbose, logfile=None):
-    """Configure logging for the whole process: colored console output (always),
-    plus an optional plain-text file handler when a logfile path is given.
+def setup_logging(verbose, logfile=None, quiet=False, silent=False):
+    """Configure logging for the whole process: colored console output, plus an
+    optional plain-text file handler when a logfile path is given.
 
     verbose is a count:
       0 (default) -> WARNING, short format
       1 (-v)      -> INFO, short format
       2 (-vv)     -> DEBUG, short format
       3+ (-vvv)   -> DEBUG, full format (adds [filename->funcName():lineno])
+
+    -q/--quiet and -s/--silent only affect the CONSOLE handler: they silence
+    terminal output (progress bar aside, see shouldShowProgress()) but the
+    optional -log FILE still records at the verbose-derived level, so a quiet
+    run can still capture full detail for later inspection.
     """
     if verbose >= 2:
         level = logging.DEBUG
@@ -79,12 +86,50 @@ def setup_logging(verbose, logfile=None):
 
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(ColoredFormatter(fmt))
+    console_handler.setLevel(logging.CRITICAL + 1 if (quiet or silent) else level)
     root_logger.addHandler(console_handler)
 
     if logfile is not None:
         file_handler = logging.FileHandler(logfile, encoding="utf-8")
         file_handler.setFormatter(logging.Formatter(fmt))
         root_logger.addHandler(file_handler)
+
+
+def shouldShowProgress(cli_params):
+    """-s/--silent always wins (no output at all). -q/--quiet forces the
+    progress bar on regardless of -v. Otherwise the progress bar only shows
+    in the default (no -v) case, since it doesn't mix well with scrolling
+    log lines.
+    """
+    if cli_params["silent"]:
+        return False
+    if cli_params["quiet"]:
+        return True
+    return cli_params["verbose"] == 0
+
+
+def renderSceneLoggingArgs(cli_params):
+    """Build the logging-related CLI flags to pass down to each render_scene.py
+    subprocess, so the whole (potentially large) pool of parallel per-scene
+    processes behaves consistently with how render_dataset.py itself was invoked.
+
+    This is not a literal mirror of render_dataset's own flags, and it is NOT
+    simply "whenever shouldShowProgress() is True" -- that function answers a
+    different question (does the parent draw a progress bar?) and, notably,
+    returns False when silent=True, since a silent run shows no progress bar
+    either. Here we need the opposite: silent/quiet must force children
+    silent too. So: whenever render_dataset is silent, quiet, or in its
+    default (no -v) mode -- i.e. whenever the console isn't showing explicit
+    detail -- every child is forced fully silent (-s), otherwise per-scene
+    WARNING/ERROR output from dozens of parallel workers would corrupt the
+    progress bar or violate quiet/silent mode. Only when the user explicitly
+    asked for detail (-v/-vv/-vvv, with neither -q nor -s) do children mirror
+    that same verbosity level.
+    """
+    if cli_params["silent"] or cli_params["quiet"] or cli_params["verbose"] == 0:
+        return ["-s"]
+
+    return ["-" + "v" * cli_params["verbose"]]
 
 
 #
@@ -556,13 +601,19 @@ def buildDataSetRecipes(cli_params=None, data=None):
     logger.debug("buildDataSetRecipes Pool size: {}".format(max_pool_size))
     cpu_pool = Pool(max_pool_size)
 
-    result = cpu_pool.map(buildDataSetRecipe, data)
+    iterator = cpu_pool.imap_unordered(buildDataSetRecipe, data)
+
+    if shouldShowProgress(cli_params):
+        iterator = tqdm(iterator, total=len(data), desc="buildDataSetRecipes")
+
+    for _ in iterator:
+        pass
 
     cpu_pool.close()
     cpu_pool.join()
 
 
-def soundSpatializeScene(data=None):
+def soundSpatializeScene(data=None, cli_params=None):
     if data is not None:
         output_dir = os.path.split(data)[0]
         logger.info("Dataset, Rendering Scene: " + str(output_dir))
@@ -577,8 +628,10 @@ def soundSpatializeScene(data=None):
         # scene_render: no verbose, no logfile, keep intermediate files
         # cmd = [_SCENE_RENDER_EXE, "-k", "-c", "8", "-sf", str(data), "-o", str(output_dir)]
 
-        # scene_render: no verbose, no logfile, no intermediate files
+        # scene_render: no logfile, no intermediate files, logging level/silence
+        # matched to the parent render_dataset.py invocation (see renderSceneLoggingArgs)
         cmd = [_SCENE_RENDER_EXE, "-c", "8", "-sf", str(data), "-o", str(output_dir)]
+        cmd += renderSceneLoggingArgs(cli_params)
 
         # execute
         os.system(" ".join(cmd))
@@ -625,7 +678,13 @@ def soundSpatializeDataSet(cli_params=None):
     logger.info("soundSpatializeDataSet Pool size: {}".format(max_pool_size))
     cpu_pool = Pool(max_pool_size)
 
-    result = cpu_pool.imap_unordered(soundSpatializeScene, scenes_yaml)
+    iterator = cpu_pool.imap_unordered(partial(soundSpatializeScene, cli_params=cli_params), scenes_yaml)
+
+    if shouldShowProgress(cli_params):
+        iterator = tqdm(iterator, total=len(scenes_yaml), desc="soundSpatializeDataSet")
+
+    for _ in iterator:
+        pass
 
     cpu_pool.close()
     cpu_pool.join()
@@ -755,6 +814,22 @@ if __name__ == "__main__":
         help="verbose, repeat for more detail: -v=INFO, -vv=DEBUG, -vvv=DEBUG+source location (default: WARNING)",
     )
     parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        default=False,
+        help="suppress all console log output regardless of -v; show only the progress bar. "
+        "Takes precedence over -v/-vv/-vvv (default: %(default)s)",
+    )
+    parser.add_argument(
+        "-s",
+        "--silent",
+        action="store_true",
+        default=False,
+        help="suppress all console output, including the progress bar. "
+        "Takes precedence over -q and -v/-vv/-vvv (default: %(default)s)",
+    )
+    parser.add_argument(
         "-log",
         "--logfile",
         type=str,
@@ -781,7 +856,7 @@ if __name__ == "__main__":
     #
     # set debug verbosity
     #
-    setup_logging(args.verbose, args.logfile)
+    setup_logging(args.verbose, args.logfile, quiet=args.quiet, silent=args.silent)
 
     #
     # load params from external config file (if given)

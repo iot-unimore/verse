@@ -57,15 +57,21 @@ class ColoredFormatter(logging.Formatter):
         return f"{color}{message}{self.RESET}"
 
 
-def setup_logging(verbose, logfile=None):
-    """Configure logging for the whole process: colored console output (always),
-    plus an optional plain-text file handler when a logfile path is given.
+def setup_logging(verbose, logfile=None, quiet=False, silent=False):
+    """Configure logging for the whole process: colored console output, plus an
+    optional plain-text file handler when a logfile path is given.
 
     verbose is a count:
       0 (default) -> WARNING, short format
       1 (-v)      -> INFO, short format
       2 (-vv)     -> DEBUG, short format
       3+ (-vvv)   -> DEBUG, full format (adds [filename->funcName():lineno])
+
+    -q/--quiet and -s/--silent only affect the CONSOLE handler: they silence
+    terminal output, but the optional -log FILE still records at the
+    verbose-derived level. Kept identical to render_dataset.py's setup_logging()
+    for consistent behavior across the toolchain (render_dataset spawns
+    render_scene as a subprocess and propagates a matching set of flags).
     """
     if verbose >= 2:
         level = logging.DEBUG
@@ -84,6 +90,7 @@ def setup_logging(verbose, logfile=None):
 
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(ColoredFormatter(fmt))
+    console_handler.setLevel(logging.CRITICAL + 1 if (quiet or silent) else level)
     root_logger.addHandler(console_handler)
 
     if logfile is not None:
@@ -1764,6 +1771,21 @@ if __name__ == "__main__":
         help="verbose, repeat for more detail: -v=INFO, -vv=DEBUG, -vvv=DEBUG+source location (default: WARNING)",
     )
     parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        default=False,
+        help="suppress all console log output regardless of -v. Takes precedence over "
+        "-v/-vv/-vvv (default: %(default)s)",
+    )
+    parser.add_argument(
+        "-s",
+        "--silent",
+        action="store_true",
+        default=False,
+        help="suppress all console output. Takes precedence over -q and -v/-vv/-vvv (default: %(default)s)",
+    )
+    parser.add_argument(
         "-log",
         "--logfile",
         type=str,
@@ -1776,7 +1798,7 @@ if __name__ == "__main__":
     #
     # set debug verbosity
     #
-    setup_logging(args.verbose, args.logfile)
+    setup_logging(args.verbose, args.logfile, quiet=args.quiet, silent=args.silent)
 
     #
     # load params from external config file (if given)
