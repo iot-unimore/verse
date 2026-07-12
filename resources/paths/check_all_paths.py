@@ -46,6 +46,13 @@ def run_batch(input_folder: str):
                 text=True
             )
 
+            # result = subprocess.run(
+            #     ["python", _CHECK_PATH, "-i", str(csv_file), "-d", str("1"), "-e", str("45"), "--dry-run"],
+            #     check=True,
+            #     capture_output=True,
+            #     text=True
+            # )
+
             # optional: print script output
             if result.stdout:
                 print(result.stdout)
