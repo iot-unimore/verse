@@ -124,12 +124,16 @@ _FFPROBE_EXE = "/usr/bin/ffprobe"
 # TOOLS
 #
 def signal_handler(sig, frame):
+    """SIGINT (Ctrl+C) handler: prints a notice and sets the global exit flag."""
     global _CTRL_EXIT_SIGNAL
     print("\npressed Ctrl+C\n")
     _CTRL_EXIT_SIGNAL = 1
 
 
 def readYamlFile(filename=None):
+    """Load and parse a YAML file, returning its content (dict/list).
+    Returns an empty list if filename is missing or the file can't be
+    opened/parsed (error is logged, not raised)."""
     yaml_params = []
     if filename != None:
         try:
@@ -144,7 +148,8 @@ def readYamlFile(filename=None):
 
 
 def get_samplerate(wav_file):
-    """Uses ffprobe to get number of audio channels in a WAV file."""
+    """Uses ffprobe to read the sample rate (Hz) of a WAV file's first
+    audio stream. Returns it as a string (ffprobe's raw JSON value)."""
     cmd = [
         _FFPROBE_EXE,
         "-hide_banner",
@@ -165,6 +170,9 @@ def get_samplerate(wav_file):
 
 
 def waitFileCompleted(filepath, stable_time=3.0, timeout=120.0, check_interval=0.5):
+    """Poll a file's size until it stops changing for `stable_time` seconds,
+    to detect that another (parallel) process has finished writing it.
+    Returns True once stable, False if `timeout` elapses first."""
     filepath = Path(filepath)
 
     start_time = time.time()
@@ -198,7 +206,11 @@ def waitFileCompleted(filepath, stable_time=3.0, timeout=120.0, check_interval=0
 
 
 def resampleAudioFile(input_file, output_file, samplerate=0, overwrite=False):
-    """ """
+    """Resample a WAV file to `samplerate` via ffmpeg, without re-encoding
+    (detects and keeps the source codec). Used to reconcile source/HRTF
+    samplerate mismatches before/after running sspat. No-ops if
+    output_file already exists and overwrite=False. Raises ValueError on
+    any failure (bad args, unreadable input, unsupported codec, ffmpeg error)."""
 
     codec_types = ["pcm_s16le", "pcm_s24le", "pcm_s32le", "pcm_f32le", "pcm_f64le"]
 
@@ -318,17 +330,10 @@ def muxWavFilesMKV(mono_files, stereo_files, output_file):
 
 
 def getSourceFilesSoundSpatializer(cfg_yaml={}, skip_sounds=True):
-    """
-    write a config file (.yaml) for sound_spatializer tool
-
-    Parameters
-    ----------
-    t.b.d
-
-    Returns
-    -------
-    t.b.d
-    """
+    """Extract the list of mono source .wav file paths from a sound_spatializer
+    task config (cfg_yaml["sources"]), used to build the MKV's dry reference
+    tracks. When skip_sounds=True (default), entries marked is_sound=True are
+    excluded, per the -is/--include_sounds_output CLI option."""
     source_files = []
 
     if len(cfg_yaml) > 0:
@@ -342,17 +347,10 @@ def getSourceFilesSoundSpatializer(cfg_yaml={}, skip_sounds=True):
 
 
 def writeAudioMKVDescriptor(filename=None, mono_files=[], stereo_files=[], mkv_filename=None, scene_filename=None):
-    """
-    write a descriptor file (.yaml) for audio_scene final wav file (multi-track)
-
-    Parameters
-    ----------
-    t.b.d
-
-    Returns
-    -------
-    t.b.d
-    """
+    """Write the .yaml descriptor accompanying a rendered MKV file: lists
+    each mono source track and each stereo receiver track with their track
+    IDs/channel counts, the MKV filename, and a reference back to the scene
+    .yaml used to render it."""
 
     track_id = 0
 
@@ -404,17 +402,10 @@ def writeAudioMKVDescriptor(filename=None, mono_files=[], stereo_files=[], mkv_f
 
 
 def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
-    """
-    write a config file (.yaml) for sound_spatializer tool
-
-    Parameters
-    ----------
-    t.b.d
-
-    Returns
-    -------
-    t.b.d
-    """
+    """Build and write the sspat tool's own config .yaml (its "-p" argument)
+    from a sound_spatializer_cmd task dict: head/room SOFA/BRIR files, one
+    entry per source (file/coord/path_csv plus fixed 3DTI processing flags),
+    and the listener entry. Returns 0 on success, -1 on failure."""
     err = -1
 
     cfg = {}
@@ -501,6 +492,9 @@ def writeSoundSpatializerCFG(filename=None, cfg_yaml={}):
 
 
 def get_flag_value(cmd, flag):
+    """Return the value following `flag` in a command-line argument list
+    `cmd` (e.g. get_flag_value(cmd, "-o") -> the output path), or None if
+    the flag isn't present."""
     for i, token in enumerate(cmd):
         if token == flag and i + 1 < len(cmd):
             return cmd[i + 1]
@@ -508,6 +502,11 @@ def get_flag_value(cmd, flag):
 
 
 def executeSoundSpatializerCmd(cmd=""):
+    """Run one sspat command (as built in executeSpatializeTasks()). First
+    checks whether every source's samplerate matches the HRTF's (parsed from
+    the SOFA file via parse_sofa.py); on mismatch, resamples the inputs to
+    match, runs sspat, resamples the output back down, then removes the
+    temporary resampled files. Returns 0 on success, -1 on any failure."""
     err = 0
 
     if cmd == "":
@@ -613,17 +612,10 @@ def executeSoundSpatializerCmd(cmd=""):
 
 
 def writePostProcessingCFG(cfg_file=None, wav_file=None, cli=[], task_yaml={}, postproc_yaml={}):
-    """
-    write a config file (.yaml) for postprocessing
-
-    Parameters
-    ----------
-    t.b.d
-
-    Returns
-    -------
-    t.b.d
-    """
+    """Write the config .yaml for one post-processing script invocation:
+    in-place input/output (post-processing overwrites wav_file), a reference
+    to the scene file, and the task/postproc resource descriptors. Returns
+    0 on success, -1 on failure (empty task_yaml, bad data, or write error)."""
     err = -1
 
     cfg = {}
@@ -674,6 +666,9 @@ def writePostProcessingCFG(cfg_file=None, wav_file=None, cli=[], task_yaml={}, p
 
 
 def executePostProcessingCmd(cmd=""):
+    """Run one post-processing script command (as built in
+    executeSpatializeTasks()) and verify its output file was produced.
+    Returns 0 on success, -1 on failure."""
     err = 0
     logger.debug("post-processing, executing:" + str(cmd))
 
@@ -694,12 +689,10 @@ def executePostProcessingCmd(cmd=""):
 # AUDIO PROCESSING
 #
 def getMediaInfo(filename, print_result=True):
-    """
-    Returns:
-        result = dict with audio info where:
-        result['format'] contains dict of tags, bit rate etc.
-        result['streams'] contains a dict per stream with sample rate, channels etc.
-    """
+    """Run ffprobe on `filename` and return its full format+streams info as
+    a dict (parsed JSON): result["format"] holds tags/bit rate/etc.,
+    result["streams"] holds one dict per stream (sample rate, channels...).
+    If print_result=True, also pretty-prints both to stdout."""
     result = check_output(
         [_FFPROBE_EXE, "-hide_banner", "-loglevel", "panic", "-show_format", "-show_streams", "-of", "json", filename]
     )
@@ -723,6 +716,9 @@ def getMediaInfo(filename, print_result=True):
 
 
 def verifySpericalCoord(source_coord):
+    """Validate a "azimuth,elevation,distance" coordinate string: must have
+    exactly 3 comma-separated components, and distance must be > 0.1
+    (sspat/3DTI requirement). Returns 0 if valid, -1 otherwise (logged)."""
     err = 0
     tmp = str(source_coord).split(",")
 
@@ -986,21 +982,11 @@ def resolveSpatializerSourceEntry(scene_yaml, group_key, idx, wav_file):
 
 def audioSceneRender(cli_params=None):
     """
-    Render audio scene (.yaml) file.
-
-    Parameters
-    ----------
-    t.b.d
-
-    Returns
-    -------
-    t.b.d
-
-    Description
-    -----------
-    Get an audio scene yaml file from imput parameters and render the audio output.
-    run sanity checks on syntax and launch the spatializer tool
-    to render audio in the required format (WAV).
+    Entry point for rendering one scene .yaml file (called from __main__ with
+    the parsed CLI args). Loads and validates the scene: syntax check, the
+    "sources" (voices) and "sounds" (non-voice, optional) audio groups via
+    loadAudioObjectGroup(), the listener (exactly 1 required) and the room
+    (0 or 1). On success, hands off to audioSpatialize() to run sspat.
     """
 
     err = 0
@@ -1141,18 +1127,12 @@ def audioSpatialize(
     sounds_wav=None,
 ):
     """
-    Runs the spatializer tool on a specific scene configuration
-
-    Parameters
-    ----------
-    t.b.d
-
-    Returns
-    -------
-    t.b.d
-
-    Description
-    -----------
+    Build one sspat task per listener HRTF entry: resolves the room BRIR and
+    head SOFA files (matching on samplerate/name, falling back to defaults
+    with a warning on mismatch), then appends every "sources" (voice) and
+    "sounds" (non-voice) entry as a spatializer source via
+    resolveSpatializerSourceEntry(). Hands the resulting task list to
+    executeSpatializeTasks() for execution.
     """
 
     err = 0
@@ -1337,6 +1317,15 @@ def audioSpatialize(
 
 
 def executeSpatializeTasks(cli_params, tasks={}):
+    """
+    Runs the full rendering pipeline for the task list built by
+    audioSpatialize(): (1) writes one sspat config per task and runs them in
+    a process pool, (2) if the scene defines "postproc", runs the
+    post-processing script per task, (3) muxes the mono source files and
+    stereo sspat outputs into one multi-track MKV via ffmpeg, (4) writes the
+    MKV's .yaml descriptor, (5) unless -k/--keep_files was given, deletes
+    the intermediate tmp/ref/wav working files.
+    """
     err = 0
 
     logger.info("-" * 80)

@@ -150,12 +150,16 @@ _SCENE_RENDER_EXE = _ROOT_DIR + "/render_scene.py"
 # TOOLS
 #
 def signal_handler(sig, frame):
+    """SIGINT (Ctrl+C) handler: prints a notice and sets the global exit flag."""
     global _CTRL_EXIT_SIGNAL
     print("\npressed Ctrl+C\n")
     _CTRL_EXIT_SIGNAL = 1
 
 
 def readYamlFile(filename=None):
+    """Load and parse a YAML file, returning its content (dict/list).
+    Returns an empty list if filename is missing or the file can't be
+    opened/parsed (error is logged, not raised)."""
     yaml_params = []
     if filename != None:
         try:
@@ -170,11 +174,15 @@ def readYamlFile(filename=None):
 
 
 def readAllScenes(folder):
+    """Return the list of scene .yaml file paths under folder/info/."""
     files_yaml = glob.glob(folder + "/info/*.yaml")
     return files_yaml
 
 
 def readResourceListFull(recipe_yaml, resource, set_idx, task_idx):
+    """Resolve every entry listed under a task's `resource` key (e.g.
+    "heads", "rooms", "preproc", "postproc") into a flat list of
+    [subtype, info_file_path] pairs, via readResourceList() per entry."""
     resource_list = []
 
     if resource in recipe_yaml["sets"][set_idx]["tasks"][task_idx]:
@@ -188,6 +196,14 @@ def readResourceListFull(recipe_yaml, resource, set_idx, task_idx):
 
 
 def readResourceList(recipe_yaml, resource, set_idx, task_idx, res_idx):
+    """Resolve one `resource` entry
+    (recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]) into
+    a list of [subtype, info_file_path] pairs. Supports three "info" forms:
+    "all" (every .yaml under that resource/subtype's info/ folder), a
+    wildcard rule ("*"/"?" glob-like match, or a leading "!" to negate it),
+    or an explicit list of filenames (with or without ".yaml"). Used to
+    expand a dataset recipe task into the concrete resource files to render.
+    """
     resource_list = []
     if ("subtype") not in recipe_yaml["sets"][set_idx]["tasks"][task_idx][resource][res_idx]:
         logger.error("listed resource has no subtype")
@@ -338,6 +354,15 @@ def readResourceList(recipe_yaml, resource, set_idx, task_idx, res_idx):
 
 
 def buildDataSetRecipe(data=None):
+    """
+    Worker function (run in a process pool by buildDataSetRecipes()): for one
+    (dataset, task, scene) unit of work, writes the concrete per-recipe scene
+    .yaml file(s) under the dataset output folder. If no voices/heads/rooms
+    customization was requested, copies each scene "as-is" (only overriding
+    the dataset's audio output format). Otherwise generates one customized
+    scene per permutation of voices/heads/rooms/postproc, cycling through
+    the provided resource lists.
+    """
     err = 0
 
     recipe_custom_id = 0
@@ -561,6 +586,10 @@ def buildDataSetRecipe(data=None):
 
 
 def buildDataSetRecipes(cli_params=None, data=None):
+    """Run buildDataSetRecipe() over every work item in `data` (one dict per
+    dataset/task/scene unit) using a CPU/MEM-sized process pool, writing out
+    every dataset recipe's concrete scene .yaml file(s) to disk. Shows a
+    progress bar when shouldShowProgress(cli_params) is True."""
     for item in data:
         logger.debug("-" * 80)
         logger.debug(yaml.dump(item))
@@ -592,6 +621,11 @@ def buildDataSetRecipes(cli_params=None, data=None):
 
 
 def soundSpatializeScene(data=None, cli_params=None):
+    """Worker function (run in a process pool by soundSpatializeDataSet()):
+    renders one scene .yaml (`data`) by spawning render_scene.py as a
+    subprocess, with logging flags matched to the parent's own verbosity via
+    renderSceneLoggingArgs() so per-scene output stays consistent across the
+    whole (potentially large) parallel pool."""
     if data is not None:
         output_dir = os.path.split(data)[0]
         logger.info("Dataset, Rendering Scene: " + str(output_dir))
@@ -614,6 +648,10 @@ def soundSpatializeScene(data=None, cli_params=None):
 
 
 def soundSpatializeDataSet(cli_params=None):
+    """Find every rendered dataset scene .yaml under _OUTPUT_DIR (filtering
+    out tmp files and any .yaml that isn't an "audio_rendering_scene"), then
+    render each one via soundSpatializeScene() in a CPU/MEM-sized process
+    pool, with an optional progress bar (shouldShowProgress())."""
     #
     # search for all available scene yaml files
     #
@@ -667,6 +705,14 @@ def soundSpatializeDataSet(cli_params=None):
 
 
 def renderDataSet(cli_params=None, recipe_yaml=None):
+    """
+    Top-level dataset build (called from __main__): for every set/task/scene
+    in the recipe, resolves the scenes/heads/rooms/voices/preproc/postproc
+    resource lists and collects one work item per unit into workers_data.
+    Then runs the two-phase pipeline: buildDataSetRecipes() (write out the
+    concrete per-recipe scene files) followed by soundSpatializeDataSet()
+    (render each one via sspat).
+    """
     workers_data = []
 
     if ("sets" not in recipe_yaml) or (recipe_yaml["sets"] is None):
