@@ -163,7 +163,7 @@ The final output is placed under [VERSE]/dataset/simple_example folder and the t
                             └── static_singlevoice_mkv.yaml
 ```
 
-See [scene_sintax](scene_syntax_howoto.md) for the details of each scene file definition and usage.
+See [scene_syntax](scene_syntax_howto.md) for the details of each scene file definition and usage.
 
 # adding tasks to a dataset
 Sometime we need a set to be rendered across multiple sources, either scenes, voices, heads or rooms. This is where adding one more task is needed to allow flexibility for the dataset recipe.

@@ -138,7 +138,7 @@ For dynamic sources the position will chance during playback and so a "path" mus
           info: path_001.yaml
 ```
 
-Paths are a RESOURCE and are defined in VERSE as specified here: (path_syntax)[path_syntax_howto]
+Paths are a RESOURCE and are defined in VERSE as specified here: [path_syntax](path_syntax_howto.md)
 
 ## listeners
 There must be only one listener in one scene.

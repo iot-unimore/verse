@@ -138,4 +138,4 @@ the low-level data is specified by a CSV file which has the following structure:
 each position is referred to the space origin which is centered at the same position of the listener's head.
 
 # visualization
-Path can be visualized with the "display_path" tool, see (display_path)[display_path.md]
+Path can be visualized with the "display_path" tool, see [display_path](display_path.md)
