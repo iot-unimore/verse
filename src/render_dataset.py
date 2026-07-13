@@ -31,6 +31,16 @@ script's own console output and its tqdm progress bar (shouldShowProgress);
 the same effective verbosity is propagated down to every render_scene.py
 subprocess (renderSceneLoggingArgs) so parallel workers don't corrupt the
 progress bar or violate quiet/silent mode.
+
+--dry-run: skips both pipeline phases (buildDataSetRecipes/
+soundSpatializeDataSet) entirely -- no folder or scene file is ever created,
+not even the top-level dataset output folder. Instead, computeWorkItemPlan()
+recomputes, for every (set, task) group, how many scene recipes would have
+been generated (mirroring buildDataSetRecipe()'s own naming/permutation
+logic exactly, without writing anything), and reportDryRun() prints one
+summary table per set (task -> scene count) via tabulate. At -v (INFO) or
+above, the full list of recipe names that would be rendered under each task
+is also logged.
 """
 
 import os
@@ -45,6 +55,7 @@ from multiprocessing import Pool
 from setproctitle import setproctitle
 from functools import partial
 from tqdm import tqdm
+from tabulate import tabulate
 
 
 #
@@ -617,6 +628,124 @@ def buildDataSetRecipe(data=None):
                         recipe_custom_id += 1
 
 
+def computeWorkItemPlan(data):
+    """Compute, for one work item (as built by renderDataSet()'s main loop),
+    the list of recipe names that buildDataSetRecipe() would generate and
+    write to disk -- without touching the filesystem. Mirrors that
+    function's naming/permutation logic exactly: each scene in
+    data["scenes_list"] contributes one recipe per permutation of the given
+    voices/heads/rooms resource lists (1 permutation when none of them are
+    customized, i.e. the "AS-IS" case), and recipe names follow the same
+    "{scene}_{task_idx}_{scene_idx}_{recipe_custom_id}" scheme.
+    """
+    voices_iteration_count = max((len(v) for v in data["voices_list"]), default=0)
+    heads_iteration_count = len(data["heads_list"])
+    rooms_iteration_count = len(data["rooms_list"])
+
+    scene_iteration_count = (
+        max(1, voices_iteration_count) * max(1, heads_iteration_count) * max(1, rooms_iteration_count)
+    )
+
+    names = []
+    recipe_custom_id = 0
+    for scene in data["scenes_list"]:
+        if (len(scene) == 2) and scene[1].endswith(".yaml"):
+            base_name = os.path.split(scene[1])[1][0:-5]
+            for _ in range(scene_iteration_count):
+                recipe_name = "_".join(
+                    [base_name, str(data["task_idx"]), str(data["scene_idx"]), str(recipe_custom_id)]
+                )
+                names.append(recipe_name)
+                recipe_custom_id += 1
+
+    return names
+
+
+def taskLabel(task_idx, task_name):
+    """Return the display label for a task in dry-run reporting: the task's
+    "name" field (recipe syntax 0.2.1+) when available, falling back to its
+    plain task_idx for older recipes that don't have one."""
+    return task_name if task_name else task_idx
+
+
+def reportDryRun(cli_params, recipe_yaml, workers_data):
+    """--dry-run reporting: group `workers_data` by (set, task), compute how
+    many scene recipes each group would generate via computeWorkItemPlan()
+    (no file/folder is written), and print one summary table per set using
+    tabulate. Tasks are labeled by their "name" field when the recipe
+    provides one (syntax 0.2.1+, see taskLabel()), otherwise by their plain
+    task_idx. Each row shows both "Recipe Scenes" (the raw scene count
+    listed under the task's "scenes" key in the recipe file) and "Render
+    Scenes" (the actual number of scene recipes that will be rendered, i.e.
+    "Recipe Scenes" multiplied by however many voices/heads/rooms
+    permutations the task's customization produces) and "Ratio" (Render
+    Scenes / Recipe Scenes, to 1 decimal place) so it's easy to see how many
+    variations a task's voice/head/room combinations generate. At INFO
+    verbosity (-v) or above, also logs the full list of recipe names that
+    would be rendered under each task.
+    """
+    sets_order = []
+    tasks_by_set = {}
+    names_by_set_task = {}
+    task_names = {}
+    recipe_scene_counts = {}
+
+    for data in workers_data:
+        ds_idx = data["dataset_idx"]
+        t_idx = data["task_idx"]
+
+        if ds_idx not in tasks_by_set:
+            tasks_by_set[ds_idx] = []
+            sets_order.append(ds_idx)
+        if t_idx not in tasks_by_set[ds_idx]:
+            tasks_by_set[ds_idx].append(t_idx)
+
+        key = (ds_idx, t_idx)
+        task_names[key] = data.get("task_name")
+        recipe_scene_counts[key] = recipe_scene_counts.get(key, 0) + len(data["scenes_list"])
+        names_by_set_task.setdefault(key, []).extend(computeWorkItemPlan(data))
+
+    print("")
+    print("DRY RUN -- recipe: {}".format(recipe_yaml.get("name")))
+    print("no scene file or output folder will be created")
+    print("")
+
+    grand_total = 0
+
+    for ds_idx in sets_order:
+        rows = []
+        set_total = 0
+        for t_idx in tasks_by_set[ds_idx]:
+            key = (ds_idx, t_idx)
+            count = len(names_by_set_task[key])
+            recipe_count = recipe_scene_counts[key]
+            ratio = count / recipe_count if recipe_count else 0.0
+            rows.append([taskLabel(t_idx, task_names[key]), recipe_count, count, ratio])
+            set_total += count
+
+        print("Set: {}".format(ds_idx))
+        print(
+            tabulate(
+                rows, headers=["Task", "Recipe Scenes", "Render Scenes", "Ratio"], tablefmt="psql", floatfmt=".1f"
+            )
+        )
+        print("Set {} total: {} scene(s)".format(ds_idx, set_total))
+        print("")
+
+        if cli_params["verbose"] >= 1:
+            for t_idx in tasks_by_set[ds_idx]:
+                names = names_by_set_task[(ds_idx, t_idx)]
+                label = taskLabel(t_idx, task_names[(ds_idx, t_idx)])
+                logger.info("Set {} / Task {}: {} scene(s) to render:".format(ds_idx, label, len(names)))
+                for name in names:
+                    logger.info("  - {}/{}".format(ds_idx, name))
+
+        grand_total += set_total
+
+    print("TOTAL: {} scene(s) across {} set(s)".format(grand_total, len(sets_order)))
+    print("")
+
+
 def buildDataSetRecipes(cli_params=None, data=None):
     """Run buildDataSetRecipe() over every work item in `data` (one dict per
     dataset/task/scene unit) using a CPU/MEM-sized process pool, writing out
@@ -792,6 +921,9 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
                         data = {}
                         data["dataset_idx"] = dsidx
                         data["task_idx"] = tidx
+                        # "name" is only present from ds_recipe syntax 0.2.1 onward; older recipes
+                        # leave this None, and reportDryRun() falls back to task_idx for them.
+                        data["task_name"] = recipe_yaml["sets"][dsidx]["tasks"][tidx].get("name")
                         data["scene_idx"] = sidx
                         data["scenes_list"] = scenes_list
                         data["heads_list"] = heads_list
@@ -802,6 +934,10 @@ def renderDataSet(cli_params=None, recipe_yaml=None):
                         data["postproc_list"] = postproc_list
 
                         workers_data.append(data)
+
+    if cli_params["dry_run"]:
+        reportDryRun(cli_params, recipe_yaml, workers_data)
+        return
 
     # we got all the work listed, now spawn multi-process to create all the scene files
     # inside the dataset folder [DATASET]/scenes
@@ -885,6 +1021,14 @@ if __name__ == "__main__":
         default=False,
         help="keep all output files (default: %(default)s)",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        default=False,
+        help="compute and print, per set/task, how many scenes would be rendered, without creating "
+        "any file or folder (not even the output folder). Combine with -v to also list every scene "
+        "that would be rendered (default: %(default)s)",
+    )
 
     args, remaining = parser.parse_known_args()
 
@@ -967,11 +1111,14 @@ if __name__ == "__main__":
     #
     # check for output folder presence
     if not os.path.isdir(_OUTPUT_DIR):
-        logger.info("missing output folder, will create one. {}".format(_OUTPUT_DIR))
+        if cli_params["dry_run"]:
+            logger.info("dry-run: output folder does not exist yet, would create: {}".format(_OUTPUT_DIR))
+        else:
+            logger.info("missing output folder, will create one. {}".format(_OUTPUT_DIR))
 
-        os.makedirs(_OUTPUT_DIR)
-        if not os.path.isdir(_OUTPUT_DIR):
-            logger.error("cannot create output folder. exit")
+            os.makedirs(_OUTPUT_DIR)
+            if not os.path.isdir(_OUTPUT_DIR):
+                logger.error("cannot create output folder. exit")
 
     renderDataSet(cli_params, recipe_yaml)
 
