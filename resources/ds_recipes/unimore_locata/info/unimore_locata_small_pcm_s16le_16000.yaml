@@ -94,7 +94,7 @@ sets:
         voices:
           0:
             subtype: unimore
-            info: ["000001_voice","000003_voice",]
+            info: ["000001_voice","000003_voice"]
           1:
             subtype: unimore
             info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut"]
