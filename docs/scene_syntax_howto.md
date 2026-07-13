@@ -171,6 +171,34 @@ The syntax for a listener is the following:
 
 
 
+## sounds (optional, syntax 0.2.0+)
+Starting from scene syntax version 0.2.0 a scene can also include one or more non-human-voice sound sources (e.g. urban/environmental noise), used to test the human-voice "extraction/isolation" performance of a rendering pipeline. This section is entirely optional: a scene with `syntax.version.minor: 0` (0.1.0) simply omits it, and existing 0.1.0 scenes remain valid as-is.
+
+A "sound" source follows the exact same shape as a voice `source` (type/subtype/info plus a static or dynamic `position`), except its `type` is `sounds` instead of `voices`. It is placed between the `listeners` and `rooms` sections:
+
+```
+  #
+  # sounds sources (any NON human voice)
+  #
+  sounds_count: 1
+  sounds:
+    0:
+      # source type and info file
+      type: sounds
+      subtype: urbansound8k
+      info: sound_000010
+
+      # positioning using spherical coord
+      position:
+        type: dynamic
+        value:
+          type: paths
+          subtype: unimore
+          info: path_140
+```
+
+Sounds are a RESOURCE like voices, placed under `[VERSE]/resources/sounds` (e.g. the `urbansound8k` and `aid` subtypes). When a scene has no sounds, `sounds_count` is simply omitted along with the whole `sounds:` block (not set to `0` with an empty section), and the syntax stays at 0.1.0 for backward compatibility.
+
 ## rooms
 There must be only one room, which is defined by the corrispondent RIR (room impulse response). Room syntax for VERSE is defined here: [room_syntax](room_syntax_howto.md)
 

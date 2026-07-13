@@ -41,9 +41,11 @@ The structure of the repository is the following:
 +-- resources
 |   +-- ds_recipes
 |   +-- heads
+|   +-- noise
 |   +-- paths
 |   +-- rooms
 |   +-- scenes
+|   +-- sounds
 |   +-- voices
 |
 +-- src
@@ -67,7 +69,7 @@ RESOURCES is the folder where all the main components are placed, each one with 
           +--files
              +--[AUDIO_FILE].ext
 ```
-RESOURCE_TYPE folder is defined as voices, heads, rooms, paths, scenes. Inside each RESOURCE_TYPE folder there is one sub-folder for each data provider. This allow to pull data of the same type from different locations, even outside of the VERSE repository, as long as the following information are provided. Each RESOURCE_TYPE is defined by a "fetch\_file.sh" script which allows to retrieve binary files from external repositories, and a mandatory "info.yaml" which decribe the resource itself.
+RESOURCE_TYPE folder is defined as voices, heads, rooms, paths, scenes, sounds, noise. Inside each RESOURCE_TYPE folder there is one sub-folder for each data provider. This allow to pull data of the same type from different locations, even outside of the VERSE repository, as long as the following information are provided. Each RESOURCE_TYPE is defined by a "fetch\_file.sh" script which allows to retrieve binary files from external repositories, and a mandatory "info.yaml" which decribe the resource itself.
 
 Binary files are placed into the "files" subfolder and for each binary file there is a correspondent yaml descriptor into the "info" sub-folder. The purpose of the main info.yaml file is to provide a human readable description of the content for this specific resource, while the purpose of the single yaml files placed into the info sub-folder is to provide a human readable description of each binary files composing the resource itself.
 
@@ -97,7 +99,7 @@ cd verse/src
 ./render_dataset.py -i ../resources/ds_recipes/simple_example/info/simple_example.yaml -v
 ```
 
-Use option "-v" to enable verbose. If your cpu has many cores you can use option "-c" to enable more parallel rendering.
+Use option "-v" to enable verbose. If your cpu has many cores you can use option "-c" to enable more parallel rendering. Before committing to a (potentially large/slow) real render, you can also pass "--dry-run" to print how many scenes a recipe would generate, per set/task, without writing anything to disk. See the full CLI reference, including `--dry-run`, in [Dataset rendering](docs/dataset_syntax_howto.md#dataset-rendering).
 
 this will create a subfolder with few files under the "verse/datasets" folder :
 ```
@@ -190,7 +192,9 @@ For "resources" we refer to the core components of an audio scene: human voices,
 Each resource has a specific binary format depending on the purpose of the resource itself. Resources could be retrieved also from different (external) datasets to expand possibilities of VERSE.
 For this reason each resource has an abstraction layer which leverages YAML syntax to define the content of a resource folder.
 
-Starting from [VERSE]/resources we see a folder for each type: voices, heads, paths, rooms, scenes.
+Starting from [VERSE]/resources we see a folder for each type: voices, heads, paths, rooms, scenes, sounds, noise.
+
+"sounds" and "noise" provide non-human-voice audio (e.g. urban/environmental noise, microphone noise) used to test the human-voice "extraction/isolation" performance of a rendering pipeline: "sounds" can be referenced by a scene's optional `sounds` section (scene syntax 0.2.0+, see [scene_syntax_howto.md](docs/scene_syntax_howto.md)), while "noise" is used by a ds_recipe's `postproc` hooks (see [dataset_syntax_howto.md](docs/dataset_syntax_howto.md)).
 
 When selecting the resource type folder we have the list of different subset of that specific resource, each subset being a specific "selection" made by the user or someone on behalf of the user.
 For example selecting "voices" we have two subtypes:

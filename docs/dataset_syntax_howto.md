@@ -74,6 +74,19 @@ The syntax for a ds recipe is fairly flexible, but in the simpler form it is def
 
 A set is composed of multiple "tasks". There must be at least one task (#0). Tasks are needed to mix & match components that are coming from different resources. For a specific set we might need to pull voices from more (different) resources, same for heads and rooms, and for each different resource origin we need a separate task.
 
+## naming tasks (syntax 0.2.1+)
+Starting from ds_recipe syntax version 0.2.1 a task can optionally declare a `name` field, right alongside its `voices`/`heads`/`rooms`/`scenes` keys:
+
+```
+    tasks:
+      0:
+        name: "dynamic_1to1"
+        voices:
+          [...]
+```
+
+This is purely a human-readable label: it does not change how the task is resolved or rendered, and it has no effect on the "{scene}\_{task\_idx}\_{scene\_idx}\_{recipe\_custom\_id}" naming scheme used for the generated recipe files (see `renderDataSet`/`buildDataSetRecipe` in `render_dataset.py`), which still keys off the task's index. It exists so that tasks can be identified by a meaningful name (e.g. `static_1to1`, `dynamic_1toM`, `sounds_1toM`) instead of a bare number when inspecting a recipe -- for example `render_dataset.py --dry-run` (see [Dataset rendering](#dataset-rendering) below) shows this name in its summary table when the recipe provides one, falling back to the plain task index for older (pre-0.2.1) recipes that don't.
+
 # simple definition
 But for the simplest use case the set/task only refer to a list of scenes without specifying modifications to the resources used by the scene itself. This means the dataset is using the scenes "as-is", as defined by the original resource.
 
@@ -335,3 +348,67 @@ The same can be done for all resource definition in a ds_recipe.
 The combination of sets, tasks and wildcards allow the definition of fairly articulated dataset recipes, all starting from audio scenes previously defined.
 
 **The main advantage of this technique is to provide a method to render the same "source motion path" while mixing sources (human voices) listener (human head) and room (reverb), saving the time to physically record all these sessions**
+
+# Dataset rendering
+
+Rendering a full dataset from a ds_recipe requires the "render_dataset.py" script available under [VERSE]/src folder. It expands the recipe into individual scene files and renders each one by spawning "render_scene.py" (see [Audio scene rendering](scene_syntax_howto.md#audio-scene-rendering)) once per generated scene.
+
+The full syntax of this command is the following:
+
+```
+usage: render_dataset.py [-h] [-i INPUT_FILE] [-c CPU_PROCESS] [-v] [-q] [-s]
+                         [-log LOGFILE] [-o OUTPUT_FOLDER] [-k] [--dry-run]
+
+options:
+  -h, --help            show this help message and exit
+  -i INPUT_FILE, --input_file INPUT_FILE
+                        dataset recipe to render (default: None)
+  -c CPU_PROCESS, --cpu_process CPU_PROCESS
+                        maximum number of CPU process to use
+  -v, --verbose         verbose, repeat for more detail: -v=INFO, -vv=DEBUG,
+                        -vvv=DEBUG+source location (default: WARNING)
+  -q, --quiet           suppress all console log output regardless of -v; show
+                        only the progress bar. Takes precedence over
+                        -v/-vv/-vvv (default: False)
+  -s, --silent          suppress all console output, including the progress
+                        bar. Takes precedence over -q and -v/-vv/-vvv
+                        (default: False)
+  -log LOGFILE, --logfile LOGFILE
+                        log verbose output to file (default: None)
+  -o OUTPUT_FOLDER, --output_folder OUTPUT_FOLDER
+                        output folder (default: None)
+  -k, --keep_files      keep all output files (default: False)
+  --dry-run             compute and print, per set/task, how many scenes would
+                        be rendered, without creating any file or folder (not
+                        even the output folder). Combine with -v to also list
+                        every scene that would be rendered (default: False)
+```
+* The "input_file" is the ds_recipe .yaml to render, this is mandatory.
+* Repeat "-v" for more detail (`-v`=INFO, `-vv`=DEBUG, `-vvv`=DEBUG plus source file/function/line). With no `-v` the console only shows a progress bar.
+* "-q/--quiet" forces the progress bar on and silences every log line regardless of `-v`; "-s/--silent" goes further and silences the progress bar too. Both take precedence over `-v`. The same effective verbosity is propagated to every "render_scene.py" subprocess so a large parallel pool doesn't corrupt the progress bar.
+* "-o/--output_folder" overrides the dataset output folder that would otherwise be derived from the recipe's own `output.path` (or its `name`, see above).
+* "-c/--cpu_process" caps how many worker processes are used for both the scene-file generation phase and the rendering phase.
+* "-k/--keep_files" keeps intermediate files around, useful for debugging.
+
+## dry-run
+"--dry-run" computes the exact same set/task/scene expansion as a real run, but skips both writing any scene .yaml file and rendering any audio -- nothing is created on disk, not even the dataset's top-level output folder. Instead it prints one summary table per set, with one row per task:
+
+```
+Set: train
++--------------+-----------------+-----------------+---------+
+| Task         |   Recipe Scenes |   Render Scenes |   Ratio |
+|--------------+-----------------+-----------------+---------|
+| static_1to1  |              20 |             180 |     9.0 |
+| static_1toM  |              12 |              60 |     5.0 |
+| dynamic_1to1 |              16 |             208 |    13.0 |
+[...]
++--------------+-----------------+-----------------+---------+
+Set train total: 873 scene(s)
+```
+
+* "Task" shows the task's `name` field when the recipe provides one (syntax 0.2.1+, see [naming tasks](#naming-tasks-syntax-021)), otherwise its plain task index.
+* "Recipe Scenes" is the raw number of scenes listed under the task's `scenes` key.
+* "Render Scenes" is how many scene recipes will actually be generated and rendered, i.e. "Recipe Scenes" multiplied by however many voices/heads/rooms permutations the task's customization produces (1x if the task uses its scenes "as-is", more otherwise -- see [mixing resources](#mixing-resources)).
+* "Ratio" is "Render Scenes" / "Recipe Scenes" (to one decimal place), a quick way to see how much a task's customization is multiplying the dataset size.
+
+Combine `--dry-run` with `-v` to also log the full list of individual recipe names that would be rendered under each task, useful to sanity-check a recipe's resource selectors (wildcards, `all`, exclusions) before committing to a potentially large/slow real render.
