@@ -680,9 +680,12 @@ def reportDryRun(cli_params, recipe_yaml, workers_data):
     "Recipe Scenes" multiplied by however many voices/heads/rooms
     permutations the task's customization produces) and "Ratio" (Render
     Scenes / Recipe Scenes, to 1 decimal place) so it's easy to see how many
-    variations a task's voice/head/room combinations generate. At INFO
-    verbosity (-v) or above, also logs the full list of recipe names that
-    would be rendered under each task.
+    variations a task's voice/head/room combinations generate. After the
+    grand total, also prints one line breaking down what percentage of all
+    rendered scenes falls in each set (1 decimal place), e.g.
+    "train (60.0%), validate (20.0%), test (20.0%)". At INFO verbosity (-v)
+    or above, also logs the full list of recipe names that would be
+    rendered under each task.
     """
     sets_order = []
     tasks_by_set = {}
@@ -711,6 +714,7 @@ def reportDryRun(cli_params, recipe_yaml, workers_data):
     print("")
 
     grand_total = 0
+    set_totals = {}
 
     for ds_idx in sets_order:
         rows = []
@@ -740,9 +744,16 @@ def reportDryRun(cli_params, recipe_yaml, workers_data):
                 for name in names:
                     logger.info("  - {}/{}".format(ds_idx, name))
 
+        set_totals[ds_idx] = set_total
         grand_total += set_total
 
     print("TOTAL: {} scene(s) across {} set(s)".format(grand_total, len(sets_order)))
+
+    if grand_total:
+        breakdown = ", ".join(
+            "{} ({:.1f}%)".format(ds_idx, 100.0 * set_totals[ds_idx] / grand_total) for ds_idx in sets_order
+        )
+        print(breakdown)
     print("")
 
 
