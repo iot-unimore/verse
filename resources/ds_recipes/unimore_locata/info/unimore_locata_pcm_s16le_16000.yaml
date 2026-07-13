@@ -56,8 +56,8 @@ sets:
           0:
             subtype: unimore
             info: ["000001_voice","000003_voice","000004_voice", 
-                   "f1_script1_clean_cut","f2_script1_clean_cut","f3_script1_clean_cut",
-                   "m1_script1_clean_cut","m2_script1_clean_cut","m3_script1_clean_cut",]
+                   "f1_script1_clean_cut","f2_script1_clean_cut",
+                   "m1_script1_clean_cut","m2_script1_clean_cut",]
         heads:
           0:
             subtype: unimore
@@ -114,7 +114,7 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["static_twovoice_000000",  "static_twovoice_000030",  "static_twovoice_000060",   "static_twovoice_000090",
+            info: ["static_twovoice_000000",  "static_twovoice_000030",  "static_twovoice_000060",
                    "static_twovoice_000120",  "static_twovoice_000150",  "static_threevoice_000000", "static_threevoice_000030",
                    "static_threevoice_000060","static_threevoice_000090","static_threevoice_000120", "static_threevoice_000150"]
         # HOOKS: run a script on the input (pre) or output (post) files
@@ -136,8 +136,8 @@ sets:
           0:
             subtype: unimore
             info: ["000001_voice","000003_voice","000004_voice", 
-                   "f1_script3_clean_cut","f2_script3_clean_cut","f3_script3_clean_cut","f4_script3_clean_cut","f5_script3_clean_cut",
-                   "m1_script3_clean_cut","m2_script3_clean_cut","m3_script3_clean_cut","m4_script3_clean_cut","m5_script3_clean_cut"]
+                   "f1_script3_clean_cut","f2_script3_clean_cut","f3_script3_clean_cut",
+                   "m1_script3_clean_cut","m2_script3_clean_cut","m3_script3_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -175,10 +175,10 @@ sets:
             info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
+            info: ["f1_script4_clean_cut","f2_script4_clean_cut","f3_script4_clean_cut","f4_script4_clean_cut","f5_script4_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
+            info: ["m1_script4_clean_cut","m2_script4_clean_cut","m3_script4_clean_cut","m4_script4_clean_cut","m5_script4_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -221,10 +221,10 @@ sets:
             info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
+            info: ["f1_script5_clean_cut","f2_script5_clean_cut","f3_script5_clean_cut","f4_script5_clean_cut","f5_script5_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
+            info: ["m1_script5_clean_cut","m2_script5_clean_cut","m3_script5_clean_cut","m4_script5_clean_cut","m5_script5_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -259,10 +259,10 @@ sets:
             info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
+            info: ["f1_script1_clean_cut","f2_script1_clean_cut","f3_script1_clean_cut","f4_script1_clean_cut","f5_script1_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
+            info: ["m1_script1_clean_cut","m2_script1_clean_cut","m3_script1_clean_cut","m4_script1_clean_cut","m5_script1_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -460,10 +460,10 @@ sets:
             info: ["000005_voice"]
           1:
             subtype: unimore
-            info: ["f6_script2_clean_cut","f7_script2_clean_cut"]
+            info: ["f6_script4_clean_cut","f7_script4_clean_cut"]
           2:
             subtype: unimore
-            info: ["m6_script2_clean_cut","m7_script2_clean_cut"]
+            info: ["m6_script4_clean_cut","m7_script4_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -504,10 +504,10 @@ sets:
             info: ["000005_voice"]
           1:
             subtype: unimore
-            info: ["f6_script2_clean_cut","f7_script2_clean_cut"]
+            info: ["f6_script5_clean_cut","f7_script5_clean_cut"]
           2:
             subtype: unimore
-            info: ["m6_script2_clean_cut","m7_script2_clean_cut"]
+            info: ["m6_script5_clean_cut","m7_script5_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -543,10 +543,10 @@ sets:
             info: ["000005_voice"]
           1:
             subtype: unimore
-            info: ["f6_script2_clean_cut","f7_script2_clean_cut"]
+            info: ["f6_script1_clean_cut","f7_script1_clean_cut"]
           2:
             subtype: unimore
-            info: ["m6_script2_clean_cut","m7_script2_clean_cut"]
+            info: ["m6_script1_clean_cut","m7_script1_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -742,10 +742,10 @@ sets:
             info: ["000006_voice","000007_voice"]
           1:
             subtype: unimore
-            info: ["f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut"]
+            info: ["f8_script4_clean_cut","f9_script4_clean_cut","f10_script4_clean_cut"]
           2:
             subtype: unimore
-            info: ["m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
+            info: ["m8_script4_clean_cut","m9_script4_clean_cut","m10_script4_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -786,10 +786,10 @@ sets:
             info: ["000006_voice","000007_voice"]
           1:
             subtype: unimore
-            info: ["f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut"]
+            info: ["f8_script5_clean_cut","f9_script5_clean_cut","f10_script5_clean_cut"]
           2:
             subtype: unimore
-            info: ["m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
+            info: ["m8_script5_clean_cut","m9_script5_clean_cut","m10_script5_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -824,10 +824,10 @@ sets:
             info: ["000006_voice","000007_voice"]
           1:
             subtype: unimore
-            info: ["f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut"]
+            info: ["f8_script1_clean_cut","f9_script1_clean_cut","f10_script1_clean_cut"]
           2:
             subtype: unimore
-            info: ["m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
+            info: ["m8_script1_clean_cut","m9_script1_clean_cut","m10_script1_clean_cut"]
         heads:
           0:
             subtype: unimore
