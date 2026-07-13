@@ -49,6 +49,13 @@ Rules:
         the same way as voices/paths (shuffle-bag, shared across all scene
         kinds), and within one scene no two sounds repeat the same sound
         id or the same path.
+      * scenes that end up with a sounds section get "_sound" inserted
+        into their name/filename, e.g. dynamic_onevoice_000100.yaml (no
+        sounds) vs dynamic_onevoice_sound_000100.yaml (has sounds). Each
+        of the two variants has its own independent numbering sequence
+        per scene kind (starting at 0 the first time that variant is
+        generated), so e.g. dynamic_onevoice_000005.yaml and
+        dynamic_onevoice_sound_000005.yaml can both exist at once.
 
 Usage:
     python3 generate_dynamic_scenes.py COUNT [-o OUTPUT_DIR] [-t {1,2,3}] [-s SOUNDS] [--dry-run] [--seed SEED]
@@ -105,6 +112,7 @@ Usage:
 """
 
 import argparse
+import itertools
 import random
 import re
 import sys
@@ -176,7 +184,10 @@ def list_sound_ids():
 
 def next_start_number(prefix):
     """Find the highest NNNNNN already used by '{prefix}_NNNNNN.yaml' files
-    in resources/scenes/unimore/info, and return the next free number."""
+    in resources/scenes/unimore/info, and return the next free number (0 if
+    none exist yet). Called with a plain prefix (e.g. 'dynamic_onevoice')
+    and separately with its '_sound' variant (e.g. 'dynamic_onevoice_sound')
+    to give each its own independent numbering sequence."""
     pattern = re.compile(rf"^{re.escape(prefix)}_(\d+)\.yaml$")
     max_n = -1
     for p in _SCENES_INFO_DIR.glob(f"{prefix}_*.yaml"):
@@ -440,6 +451,15 @@ setup:
 {_compose_tail(sounds_text)}"""
 
 
+def _scene_name(prefix, num, has_sounds):
+    """Build a scene's name/filename stem: '{prefix}_NNNNNN', or
+    '{prefix}_sound_NNNNNN' when `has_sounds` is True, so that files with
+    a sounds section are distinguishable by filename (e.g.
+    dynamic_onevoice_000100.yaml vs dynamic_onevoice_sound_000100.yaml)."""
+    suffix = "_sound" if has_sounds else ""
+    return f"{prefix}{suffix}_{num:06d}"
+
+
 def _sounds_text_for_scene(sounds_option, allow_multiple, sound_id_bag, sound_path_bag):
     """Compute the sounds_text to embed in one scene, given the global
     -s/--sounds option (`sounds_option`, already validated to be None or
@@ -510,18 +530,25 @@ def generate(count, output_dir, dry_run, seed, types, sounds):
         sound_id_bag = ShuffleBag(sound_ids)
         sound_path_bag = ShuffleBag(sound_path_ids)
 
-    onevoice_start = next_start_number("dynamic_onevoice")
-    twovoice_start = next_start_number("dynamic_twovoice")
-    threevoice_start = next_start_number("dynamic_threevoice")
+    # each scene kind has two independent numbering sequences: one for
+    # plain files and one for their "_sound" counterpart, since a scene
+    # may or may not end up with a sounds section (see _scene_name()).
+    onevoice_plain_nums = itertools.count(next_start_number("dynamic_onevoice"))
+    onevoice_sound_nums = itertools.count(next_start_number("dynamic_onevoice_sound"))
+    twovoice_plain_nums = itertools.count(next_start_number("dynamic_twovoice"))
+    twovoice_sound_nums = itertools.count(next_start_number("dynamic_twovoice_sound"))
+    threevoice_plain_nums = itertools.count(next_start_number("dynamic_threevoice"))
+    threevoice_sound_nums = itertools.count(next_start_number("dynamic_threevoice_sound"))
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for i in range(count):
-        num = onevoice_start + i
-        name = f"dynamic_onevoice_{num:06d}"
         (voice_id,) = voice_bag.draw_distinct(1)
         (path_id,) = path_pool_high_bag.draw_distinct(1)
         sounds_text, sounds_log = _sounds_text_for_scene(sounds, False, sound_id_bag, sound_path_bag)
+        has_sounds = sounds_text is not None
+        num = next(onevoice_sound_nums if has_sounds else onevoice_plain_nums)
+        name = _scene_name("dynamic_onevoice", num, has_sounds)
         content = render_onevoice(name, voice_id, path_id, version_minor, sounds_text)
         out_path = output_dir / f"{name}.yaml"
         print(f"[INFO] {name}: voice={voice_id}, path={path_id}{sounds_log}")
@@ -530,13 +557,14 @@ def generate(count, output_dir, dry_run, seed, types, sounds):
 
     if types >= 2:
         for i in range(count):
-            num = twovoice_start + i
-            name = f"dynamic_twovoice_{num:06d}"
             voice_ids_pick = voice_bag.draw_distinct(2)
             (path_id_low,) = path_pool_low_bag.draw_distinct(1)
             (path_id_high,) = path_pool_high_bag.draw_distinct(1)
             path_ids_pick = [path_id_low, path_id_high]
             sounds_text, sounds_log = _sounds_text_for_scene(sounds, True, sound_id_bag, sound_path_bag)
+            has_sounds = sounds_text is not None
+            num = next(twovoice_sound_nums if has_sounds else twovoice_plain_nums)
+            name = _scene_name("dynamic_twovoice", num, has_sounds)
             content = render_twovoice(name, voice_ids_pick, path_ids_pick, version_minor, sounds_text)
             out_path = output_dir / f"{name}.yaml"
             print(f"[INFO] {name}: voices={voice_ids_pick}, paths={path_ids_pick}{sounds_log}")
@@ -545,13 +573,14 @@ def generate(count, output_dir, dry_run, seed, types, sounds):
 
     if types >= 3:
         for i in range(count):
-            num = threevoice_start + i
-            name = f"dynamic_threevoice_{num:06d}"
             voice_ids_pick = voice_bag.draw_distinct(3)
             (path_id_low,) = path_pool_low_bag.draw_distinct(1)
             path_ids_high = path_pool_high_bag.draw_distinct(2)
             path_ids_pick = [path_id_low, *path_ids_high]
             sounds_text, sounds_log = _sounds_text_for_scene(sounds, True, sound_id_bag, sound_path_bag)
+            has_sounds = sounds_text is not None
+            num = next(threevoice_sound_nums if has_sounds else threevoice_plain_nums)
+            name = _scene_name("dynamic_threevoice", num, has_sounds)
             content = render_threevoice(name, voice_ids_pick, path_ids_pick, version_minor, sounds_text)
             out_path = output_dir / f"{name}.yaml"
             print(f"[INFO] {name}: voices={voice_ids_pick}, paths={path_ids_pick}{sounds_log}")
