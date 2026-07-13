@@ -149,7 +149,8 @@ sets:
             subtype: unimore
             info: ["dynamic_onevoice_000000","dynamic_onevoice_000010","dynamic_onevoice_000030","dynamic_onevoice_000037",
                    "dynamic_onevoice_000047","dynamic_onevoice_000049","dynamic_onevoice_000070","dynamic_onevoice_000071",
-                   "dynamic_onevoice_000072","dynamic_onevoice_000090","dynamic_onevoice_000091","dynamic_onevoice_000102"]
+                   "dynamic_onevoice_000072","dynamic_onevoice_000090","dynamic_onevoice_000091","dynamic_onevoice_000102",
+                   "dynamic_onevoice_000103","dynamic_onevoice_000104","dynamic_onevoice_000105","dynamic_onevoice_000106"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -188,8 +189,12 @@ sets:
             subtype: unimore
             info: ["dynamic_twovoice_000001",   "dynamic_twovoice_000002",   "dynamic_twovoice_000003",   "dynamic_twovoice_000004",
                    "dynamic_twovoice_000030",   "dynamic_twovoice_000040",   "dynamic_twovoice_000070",   "dynamic_twovoice_000071",
+                   "dynamic_twovoice_000126",   "dynamic_twovoice_000127",   "dynamic_twovoice_000128",   "dynamic_twovoice_000129",
+                   "dynamic_twovoice_000130",   "dynamic_twovoice_000131",   "dynamic_twovoice_000132",   "dynamic_twovoice_000133",                   
                    "dynamic_threevoice_000001", "dynamic_threevoice_000002", "dynamic_threevoice_000003", "dynamic_threevoice_000004",
-                   "dynamic_threevoice_000030", "dynamic_threevoice_000031", "dynamic_threevoice_000061", "dynamic_threevoice_000071"]
+                   "dynamic_threevoice_000030", "dynamic_threevoice_000031", "dynamic_threevoice_000061", "dynamic_threevoice_000071",
+                   "dynamic_threevoice_000126", "dynamic_threevoice_000127", "dynamic_threevoice_000128", "dynamic_threevoice_000129",
+                   "dynamic_threevoice_000130", "dynamic_threevoice_000131", "dynamic_threevoice_000132", "dynamic_threevoice_000133"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -239,6 +244,7 @@ sets:
       #
       # LOCATA dynamic, 1->M
       # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #                using paths that were extracted from the Locata dataset.
       #
       5:
         voices:
@@ -274,6 +280,46 @@ sets:
             subtype: unimore
             info: ["noise_8mics"]
 
+      #
+      # VOICE+SOUNDS dynamic, 1->M
+      # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance
+      #
+      6:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000001_voice","000003_voice","000004_voice"]
+          1:
+            subtype: unimore
+            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
+          2:
+            subtype: unimore
+            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["dynamic_onevoice_sound_000000", "dynamic_onevoice_sound_000001", "dynamic_onevoice_sound_000002", "dynamic_onevoice_sound_000003","dynamic_onevoice_sound_000004",
+                   "dynamic_onevoice_sound_000005", "dynamic_onevoice_sound_000006", "dynamic_onevoice_sound_000007", "dynamic_onevoice_sound_000008","dynamic_onevoice_sound_000009",
+                   "dynamic_twovoice_sound_000000", "dynamic_twovoice_sound_000001", "dynamic_twovoice_sound_000002", "dynamic_twovoice_sound_000003", "dynamic_twovoice_sound_000004",
+                   "dynamic_twovoice_sound_000005", "dynamic_twovoice_sound_000006", "dynamic_twovoice_sound_000007", "dynamic_twovoice_sound_000008", "dynamic_twovoice_sound_000009",
+                   "dynamic_threevoice_sound_000000", "dynamic_threevoice_sound_000001", "dynamic_threevoice_sound_000002", "dynamic_threevoice_sound_000003", "dynamic_threevoice_sound_000004",
+                   "dynamic_threevoice_sound_000005", "dynamic_threevoice_sound_000006", "dynamic_threevoice_sound_000007", "dynamic_threevoice_sound_000008", "dynamic_threevoice_sound_000009" ]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
   # ###############################################################################################
   # V A L I D A T E
   # ###############################################################################################
@@ -382,7 +428,7 @@ sets:
             info: ["dynamic_onevoice_000005","dynamic_onevoice_000015","dynamic_onevoice_000032","dynamic_onevoice_000033",
                    "dynamic_onevoice_000046","dynamic_onevoice_000048","dynamic_onevoice_000053","dynamic_onevoice_000054",
                    "dynamic_onevoice_000094","dynamic_onevoice_000096","dynamic_onevoice_000097","dynamic_onevoice_000100",
-                   "dynamic_onevoice_000101"]
+                   "dynamic_onevoice_000110","dynamic_onevoice_000111","dynamic_onevoice_000112","dynamic_onevoice_000113"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -421,8 +467,10 @@ sets:
             subtype: unimore
             info: ["dynamic_twovoice_000005",  "dynamic_twovoice_000006",  "dynamic_twovoice_000007",  "dynamic_twovoice_000008",
                    "dynamic_twovoice_000033",  "dynamic_twovoice_000043",  "dynamic_twovoice_000072",  "dynamic_twovoice_000073",
+                   "dynamic_twovoice_000134",  "dynamic_twovoice_000135",  "dynamic_twovoice_000136",  "dynamic_twovoice_000137",
                    "dynamic_threevoice_000005","dynamic_threevoice_000006","dynamic_threevoice_000007","dynamic_threevoice_000008",
-                   "dynamic_threevoice_000033","dynamic_threevoice_000043","dynamic_threevoice_000072","dynamic_threevoice_000073"]
+                   "dynamic_threevoice_000033","dynamic_threevoice_000043","dynamic_threevoice_000072","dynamic_threevoice_000073",
+                   "dynamic_threevoice_000134","dynamic_threevoice_000135","dynamic_threevoice_000136","dynamic_threevoice_000137"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -498,6 +546,46 @@ sets:
             info: ["dynamic_twovoice_000117",  "dynamic_twovoice_000118",  "dynamic_twovoice_000119",  "dynamic_twovoice_000120",
                    "dynamic_twovoice_000121",  "dynamic_threevoice_000117","dynamic_threevoice_000118","dynamic_threevoice_000119",
                    "dynamic_threevoice_000120","dynamic_threevoice_000121"]
+
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+
+      #
+      # VOICE+SOUNDS dynamic, 1->M
+      # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance            
+      #
+      6:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000005_voice"]
+          1:
+            subtype: unimore
+            info: ["f6_script2_clean_cut","f7_script2_clean_cut"]
+          2:
+            subtype: unimore
+            info: ["m6_script2_clean_cut","m7_script2_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["dynamic_onevoice_sound_000010", "dynamic_onevoice_sound_000011", "dynamic_onevoice_sound_000012", "dynamic_onevoice_sound_000013",
+                   "dynamic_twovoice_sound_000010", "dynamic_twovoice_sound_000011", "dynamic_twovoice_sound_000012", "dynamic_twovoice_sound_000013",
+                   "dynamic_threevoice_sound_00010", "dynamic_threevoice_sound_000011", "dynamic_threevoice_sound_000012", "dynamic_threevoice_sound_000013" ] 
 
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
@@ -615,7 +703,7 @@ sets:
             subtype: unimore
             info: ["dynamic_onevoice_000007","dynamic_onevoice_000017","dynamic_onevoice_000034","dynamic_onevoice_000035",
                    "dynamic_onevoice_000044","dynamic_onevoice_000045","dynamic_onevoice_000050","dynamic_onevoice_000051",
-                   "dynamic_onevoice_000092","dynamic_onevoice_000093"]
+                   "dynamic_onevoice_000092","dynamic_onevoice_000093","dynamic_onevoice_000116","dynamic_onevoice_000117"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -652,10 +740,12 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["dynamic_twovoice_000010",  "dynamic_twovoice_000012",  "dynamic_twovoice_000021",  "dynamic_twovoice_000023",
-                   "dynamic_twovoice_000035",  "dynamic_twovoice_000037",  "dynamic_twovoice_000092",  "dynamic_twovoice_000093",
-                   "dynamic_threevoice_000010","dynamic_threevoice_000014","dynamic_threevoice_000026","dynamic_threevoice_000027",
-                   "dynamic_threevoice_000036","dynamic_threevoice_000046","dynamic_threevoice_000092","dynamic_threevoice_000093"]
+            info: ["dynamic_twovoice_000010",   "dynamic_twovoice_000012",   "dynamic_twovoice_000021",   "dynamic_twovoice_000023",
+                   "dynamic_twovoice_000035",   "dynamic_twovoice_000037",   "dynamic_twovoice_000092",   "dynamic_twovoice_000093",
+                   "dynamic_twovoice_000138",   "dynamic_twovoice_000139",
+                   "dynamic_threevoice_000010", "dynamic_threevoice_000014", "dynamic_threevoice_000026", "dynamic_threevoice_000027",
+                   "dynamic_threevoice_000036", "dynamic_threevoice_000046", "dynamic_threevoice_000092", "dynamic_threevoice_000093",
+                   "dynamic_threevoice_000138", "dynamic_threevoice_000139"]
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
@@ -729,6 +819,45 @@ sets:
             subtype: unimore
             info: ["dynamic_twovoice_000122",  "dynamic_twovoice_000123",  "dynamic_twovoice_000124",  "dynamic_twovoice_000125",
                    "dynamic_threevoice_000122","dynamic_threevoice_000123","dynamic_threevoice_000124","dynamic_threevoice_000125"]
+        # HOOKS: run a script on the input (pre) or output (post) files
+        preproc:
+            # add here pre-processing of voice audio files
+        postproc: 
+          # add here post-processing of output audio files
+          0:
+            type: noise
+            subtype: unimore
+            info: ["noise_8mics"]
+
+
+      #
+      # VOICE+SOUNDS dynamic, 1->M
+      # TRAIN/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
+      #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance            
+      #
+      6:
+        voices:
+          0:
+            subtype: unimore
+            info: ["000006_voice","000007_voice"]
+          1:
+            subtype: unimore
+            info: ["f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut"]
+          2:
+            subtype: unimore
+            info: ["m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
+        heads:
+          0:
+            subtype: unimore
+            info: ["head_003"]
+        rooms:
+          # no reverberation for head_003 (long HRTF)
+        scenes:
+          0:
+            subtype: unimore
+            info: ["dynamic_onevoice_sound_000015", "dynamic_onevoice_sound_000016", "dynamic_onevoice_sound_000017", "dynamic_onevoice_sound_000018",
+                   "dynamic_twovoice_sound_000015", "dynamic_twovoice_sound_000016", "dynamic_twovoice_sound_000017", "dynamic_twovoice_sound_000018",
+                   "dynamic_threevoice_sound_00015", "dynamic_threevoice_sound_000016", "dynamic_threevoice_sound_000017", "dynamic_threevoice_sound_000018" ] 
         # HOOKS: run a script on the input (pre) or output (post) files
         preproc:
             # add here pre-processing of voice audio files
