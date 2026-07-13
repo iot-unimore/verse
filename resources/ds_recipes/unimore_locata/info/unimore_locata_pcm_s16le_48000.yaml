@@ -6,8 +6,8 @@ syntax:
   name: ds_recipe
   version:
     major: 0
-    minor: 1
-    revision: 0
+    minor: 2
+    revision: 1
 
 #
 # recipe
@@ -51,12 +51,13 @@ sets:
       # TRAIN/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
+        name: "static_1to1"
         voices:
           0:
             subtype: unimore
             info: ["000001_voice","000003_voice","000004_voice", 
-                   "f1_script1_clean_cut","f2_script1_clean_cut","f3_script1_clean_cut",
-                   "m1_script1_clean_cut","m2_script1_clean_cut","m3_script1_clean_cut",]
+                   "f1_script1_clean_cut","f2_script1_clean_cut",
+                   "m1_script1_clean_cut","m2_script1_clean_cut",]
         heads:
           0:
             subtype: unimore
@@ -90,6 +91,7 @@ sets:
       # TRAIN/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
+        name: "static_1toM"
         voices:
           0:
             subtype: unimore
@@ -112,7 +114,7 @@ sets:
         scenes:
           0:
             subtype: unimore
-            info: ["static_twovoice_000000",  "static_twovoice_000030",  "static_twovoice_000060",   "static_twovoice_000090",
+            info: ["static_twovoice_000000",  "static_twovoice_000030",  "static_twovoice_000060",
                    "static_twovoice_000120",  "static_twovoice_000150",  "static_threevoice_000000", "static_threevoice_000030",
                    "static_threevoice_000060","static_threevoice_000090","static_threevoice_000120", "static_threevoice_000150"]
         # HOOKS: run a script on the input (pre) or output (post) files
@@ -129,12 +131,13 @@ sets:
       # TRAIN/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
+        name: "dynamic_1to1"
         voices:
           0:
             subtype: unimore
             info: ["000001_voice","000003_voice","000004_voice", 
-                   "f1_script3_clean_cut","f2_script3_clean_cut","f3_script3_clean_cut","f4_script3_clean_cut","f5_script3_clean_cut",
-                   "m1_script3_clean_cut","m2_script3_clean_cut","m3_script3_clean_cut","m4_script3_clean_cut","m5_script3_clean_cut"]
+                   "f1_script3_clean_cut","f2_script3_clean_cut","f3_script3_clean_cut",
+                   "m1_script3_clean_cut","m2_script3_clean_cut","m3_script3_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -165,16 +168,17 @@ sets:
       # TRAIN/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
+        name: "dynamic_1toM"        
         voices:
           0:
             subtype: unimore
             info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
+            info: ["f1_script4_clean_cut","f2_script4_clean_cut","f3_script4_clean_cut","f4_script4_clean_cut","f5_script4_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
+            info: ["m1_script4_clean_cut","m2_script4_clean_cut","m3_script4_clean_cut","m4_script4_clean_cut","m5_script4_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -210,16 +214,17 @@ sets:
       # TRAIN/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
+        name: "mixed_1toM"        
         voices:
           0:
             subtype: unimore
             info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
+            info: ["f1_script5_clean_cut","f2_script5_clean_cut","f3_script5_clean_cut","f4_script5_clean_cut","f5_script5_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
+            info: ["m1_script5_clean_cut","m2_script5_clean_cut","m3_script5_clean_cut","m4_script5_clean_cut","m5_script5_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -247,16 +252,17 @@ sets:
       #                using paths that were extracted from the Locata dataset.
       #
       5:
+        name: "locata_1toM"        
         voices:
           0:
             subtype: unimore
             info: ["000001_voice","000003_voice","000004_voice"]
           1:
             subtype: unimore
-            info: ["f1_script2_clean_cut","f2_script2_clean_cut","f3_script2_clean_cut","f4_script2_clean_cut","f5_script2_clean_cut"]
+            info: ["f1_script1_clean_cut","f2_script1_clean_cut","f3_script1_clean_cut","f4_script1_clean_cut","f5_script1_clean_cut"]
           2:
             subtype: unimore
-            info: ["m1_script2_clean_cut","m2_script2_clean_cut","m3_script2_clean_cut","m4_script2_clean_cut","m5_script2_clean_cut"]
+            info: ["m1_script1_clean_cut","m2_script1_clean_cut","m3_script1_clean_cut","m4_script1_clean_cut","m5_script1_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -286,6 +292,7 @@ sets:
       #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance
       #
       6:
+        name: "sounds_1toM"
         voices:
           0:
             subtype: unimore
@@ -332,6 +339,7 @@ sets:
       # VALIDATE/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
+        name: "static_1to1"        
         voices:
           0:
             subtype: unimore
@@ -368,6 +376,7 @@ sets:
       # VALIDATE/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
+        name: "static_1toM"
         voices:
           0:
             subtype: unimore
@@ -407,6 +416,7 @@ sets:
       # VALIDATE/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
+        name: "dynamic_1to1"
         voices:
           0:
             subtype: unimore
@@ -443,16 +453,17 @@ sets:
       # VALIDATE/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
+        name: "dynamic_1toM"
         voices:
           0:
             subtype: unimore
             info: ["000005_voice"]
           1:
             subtype: unimore
-            info: ["f6_script2_clean_cut","f7_script2_clean_cut"]
+            info: ["f6_script4_clean_cut","f7_script4_clean_cut"]
           2:
             subtype: unimore
-            info: ["m6_script2_clean_cut","m7_script2_clean_cut"]
+            info: ["m6_script4_clean_cut","m7_script4_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -486,16 +497,17 @@ sets:
       # VALIDATE/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
+        name: "mixed_1toM"
         voices:
           0:
             subtype: unimore
             info: ["000005_voice"]
           1:
             subtype: unimore
-            info: ["f6_script2_clean_cut","f7_script2_clean_cut"]
+            info: ["f6_script5_clean_cut","f7_script5_clean_cut"]
           2:
             subtype: unimore
-            info: ["m6_script2_clean_cut","m7_script2_clean_cut"]
+            info: ["m6_script5_clean_cut","m7_script5_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -524,16 +536,17 @@ sets:
       # VALIDATE/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       5:
+        name: "locata_1toM"
         voices:
           0:
             subtype: unimore
             info: ["000005_voice"]
           1:
             subtype: unimore
-            info: ["f6_script2_clean_cut","f7_script2_clean_cut"]
+            info: ["f6_script1_clean_cut","f7_script1_clean_cut"]
           2:
             subtype: unimore
-            info: ["m6_script2_clean_cut","m7_script2_clean_cut"]
+            info: ["m6_script1_clean_cut","m7_script1_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -564,6 +577,7 @@ sets:
       #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance            
       #
       6:
+        name: "sounds_1toM"
         voices:
           0:
             subtype: unimore
@@ -609,6 +623,7 @@ sets:
       # TEST/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
+        name: "static_1to1"
         voices:
           0:
             subtype: unimore
@@ -644,6 +659,7 @@ sets:
       # TEST/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
+        name: "static_1toM"
         voices:
           0:
             subtype: unimore
@@ -683,6 +699,7 @@ sets:
       # TEST/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
+        name: "dynamic_1to1"
         voices:
           0:
             subtype: unimore
@@ -718,16 +735,17 @@ sets:
       # TEST/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
+        name: "dynamic_1toM"
         voices:
           0:
             subtype: unimore
             info: ["000006_voice","000007_voice"]
           1:
             subtype: unimore
-            info: ["f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut"]
+            info: ["f8_script4_clean_cut","f9_script4_clean_cut","f10_script4_clean_cut"]
           2:
             subtype: unimore
-            info: ["m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
+            info: ["m8_script4_clean_cut","m9_script4_clean_cut","m10_script4_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -761,16 +779,17 @@ sets:
       # TEST/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
+        name: "mixed_1toM"
         voices:
           0:
             subtype: unimore
             info: ["000006_voice","000007_voice"]
           1:
             subtype: unimore
-            info: ["f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut"]
+            info: ["f8_script5_clean_cut","f9_script5_clean_cut","f10_script5_clean_cut"]
           2:
             subtype: unimore
-            info: ["m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
+            info: ["m8_script5_clean_cut","m9_script5_clean_cut","m10_script5_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -798,16 +817,17 @@ sets:
       # TEST/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       5:
+        name: "locata_1toM"
         voices:
           0:
             subtype: unimore
             info: ["000006_voice","000007_voice"]
           1:
             subtype: unimore
-            info: ["f8_script2_clean_cut","f9_script2_clean_cut","f10_script2_clean_cut"]
+            info: ["f8_script1_clean_cut","f9_script1_clean_cut","f10_script1_clean_cut"]
           2:
             subtype: unimore
-            info: ["m8_script2_clean_cut","m9_script2_clean_cut","m10_script2_clean_cut"]
+            info: ["m8_script1_clean_cut","m9_script1_clean_cut","m10_script1_clean_cut"]
         heads:
           0:
             subtype: unimore
@@ -836,6 +856,7 @@ sets:
       #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance            
       #
       6:
+        name: "sounds_1toM"
         voices:
           0:
             subtype: unimore
