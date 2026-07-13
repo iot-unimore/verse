@@ -6,8 +6,8 @@ syntax:
   name: ds_recipe
   version:
     major: 0
-    minor: 1
-    revision: 0
+    minor: 2
+    revision: 1
 
 #
 # recipe
@@ -51,6 +51,7 @@ sets:
       # TRAIN/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
+        name: "static_1to1"
         voices:
           0:
             subtype: unimore
@@ -90,6 +91,7 @@ sets:
       # TRAIN/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
+        name: "static_1toM"
         voices:
           0:
             subtype: unimore
@@ -129,6 +131,7 @@ sets:
       # TRAIN/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
+        name: "dynamic_1to1"
         voices:
           0:
             subtype: unimore
@@ -165,6 +168,7 @@ sets:
       # TRAIN/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
+        name: "dynamic_1toM"        
         voices:
           0:
             subtype: unimore
@@ -210,6 +214,7 @@ sets:
       # TRAIN/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
+        name: "mixed_1toM"        
         voices:
           0:
             subtype: unimore
@@ -247,6 +252,7 @@ sets:
       #                using paths that were extracted from the Locata dataset.
       #
       5:
+        name: "locata_1toM"        
         voices:
           0:
             subtype: unimore
@@ -286,6 +292,7 @@ sets:
       #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance
       #
       6:
+        name: "sounds_1toM"
         voices:
           0:
             subtype: unimore
@@ -332,6 +339,7 @@ sets:
       # VALIDATE/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
+        name: "static_1to1"        
         voices:
           0:
             subtype: unimore
@@ -368,6 +376,7 @@ sets:
       # VALIDATE/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
+        name: "static_1toM"
         voices:
           0:
             subtype: unimore
@@ -407,6 +416,7 @@ sets:
       # VALIDATE/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
+        name: "dynamic_1to1"
         voices:
           0:
             subtype: unimore
@@ -443,6 +453,7 @@ sets:
       # VALIDATE/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
+        name: "dynamic_1toM"
         voices:
           0:
             subtype: unimore
@@ -486,6 +497,7 @@ sets:
       # VALIDATE/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
+        name: "mixed_1toM"
         voices:
           0:
             subtype: unimore
@@ -524,6 +536,7 @@ sets:
       # VALIDATE/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       5:
+        name: "locata_1toM"
         voices:
           0:
             subtype: unimore
@@ -564,6 +577,7 @@ sets:
       #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance            
       #
       6:
+        name: "sounds_1toM"
         voices:
           0:
             subtype: unimore
@@ -609,6 +623,7 @@ sets:
       # TEST/TASK #0: single static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       0:
+        name: "static_1to1"
         voices:
           0:
             subtype: unimore
@@ -644,6 +659,7 @@ sets:
       # TEST/TASK #1: multiple static source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       1:
+        name: "static_1toM"
         voices:
           0:
             subtype: unimore
@@ -683,6 +699,7 @@ sets:
       # TEST/TASK #2: single dynamic source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       2:
+        name: "dynamic_1to1"
         voices:
           0:
             subtype: unimore
@@ -718,6 +735,7 @@ sets:
       # TEST/TASK #3: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       3:
+        name: "dynamic_1toM"
         voices:
           0:
             subtype: unimore
@@ -761,6 +779,7 @@ sets:
       # TEST/TASK #4: multiple staic/dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       4:
+        name: "mixed_1toM"
         voices:
           0:
             subtype: unimore
@@ -798,6 +817,7 @@ sets:
       # TEST/TASK #5: multiple dinamyc source, single static receiver, anechoic path, long HRTF (includes reverberation) using head_003 + mic_noise
       #
       5:
+        name: "locata_1toM"
         voices:
           0:
             subtype: unimore
@@ -836,6 +856,7 @@ sets:
       #                adding also non-human-voice sounds to test the human-voice "extraction/isolation" performance            
       #
       6:
+        name: "sounds_1toM"
         voices:
           0:
             subtype: unimore
