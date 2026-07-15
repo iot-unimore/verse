@@ -1105,6 +1105,8 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
         path_file=os.path.join(_RESOURCES_DIR,yaml_info["position"]["value"]["type"],yaml_info["position"]["value"]["subtype"],"info",yaml_info["position"]["value"]["info"])
 
         try:
+            path_file = str(Path(path_file).with_suffix(".yaml"))
+
             yaml_data = safe_load_yaml(path_file)
             if yaml_data is None:
                 logger.error(f"Cannot open dynamic path file: {path_file}")
