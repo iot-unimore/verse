@@ -2101,7 +2101,6 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                 err=-1
 
 
-
         # generate array timestamps for array audio file
         if stop_event.is_set():
             return -1
@@ -2216,7 +2215,11 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                     array_position_file=""
                     position_err, source_position_file, array_position_file = find_locata_position_files( audio_wav_path=source_filename, full_timing=True)
 
-                    filename = f"VAD_{output_postfix}_{source_postfix}{str(track_id)}.txt"
+                    if(select_array=="default"):
+                        filename = f"VAD_{output_postfix}_{source_postfix}{str(track_id)}.txt"
+                    else:
+                        filename = f"VAD_{output_postfix}_{select_array}_{source_postfix}{str(track_id)}.txt"
+
                     audio_samples = generate_vad_file(  output_filename, start_datetime, output_path, output_file=filename, 
                                                         target_time_step_seconds=0, source_position_file=source_position_file, array_position_file=array_position_file)
                     if(audio_samples != total_samples):
@@ -2328,6 +2331,7 @@ def verse_to_locata(idx, path, **kwargs):
         return None
 
     if not ( check_folder_exists(output_locata_path) ):
+        logger.error(f"missing folder {output_locata_path}")
         return None
 
     start_dt = datetime.now()
@@ -2355,6 +2359,7 @@ def verse_to_locata(idx, path, **kwargs):
                 offset_xyz=array_pos, target_xyz=array_pos)
 
     if ( err != 0):
+        logger.error("error on generate_position_file for {}".format(mkv_yaml["file"]))
         return None
 
     # check for early exit
@@ -2363,6 +2368,7 @@ def verse_to_locata(idx, path, **kwargs):
 
     err = generate_source_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, audio_samples=total_audio_samples, output_postfix=output_postfix)
     if ( err != 0):
+        logger.error("error on generate_source_audio_files for {}".format(mkv_yaml["file"]))
         return None
 
     # check for early exit
@@ -2371,6 +2377,7 @@ def verse_to_locata(idx, path, **kwargs):
 
     err = generate_array_audio_files(mkv_yaml["file"], start_dt, output_path=output_locata_path, output_postfix=mic_array_name, source_postfix=output_postfix, audio_samples=total_audio_samples, select_array=kwargs["select_array"])
     if ( err != 0):
+        logger.error("error on generate_array_audio_files for {}".format(mkv_yaml["file"]))
         return None
 
     # remove intermediate files
