@@ -1900,6 +1900,18 @@ def generate_source_audio_files(mkv_path, start_datetime, output_path="/tmp/", o
     return err
 
 
+def infer_array_name(file_wav):
+    """Identify which mic array a receiver belongs to from its "file" field
+    (e.g. ".._binaural_000.wav" -> "binaural"), by matching against the full
+    name list in _MIC_ARRAY_CHANNELS["default"] (a superset of every
+    select_array-specific list), independently of whatever select_array
+    filter is active."""
+    for name in _MIC_ARRAY_CHANNELS["default"]:
+        if name in file_wav:
+            return name
+    return "unknown"
+
+
 def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", output_prefix="audio_array_", output_postfix="loudspeaker_",audio_samples=0, source_postfix="loudspeaker_", select_array="default"):
     err = 0
 
@@ -1934,6 +1946,10 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
     with tempfile.TemporaryDirectory() as tmpdir:
 
         extracted_wavs = []
+        # kept in lockstep with extracted_wavs: one {"ch", "array"} entry per
+        # mono track, in the same order they'll end up merged into
+        # output_filename by amerge (see the array_descriptor .yaml written below)
+        audio_tracks_descriptor = []
 
         for receiver_number, receiver_info in yaml_data["receivers"].items():
             channels = receiver_info.get("channels")
@@ -1967,6 +1983,7 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
 
                 if channels == 1:
                     extracted_wavs.append(track_wav)
+                    audio_tracks_descriptor.append({"ch": "mono", "array": infer_array_name(file_wav)})
                 else:
                     for channel_number in range(channels):
 
@@ -2053,6 +2070,8 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
                                     err = -1
                                 else:
                                     extracted_wavs.append(tmp_wav)
+                                    ch_label = "left" if channel_number == 0 else ("right" if channel_number == 1 else f"channel_{channel_number}")
+                                    audio_tracks_descriptor.append({"ch": ch_label, "array": infer_array_name(file_wav)})
 
                             except:
                                 logger.error(f"Invalid audio file: {output_filename}")
@@ -2099,6 +2118,32 @@ def generate_array_audio_files(mkv_path, start_datetime, output_path="/tmp/", ou
             if(audio_samples != total_samples):
                 logger.error(f"4 Invalid audio_samples count {audio_samples}!={total_samples} on audio file: {output_filename}")
                 err=-1
+
+            if(err == 0):
+                # descriptor for the merged array .wav: same name, ".yaml" extension,
+                # documenting which array/channel each merged mono track came from
+                # (audio_tracks_descriptor was built in lockstep with extracted_wavs above,
+                # so tracks_count/tracks order always matches the actual merged channel count)
+                array_descriptor = {
+                    "syntax": {
+                        "name": "verse_audio_array_wav",
+                        "version": {"major": 0, "minor": 1, "revision": 0},
+                    },
+                    "file": output_filename,
+                    "audio": {
+                        "tracks_count": len(audio_tracks_descriptor),
+                        "tracks": {i: track for i, track in enumerate(audio_tracks_descriptor)},
+                    },
+                }
+
+                array_descriptor_path = str(Path(output_filename).with_suffix(".yaml"))
+
+                try:
+                    with open(array_descriptor_path, "w") as f:
+                        yaml.dump(array_descriptor, f, sort_keys=False)
+                except OSError:
+                    logger.error(f"Cannot write array audio descriptor: {array_descriptor_path}")
+                    err = -1
 
 
         # generate array timestamps for array audio file
