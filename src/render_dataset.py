@@ -1215,7 +1215,7 @@ if __name__ == "__main__":
     if not cli_params["dry_run"]:
         generate_dataset_info(_OUTPUT_DIR, recipe_yaml, os.path.abspath(cli_params["input_file"]))
 
-    #renderDataSet(cli_params, recipe_yaml)
+    renderDataSet(cli_params, recipe_yaml)
 
     # cleanup, restore termina & exit
     os.system("tset")
