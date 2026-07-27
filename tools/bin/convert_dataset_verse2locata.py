@@ -702,6 +702,31 @@ def get_audio_info(mkv_path):
     return sample_rate, duration, total_samples, codec_name
 
 
+def generate_verse_info(path, output_path="/tmp/", output_file="verse_info.yaml"):
+    """Write the verse_info descriptor documenting the original verse input
+    folder a locata recording was converted from. Kept as its own function
+    (rather than inlined) so more fields can be added here later without
+    cluttering verse_to_locata()."""
+    verse_info = {
+        "syntax": {
+            "name": "verse_info",
+            "version": {"major": 0, "minor": 1, "revision": 0},
+        },
+        "path": path,
+    }
+
+    verse_info_path = os.path.join(output_path, output_file)
+
+    try:
+        with open(verse_info_path, "w") as f:
+            yaml.dump(verse_info, f, sort_keys=False)
+    except OSError:
+        logger.error(f"Cannot write verse info descriptor: {verse_info_path}")
+        return -1
+
+    return 0
+
+
 def generate_timestamps_file(file_path, start_datetime, output_path="/tmp/", output_file="required_time.txt", target_time_step_seconds=0.008):
     try:
         Fs, duration, total_samples, codec_name = get_audio_info(file_path)
@@ -2377,6 +2402,9 @@ def verse_to_locata(idx, path, **kwargs):
 
     if not ( check_folder_exists(output_locata_path) ):
         logger.error(f"missing folder {output_locata_path}")
+        return None
+
+    if generate_verse_info(path, output_path=output_locata_path) != 0:
         return None
 
     start_dt = datetime.now()
