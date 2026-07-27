@@ -55,6 +55,7 @@ from multiprocessing import Pool
 from setproctitle import setproctitle
 from functools import partial
 from tqdm import tqdm
+from datetime import datetime
 from tabulate import tabulate
 
 
@@ -214,6 +215,32 @@ def readYamlFile(filename=None):
         logger.error("missing yaml filename")
 
     return yaml_params
+
+
+def generate_dataset_info(output_path, recipe_yaml, origin, info_file="info.yaml"):
+    """(Over)write info.yaml inside the dataset output folder for this run,
+    recording the recipe this run started from, the recipe file's original
+    path (origin) and a timestamp. Kept as its own function (rather than
+    inlined in main()) so more per-run info can be added here later. Any
+    previous info.yaml content is discarded -- this file always reflects
+    only the most recent run."""
+    info_path = os.path.join(output_path, info_file)
+
+    info = {
+        "syntax": {"name": "dataset_info", "version": {"major": 0, "minor": 1, "revision": 0}},
+        "timestamp": datetime.now().strftime("%Y%m%d%H%M%S"),
+        "origin": origin,
+        "recipe": recipe_yaml,
+    }
+
+    try:
+        with open(info_path, "w") as file:
+            yaml.dump(info, file, sort_keys=False)
+    except OSError:
+        logger.error("cannot write dataset info file: {}".format(info_path))
+        return -1
+
+    return 0
 
 
 def readAllScenes(folder):
@@ -1185,7 +1212,10 @@ if __name__ == "__main__":
             if not os.path.isdir(_OUTPUT_DIR):
                 logger.error("cannot create output folder. exit")
 
-    renderDataSet(cli_params, recipe_yaml)
+    if not cli_params["dry_run"]:
+        generate_dataset_info(_OUTPUT_DIR, recipe_yaml, os.path.abspath(cli_params["input_file"]))
+
+    #renderDataSet(cli_params, recipe_yaml)
 
     # cleanup, restore termina & exit
     os.system("tset")
