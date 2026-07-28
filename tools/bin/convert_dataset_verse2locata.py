@@ -1094,8 +1094,7 @@ def compute_reference_frame(
 
 def apply_fixed_listener_orientation(position_df):
     """
-    Overwrite ref_vec/rotation columns with the fixed AES69/SOFA -> LOCATA
-    orientation for the listener (mic array).
+    Overwrite ref_vec/rotation columns with the fixed listener orientation.
 
     compute_reference_frame() derives a per-row "look-at" orientation, which
     is correct for VERSE sources (each speaker faces the listener head), but
@@ -1103,29 +1102,27 @@ def apply_fixed_listener_orientation(position_df):
     array_pos, the listener's own position always coincides with the look-at
     target, so forward = target - position is the zero vector every row,
     silently collapsing to an identity rotation via the zero-matrix sanity
-    check above. That discards the listener's real orientation.
+    check above (right answer, wrong/degenerate ref_vec).
 
-    In VERSE the listener is static and always oriented per AES69/SOFA
-    convention (local look axis = +x, up = +z), in the same room/global
-    frame used for positions. LOCATA's local convention (as consumed by
-    SRP-DNN's Dataset.py / cart2sph) is x=right, y=front/look, z=up. The
-    fixed change of basis between the two is:
-        LOCATA x (right) = -AES69 y (right = -left)
-        LOCATA y (front) =  AES69 x (look)
-        LOCATA z (up)    =  AES69 z (up)
+    The room/global frame used for all position files is already laid out
+    as X=right, Y=front/look, Z=up (see compute_reference_frame's own
+    docstring, and verified directly: spherical_to_cartesian(..., "verse")
+    maps az=0/el=0 to (0,1,0), i.e. +Y is "straight ahead"). That's the same
+    local convention SRP-DNN's Dataset.py / cart2sph expects (x=right,
+    y=front, z=up). So the listener needs no rotation at all: identity maps
+    room-global directly onto the expected local frame, and its reference
+    ("look") vector is the room's own +Y axis.
     """
 
     df = position_df.copy()
 
-    n = len(df)
-
-    df["ref_vec_x"] = 1.0
-    df["ref_vec_y"] = 0.0
+    df["ref_vec_x"] = 0.0
+    df["ref_vec_y"] = 1.0
     df["ref_vec_z"] = 0.0
 
     rotation_fixed = {
-        "rotation_11": 0.0, "rotation_12": 1.0, "rotation_13": 0.0,
-        "rotation_21": -1.0, "rotation_22": 0.0, "rotation_23": 0.0,
+        "rotation_11": 1.0, "rotation_12": 0.0, "rotation_13": 0.0,
+        "rotation_21": 0.0, "rotation_22": 1.0, "rotation_23": 0.0,
         "rotation_31": 0.0, "rotation_32": 0.0, "rotation_33": 1.0,
     }
     for col, value in rotation_fixed.items():
