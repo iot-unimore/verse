@@ -1091,6 +1091,48 @@ def compute_reference_frame(
 
     return df
 
+
+def apply_fixed_listener_orientation(position_df):
+    """
+    Overwrite ref_vec/rotation columns with the fixed AES69/SOFA -> LOCATA
+    orientation for the listener (mic array).
+
+    compute_reference_frame() derives a per-row "look-at" orientation, which
+    is correct for VERSE sources (each speaker faces the listener head), but
+    is meaningless for the listener itself: with offset_xyz == target_xyz ==
+    array_pos, the listener's own position always coincides with the look-at
+    target, so forward = target - position is the zero vector every row,
+    silently collapsing to an identity rotation via the zero-matrix sanity
+    check above. That discards the listener's real orientation.
+
+    In VERSE the listener is static and always oriented per AES69/SOFA
+    convention (local look axis = +x, up = +z), in the same room/global
+    frame used for positions. LOCATA's local convention (as consumed by
+    SRP-DNN's Dataset.py / cart2sph) is x=right, y=front/look, z=up. The
+    fixed change of basis between the two is:
+        LOCATA x (right) = -AES69 y (right = -left)
+        LOCATA y (front) =  AES69 x (look)
+        LOCATA z (up)    =  AES69 z (up)
+    """
+
+    df = position_df.copy()
+
+    n = len(df)
+
+    df["ref_vec_x"] = 1.0
+    df["ref_vec_y"] = 0.0
+    df["ref_vec_z"] = 0.0
+
+    rotation_fixed = {
+        "rotation_11": 0.0, "rotation_12": 1.0, "rotation_13": 0.0,
+        "rotation_21": -1.0, "rotation_22": 0.0, "rotation_23": 0.0,
+        "rotation_31": 0.0, "rotation_32": 0.0, "rotation_33": 1.0,
+    }
+    for col, value in rotation_fixed.items():
+        df[col] = value
+
+    return df
+
 def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0, sample_rate=48000, total_samples=0, offset_xyz=[0,0,0], target_xyz=(0,0,0), rotation_matrix=[], source_wav=None):
     position=[]
     err=0
@@ -1677,7 +1719,12 @@ def generate_position_file(mkv_path, start_datetime, output_path="/tmp/", output
 
                 else:
                     err,position = compute_position_static(listener_info, start_datetime, duration, Fs, total_samples, offset_xyz, target_xyz)
- 
+
+                if(err==0):
+                    # the listener's orientation is fixed (AES69/SOFA look=+x), not
+                    # derived from a look-at target -- see apply_fixed_listener_orientation()
+                    position = apply_fixed_listener_orientation(position)
+
                 if(err==0):
                     filename = f"position_full_array_{output_prefix}.txt"
                     output_filename = os.path.join(output_path, filename)                    
