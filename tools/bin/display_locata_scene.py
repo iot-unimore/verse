@@ -273,6 +273,24 @@ examples:
     print(f"Loaded {len(results)} trajectories")
 
     # --------------------------------------------------------
+    # Scene-wide bounding box, used to scale reference frames.
+    #
+    # NOTE: this must be the whole scene's range, not each individual
+    # trajectory's own range -- a static trajectory (e.g. a fixed
+    # listener/array) has zero range on its own, which would collapse its
+    # frame arrows to zero length and make them invisible.
+    # --------------------------------------------------------
+
+    scene_range = max(
+        max(r["x"].max() for r in results) - min(r["x"].min() for r in results),
+        max(r["y"].max() for r in results) - min(r["y"].min() for r in results),
+        max(r["z"].max() for r in results) - min(r["z"].min() for r in results),
+    )
+
+    if scene_range <= 0:
+        scene_range = 1.0
+
+    # --------------------------------------------------------
     # Figure
     # --------------------------------------------------------
 
@@ -384,15 +402,9 @@ examples:
         # Reference frames
         # ----------------------------------------------------
 
-        if args.frames and "source" in label.lower():
+        if args.frames:
 
-            xyz_range = max(
-                x.max() - x.min(),
-                y.max() - y.min(),
-                z.max() - z.min()
-            )
-
-            frame_scale = args.frames_scale * xyz_range
+            frame_scale = args.frames_scale * scene_range
 
             plot_reference_frames(
                 ax,
@@ -434,7 +446,7 @@ examples:
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
 
-    ax.set_title("LOCATA Audio Scene")
+    ax.set_title("LOCATA Scene (look=y=green)")
 
     ax.legend(
         loc="upper right",

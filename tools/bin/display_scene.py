@@ -336,6 +336,8 @@ if __name__ == "__main__":
     ax.plot([0, 0], [0, ax.get_ylim()[1]], [0, 0], color="green", linewidth=1)
     ax.plot([0, 0], [0, 0], [0, ax.get_zlim()[1]], color="blue", linewidth=1)
 
+    ax.set_title("VERSE Scene (look=x=red)")
+
     ax.set_aspect("equal", adjustable="box")
 
     plt.show()
