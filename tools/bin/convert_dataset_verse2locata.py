@@ -869,27 +869,46 @@ def generate_vad_file(file_path, start_datetime, output_path="/tmp/", output_fil
 
 # ----------------------------------------------------
 # 2. SPHERICAL -> CARTESIAN
-# LOCATA-like convention:
 #
-# azimuth:
-#   0 deg  -> +x
-#   +90    -> +y
+# Two conventions, verified against the actual specs (see docs/aes and
+# docs/locata):
 #
-# elevation:
-#   0 deg  -> xy plane
-#   +90    -> +z
+# "aes69": VERSE's own native convention (AES69-2022 secs. 4.1.3/4.3.1;
+#          matches sspat's coordSphericalToCartesian(), which implements
+#          this formula "as per AES69-2022 spec"):
+#   azimuth:
+#     0 deg  -> +x (forward)
+#     +90    -> +y
+#   elevation:
+#     0 deg  -> xy plane
+#     +90    -> +z
 #
+# "locata": LOCATA's own documented convention (LOCATA_documentation_
+#           final_release_V1.pdf sec. 7.2: "reference vector (0,1,0)",
+#           azimuth 0 rad pointing along the positive y-axis):
+#   azimuth:
+#     0 deg  -> +y (forward)
+#     +90    -> -x
+#   elevation:
+#     0 deg  -> xy plane
+#     +90    -> +z
+#
+# NOTE: VERSE always supplies azimuth/elevation already expressed in ITS
+# OWN (aes69) convention. Applying the "locata" branch directly to those
+# raw values both decodes them correctly AND rotates the result into
+# LOCATA's frame in a single step -- that's why the verse2locata converter
+# always calls this with convention="locata".
 # ----------------------------------------------------
 
-def spherical_to_cartesian(az_deg, el_deg, r, convention="locata"):
+def spherical_to_cartesian(az_deg, el_deg, r, convention="aes69"):
 
-    conventions=["locata","verse"]
+    conventions=["aes69","locata"]
 
     x=0
     y=0
     z=0
 
-    if(str(convention).lower() == "locata"):
+    if(str(convention).lower() == "aes69"):
         az = np.deg2rad(az_deg)
         el = np.deg2rad(el_deg)
 
@@ -897,7 +916,7 @@ def spherical_to_cartesian(az_deg, el_deg, r, convention="locata"):
         y = r * np.cos(el) * np.sin(az)
         z = r * np.sin(el)
 
-    elif(str(convention).lower() == "verse"):
+    elif(str(convention).lower() == "locata"):
         az = np.deg2rad(az_deg)
         el = np.deg2rad(el_deg)
 
@@ -1106,7 +1125,7 @@ def apply_fixed_listener_orientation(position_df):
 
     The room/global frame used for all position files is already laid out
     as X=right, Y=front/look, Z=up (see compute_reference_frame's own
-    docstring, and verified directly: spherical_to_cartesian(..., "verse")
+    docstring, and verified directly: spherical_to_cartesian(..., "locata")
     maps az=0/el=0 to (0,1,0), i.e. +Y is "straight ahead"). That's the same
     local convention SRP-DNN's Dataset.py / cart2sph expects (x=right,
     y=front, z=up). So the listener needs no rotation at all: identity maps
@@ -1207,7 +1226,7 @@ def compute_position_dynamic(yaml_info="", start_datetime=0, duration_seconds=0,
                 df['azimuth_deg'].to_numpy(),
                 df['elevation_deg'].to_numpy(),
                 df['distance'].to_numpy(),
-                convention="verse"
+                convention="locata"
             )
 
             x = x + offset_xyz[0]
@@ -1361,7 +1380,7 @@ def compute_position_static(yaml_info="", start_datetime=0, duration_seconds=0, 
                 yaml_info["position"]["coord"]["value"][0],
                 yaml_info["position"]["coord"]["value"][1],
                 yaml_info["position"]["coord"]["value"][2],
-                convention="verse"
+                convention="locata"
             )
 
             x = x + offset_xyz[0]
