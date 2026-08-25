@@ -11,6 +11,7 @@ import re
 import logging
 import tempfile
 import multiprocessing
+import fcntl
 from concurrent.futures import ProcessPoolExecutor, as_completed, TimeoutError
 from tqdm import tqdm
 from datetime import datetime, timedelta
@@ -28,6 +29,9 @@ manager = multiprocessing.Manager()
 stop_event = manager.Event()
 
 LOCATA_DATA_TYPES={"train":"dev","test":"eval","validate":"val"}
+# reverse of LOCATA_DATA_TYPES: locata on-disk folder name -> original verse
+# split name, used to fill dataset_meta.yaml's "stage" field
+LOCATA_STAGE_FROM_DATA_TYPE={v: k for k, v in LOCATA_DATA_TYPES.items()}
 
 REQUIRED_SYNTAX_NAMES = {
     "audio_rendering_scene",
@@ -722,6 +726,78 @@ def generate_verse_info(path, output_path="/tmp/", output_file="verse_info.yaml"
             yaml.dump(verse_info, f, sort_keys=False)
     except OSError:
         logger.error(f"Cannot write verse info descriptor: {verse_info_path}")
+        return -1
+
+    return 0
+
+
+def update_dataset_meta_file(split_path, stage, sources_count, select_array, mic_array_name, output_file="dataset_meta.yaml"):
+    """Update (or create) the dataset_meta.yaml descriptor shared by every
+    recording under a given locata split folder (dev/eval/val).
+
+    Tracks:
+      - stage: the original verse split name this locata folder was built
+        from (see LOCATA_STAGE_FROM_DATA_TYPE)
+      - max_sources: the largest sources_count seen across every scene
+        converted into this split so far (never lowered, only raised)
+      - locata_folder_names: canonical array name (select_array) -> on-disk
+        device-prefixed recording subfolder name
+
+    select_array=="default" is skipped: there is no canonical array name to
+    key locata_folder_names by in that case.
+
+    verse_to_locata() runs many scenes in parallel (ProcessPoolExecutor), and
+    scenes belonging to the same split race to update this same shared file,
+    so the read-modify-write below is guarded by a cross-process file lock.
+    """
+
+    if select_array == "default":
+        return 0
+
+    meta_path = os.path.join(split_path, output_file)
+    lock_path = meta_path + ".lock"
+
+    try:
+        with open(lock_path, "w") as lock_f:
+
+            fcntl.flock(lock_f, fcntl.LOCK_EX)
+
+            try:
+                meta = safe_load_yaml(meta_path) if os.path.exists(meta_path) else None
+                if not isinstance(meta, dict):
+                    meta = {}
+
+                folder_names = meta.get("locata_folder_names", {})
+                if not isinstance(folder_names, dict):
+                    folder_names = {}
+
+                on_disk_name = "_".join([mic_array_name, select_array])
+
+                if select_array not in folder_names:
+                    folder_names[select_array] = on_disk_name
+                elif folder_names[select_array] != on_disk_name:
+                    logger.warning(
+                        f"{meta_path}: locata_folder_names[{select_array}] was "
+                        f"'{folder_names[select_array]}', leaving unchanged "
+                        f"(got '{on_disk_name}')"
+                    )
+
+                max_sources = max(meta.get("max_sources", 0), sources_count)
+
+                meta_out = {
+                    "stage": stage,
+                    "max_sources": max_sources,
+                    "locata_folder_names": folder_names,
+                }
+
+                with open(meta_path, "w") as f:
+                    yaml.dump(meta_out, f, sort_keys=False)
+
+            finally:
+                fcntl.flock(lock_f, fcntl.LOCK_UN)
+
+    except OSError:
+        logger.error(f"Cannot update dataset meta descriptor: {meta_path}")
         return -1
 
     return 0
@@ -2449,6 +2525,11 @@ def verse_to_locata(idx, path, **kwargs):
             if d in tmp_list:
                 output_locata_path = os.path.join(output_path, "locata", tmp_list[tmp_list.index("datasets")+1])
 
+    # dataset root path (".../locata/<dataset_name>"), kept aside before
+    # output_locata_path grows into the per-recording path below -- this is
+    # where dataset_meta.yaml lives, one level above data_type/task_type/...
+    dataset_root_path = output_locata_path
+
     # mic array name from head definition in audio scene
     mic_array_name=scene_yaml["setup"]["listeners"][0]["subtype"]+"_"+scene_yaml["setup"]["listeners"][0]["info"]
 
@@ -2468,6 +2549,14 @@ def verse_to_locata(idx, path, **kwargs):
         return None
 
     if generate_verse_info(path, output_path=output_locata_path) != 0:
+        return None
+
+    stage = LOCATA_STAGE_FROM_DATA_TYPE.get(data_type, data_type)
+    split_path = os.path.join(dataset_root_path, data_type)
+
+    if update_dataset_meta_file(
+            split_path, stage, scene_yaml["setup"]["sources_count"],
+            kwargs["select_array"], mic_array_name) != 0:
         return None
 
     start_dt = datetime.now()
