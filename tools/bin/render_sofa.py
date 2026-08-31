@@ -16,6 +16,39 @@ import matplotlib.pyplot as plt
 _CTRL_EXIT_SIGNAL = 0  # driven by CTRL-C, 0 to exit threads
 _ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 
+# Auralys writes the measured time of arrival as a custom SOFA variable.
+# Both the name and the unit changed, so accept either:
+#   AuralysPrjIROnsetDelay : seconds, sub-sample, IR onset          (current)
+#   IRPeakDelay            : samples, integer, np.argmax of the IR  (legacy)
+#
+# NOTE: legacy files written before the Auralys onset detector hold the argmax
+#       PEAK, later ones hold the ONSET, and nothing in the file distinguishes
+#       them. The difference is 0.03 to 0.35 ms depending on how shadowed the
+#       receiver is. Fine while this only feeds a log line, not fine if it ever
+#       drives alignment: regenerate the old files instead of guessing.
+_ONSET_VARIANTS = (
+    ("AuralysPrjIROnsetDelay", "seconds"),
+    ("IRPeakDelay", "samples"),
+)
+
+
+def attr_str(obj, name, default):
+    """Read an HDF5 string attribute, decoding bytes if needed."""
+    value = obj.attrs.get(name, default)
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    return str(value)
+
+
+def to_samples(value, units, fs):
+    """Convert a delay expressed in 'seconds' or 'samples' to samples."""
+    units = units.lower()
+    if units == "seconds":
+        return value * fs
+    if units == "samples":
+        return value
+    raise ValueError(f"[ERROR] Unsupported delay unit: '{units}' (expected 'seconds' or 'samples')")
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Render audio using SOFA HRIRs with multiple receivers.")
     parser.add_argument("wav_file", help="Input mono .wav file")
@@ -31,20 +64,25 @@ def load_sofa_data(sofa_file):
         delay = f['Data.Delay'][:]                     # shape [M, R]
         fs = f['Data.SamplingRate'][0]                 # float
 
-        # Default unit is seconds if attribute missing
-        delay_units_attr = f['Data.Delay'].attrs.get('Units', b'samples')
-        # decode bytes to string if needed
-        if isinstance(delay_units_attr, bytes):
-            delay_units = delay_units_attr.decode('utf-8')
-        else:
-            delay_units = str(delay_units_attr)
+        # AES69 expresses Data.Delay in samples, and the files carry no Units
+        # attribute, so "samples" is the correct default here.
+        delay_units = attr_str(f['Data.Delay'], 'Units', 'samples')
 
-        try:
-            peaks = f['IRPeakDelay'][:]                    # shape [M, R]
-        except:
-            peaks = -1 * np.ones(delay.shape)
+        # IR arrival time: optional, and renamed between Auralys versions
+        onset = None
+        onset_units = 'samples'
+        onset_name = 'none'
+        for name, default_units in _ONSET_VARIANTS:
+            if name in f:
+                onset = f[name][:]                     # shape [M, R]
+                onset_units = attr_str(f[name], 'Units', default_units)
+                onset_name = name
+                break
 
-    return source_pos, ir, delay, fs, delay_units, peaks
+        if onset is None:
+            onset = -1 * np.ones(delay.shape)
+
+    return source_pos, ir, delay, fs, delay_units, onset, onset_units, onset_name
 
 def find_closest_source_idx(source_pos, target_pos):
     diffs = source_pos - target_pos
@@ -82,8 +120,10 @@ def main():
     # plt.show()
 
     # Load SOFA data
-    source_pos, irs, delays, fs_sofa, delay_units, peaks = load_sofa_data(args.sofa_file)
+    source_pos, irs, delays, fs_sofa, delay_units, onsets, onset_units, onset_name = load_sofa_data(args.sofa_file)
     print(f"[INFO] Delay units in SOFA file: '{delay_units}'")
+    if onset_name != 'none':
+        print(f"[INFO] IR arrival variable: '{onset_name}' in '{onset_units}'")
 
     fs_sofa = int (fs_sofa)
     fs_wav = int(fs_wav)
@@ -114,14 +154,9 @@ def main():
 
         h = irs[idx, r, :]            # IR for this receiver
         delay_val = delays[idx, r]
-        peak_val = peaks[idx, r]
+        onset_val = onsets[idx, r]
 
-        if delay_units.lower() == "seconds":
-            delay_samples = delay_val * fs_sofa
-        elif delay_units.lower() == "samples":
-            delay_samples = delay_val
-        else:
-            raise ValueError(f"[ERROR] Unsupported delay unit: '{delay_units}' (expected 'seconds' or 'samples')")
+        delay_samples = to_samples(delay_val, delay_units, fs_sofa)
 
         ir = pf.Signal(h, fs_sofa)
         out = pf.dsp.convolve(signal, ir)
@@ -140,11 +175,15 @@ def main():
         if(delay_samples>0):
             if delay_units.lower() == "seconds":
                 print(f"Saved: {out_filename} (delay {delay_val:.6f} {delay_units})")
-            elif delay_units.lower() == "samples":
+            else:
                 print(f"Saved: {out_filename} (delay {delay_val:.0f} {delay_units})")
+        elif onset_val >= 0:
+            # normalise to samples: the stored unit is seconds on current files
+            # and samples on legacy ones, printing it raw would compare apples
+            # to oranges (and ":.0f" would show every new file as "0")
+            print(f"Saved: {out_filename} (IR arrival at {to_samples(onset_val, onset_units, fs_sofa):.1f} samples)")
         else:
-            # print(f"Saved: {out_filename} (delay {delay_val:.0f} {delay_units})")
-            print(f"Saved: {out_filename} (IR-peak at {peak_val:.0f} {delay_units})")
+            print(f"Saved: {out_filename} (no delay, no IR arrival in file)")
 
 if __name__ == "__main__":
     main()
