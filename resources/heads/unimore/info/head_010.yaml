@@ -1,0 +1,46 @@
+---
+# head related impulse response (HRTF)
+syntax:
+  name: hrtf_file
+  version:
+    major: 0
+    minor: 1
+    revision: 0
+
+name: auralysClean_5ms
+
+description: auralys head (barebone) with glasses having six microphones (three pairs of L/R mics). Mics are also inside ears (binaural) for reference. This HRTF has ben cut by a window of 5ms.
+
+format: sofa
+
+format_3dti: yes
+
+geometry:
+  head_radius: 0.07
+
+#
+# HRTFs definition:
+# we can have more than one HRTF for the same head because the 3DTuneIn tool will
+# take only binaural hrtf for rendering. For this head we have multiple micropones
+# arranged in L/R pairs (for binaural and for glasses array).
+# we list them in order with the associated hrtf file.
+#
+hrtf_count: 4
+hrtf_samplerates: [ 96000 ]
+hrtf_main_idx: 0
+hrtf:
+  0:
+    name: binaural
+    file: files/head_010/auralysClean_20260903-001_binaural.sofa
+  1:
+    name: array_six_front
+    file: files/head_010/auralysClean_20260903-001_array_six_front.sofa
+  2:
+    name: array_six_middle
+    file: files/head_010/auralysClean_20260903-001_array_six_middle.sofa
+  3:
+    name: array_six_rear
+    file: files/head_010/auralysClean_20260903-001_array_six_rear.sofa
+
+#EOF
+...
